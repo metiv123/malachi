@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: malachi
+    runtime: node
+    plan: free
+    region: oregon
+    rootDir: app
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: WHATSAPP_PROVIDER
+        value: mock
+      - key: MALACHI_SCHEDULER
+        value: "true"
+      - key: MALACHI_BETA_OPEN
+        value: "true"
+      - key: MALACHI_DEV_TOOLS
+        value: "false"
