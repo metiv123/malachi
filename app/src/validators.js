@@ -9,12 +9,12 @@ export function isLikelyPhone(value) {
 
 export function validateJoinInput(input) {
   const errors = [];
-  for (const field of ['ownerName','ownerPhone','elderName','elderPhone','dailyCheckTime','contactName','contactPhone']) {
+  for (const field of ['ownerName','ownerPhone','elderName','elderPhone','dailyCheckTime']) {
     if (!input[field] || String(input[field]).trim() === '') errors.push(`חסר שדה: ${field}`);
   }
   if (input.dailyCheckTime && !isValidTime(input.dailyCheckTime)) errors.push('שעה לא תקינה');
   if (input.ownerPhone && !isLikelyPhone(input.ownerPhone)) errors.push('טלפון בן משפחה לא תקין');
   if (input.elderPhone && !isLikelyPhone(input.elderPhone)) errors.push('טלפון האדם המבוגר לא תקין');
-  if (input.contactPhone && !isLikelyPhone(input.contactPhone)) errors.push('טלפון איש קשר לא תקין');
+  if (input.contactPhone && !isLikelyPhone(input.contactPhone)) errors.push('טלפון איש קשר להתראה לא תקין');
   if (errors.length) throw new Error(errors.join(', '));
 }

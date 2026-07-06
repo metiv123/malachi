@@ -19,8 +19,8 @@ export async function createFamily(input) {
   const elderName = requireField(input, 'elderName');
   const elderPhone = requireField(input, 'elderPhone');
   const dailyCheckTime = requireField(input, 'dailyCheckTime');
-  const contactName = requireField(input, 'contactName');
-  const contactPhone = requireField(input, 'contactPhone');
+  const contactName = String(input.contactName || ownerName).trim();
+  const contactPhone = String(input.contactPhone || ownerPhone).trim();
 
   const created = await mutateDb((db) => {
     if (!config.betaOpen || db.families.length >= config.betaMaxFamilies) {
