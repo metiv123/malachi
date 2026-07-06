@@ -5,6 +5,18 @@ function normalizePhone(phone = '') {
   return String(phone).replace(/[^0-9+]/g, '');
 }
 
+function textParam(text) {
+  return { type: 'text', text: String(text ?? '') };
+}
+
+function bodyComponent(values = []) {
+  return values.length ? [{ type: 'body', parameters: values.map(textParam) }] : [];
+}
+
+function quickReplyButton(index, payload) {
+  return { type: 'button', sub_type: 'quick_reply', index: String(index), parameters: [{ type: 'payload', payload }] };
+}
+
 async function recordOutbound(kind, to, body, buttons = [], meta = {}) {
   const message = {
     id: id('msg'),
@@ -56,32 +68,44 @@ async function sendMetaTemplate(to, templateName, languageCode = 'he', component
 
 export async function sendOptIn(elder, family) {
   const body = `שלום ${elder.name} 🌿\nכאן מלאכי. ${family.ownerName} ביקש/ה לצרף אותך לבדיקת בוקר יומית ב-WhatsApp. בכל יום בשעה ${elder.dailyCheckTime} נשלח הודעה קצרה כדי לוודא שהכול בסדר.`;
+  const buttons = [{ id: 'approve_optin', title: 'מאשר/ת' }, { id: 'decline_optin', title: 'לא מעוניין/ת' }];
   if (config.whatsappProvider === 'meta') {
-    await sendMetaTemplate(elder.whatsappPhone, config.meta.templates.optin, 'he');
+    await sendMetaTemplate(elder.whatsappPhone, config.meta.templates.optin, 'he', [
+      ...bodyComponent([elder.name, family.ownerName, elder.dailyCheckTime]),
+      quickReplyButton(0, 'approve_optin'),
+      quickReplyButton(1, 'decline_optin')
+    ]);
   }
-  return recordOutbound('optin', elder.whatsappPhone, body, [{ id: 'approve_optin', title: 'מאשר/ת' }, { id: 'decline_optin', title: 'לא מעוניין/ת' }], { elderId: elder.id });
+  return recordOutbound('optin', elder.whatsappPhone, body, buttons, { elderId: elder.id });
 }
 
 export async function sendDailyCheck(elder, check) {
   const body = `בוקר טוב ${elder.name} 🌿\nכאן מלאכי, רק לוודא שהכול בסדר הבוקר.`;
+  const buttons = [{ id: 'daily_ok', title: 'הכול בסדר' }, { id: 'daily_distress', title: 'מצוקה' }];
   if (config.whatsappProvider === 'meta') {
-    await sendMetaTemplate(elder.whatsappPhone, config.meta.templates.dailyCheck, 'he');
+    await sendMetaTemplate(elder.whatsappPhone, config.meta.templates.dailyCheck, 'he', [
+      ...bodyComponent([elder.name]),
+      quickReplyButton(0, 'daily_ok'),
+      quickReplyButton(1, 'daily_distress')
+    ]);
   }
-  return recordOutbound('daily_check', elder.whatsappPhone, body, [{ id: 'daily_ok', title: 'הכול בסדר' }, { id: 'daily_distress', title: 'מצוקה' }], { elderId: elder.id, checkId: check.id });
+  return recordOutbound('daily_check', elder.whatsappPhone, body, buttons, { elderId: elder.id, checkId: check.id });
 }
 
 export async function sendDistressAlert(contact, elder, check) {
-  const body = `התראת מלאכי: ${elder.name} לחץ/ה על “מצוקה” בשעה ${new Date().toLocaleTimeString('he-IL')}. מומלץ ליצור קשר מיד.`;
+  const time = new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+  const body = `התראת מלאכי: ${elder.name} לחץ/ה על “מצוקה” בשעה ${time}. מומלץ ליצור קשר מיד.`;
   if (config.whatsappProvider === 'meta') {
-    await sendMetaTemplate(contact.whatsappPhone, config.meta.templates.distressAlert, 'he');
+    await sendMetaTemplate(contact.whatsappPhone, config.meta.templates.distressAlert, 'he', bodyComponent([elder.name, time]));
   }
   return recordOutbound('distress_alert', contact.whatsappPhone, body, [], { elderId: elder.id, checkId: check?.id });
 }
 
 export async function sendNoResponseAlert(contact, elder, check) {
+  const time = new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
   const body = `התראת מלאכי: ${elder.name} לא ענה/ענתה לבדיקת הבוקר עד עכשיו. מומלץ ליצור קשר ולוודא שהכול בסדר.`;
   if (config.whatsappProvider === 'meta') {
-    await sendMetaTemplate(contact.whatsappPhone, config.meta.templates.noResponseAlert, 'he');
+    await sendMetaTemplate(contact.whatsappPhone, config.meta.templates.noResponseAlert, 'he', bodyComponent([elder.name, time]));
   }
   return recordOutbound('no_response_alert', contact.whatsappPhone, body, [], { elderId: elder.id, checkId: check.id });
 }
