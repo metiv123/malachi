@@ -158,7 +158,7 @@ async function route(req, res) {
     if (req.method === 'POST' && url.pathname === '/api/jobs/no-responses') return json(res, 200, { alerts: await processNoResponses(await body(req)) });
 
     // Meta webhook verification
-    if (req.method === 'GET' && url.pathname === '/api/webhooks/whatsapp') {
+    if (req.method === 'GET' && (url.pathname === '/api/webhooks/whatsapp' || url.pathname === '/api/meta/webhook')) {
       const mode = url.searchParams.get('hub.mode');
       const token = url.searchParams.get('hub.verify_token');
       const challenge = url.searchParams.get('hub.challenge');
@@ -169,7 +169,7 @@ async function route(req, res) {
       return json(res, 403, { error: 'Webhook verification failed' });
     }
 
-    if (req.method === 'POST' && url.pathname === '/api/webhooks/whatsapp') {
+    if (req.method === 'POST' && (url.pathname === '/api/webhooks/whatsapp' || url.pathname === '/api/meta/webhook')) {
       const payload = await body(req);
       const handled = await processWhatsAppWebhookPayload(payload);
       return json(res, 200, { ok: true, received: true, handled });

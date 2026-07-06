@@ -20,7 +20,7 @@ META_TEMPLATE_NO_RESPONSE_ALERT=no_response_alert_he
 META_TEMPLATE_OPTIN=optin_confirm_he
 
 ## Webhook URL for Meta
-https://YOUR_RENDER_DOMAIN/api/meta/webhook
+https://YOUR_RENDER_DOMAIN/api/webhooks/whatsapp
 
 ## Verify Token
 אותו ערך בדיוק כמו META_VERIFY_TOKEN.
