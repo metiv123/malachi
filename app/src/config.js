@@ -13,7 +13,7 @@ export const config = {
     graphVersion: process.env.META_GRAPH_VERSION || 'v23.0',
     phoneNumberId: process.env.META_PHONE_NUMBER_ID || '',
     accessToken: process.env.META_ACCESS_TOKEN || '',
-    verifyToken: process.env.META_VERIFY_TOKEN || 'change-me',
+    verifyToken: process.env.META_VERIFY_TOKEN || (process.env.NODE_ENV === 'production' ? '' : 'change-me'),
     templates: {
       dailyCheck: process.env.META_TEMPLATE_DAILY_CHECK || 'daily_check_he',
       distressAlert: process.env.META_TEMPLATE_DISTRESS_ALERT || 'distress_alert_he',
