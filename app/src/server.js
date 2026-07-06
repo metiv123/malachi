@@ -71,7 +71,12 @@ async function route(req, res) {
     if (req.method === 'GET' && url.pathname === '/api/beta/readiness') return json(res, 200, await betaReadiness());
     if (req.method === 'GET' && url.pathname === '/api/beta/checklist') return json(res, 200, await betaChecklist());
     if (req.method === 'GET' && url.pathname === '/api/meta/readiness') return json(res, 200, metaReadiness());
-    if (req.method === 'GET' && url.pathname === '/api/live/readiness') return json(res, 200, liveReadiness());
+    if (req.method === 'GET' && url.pathname === '/api/live/readiness') {
+      const proto = req.headers['x-forwarded-proto'] || 'https';
+      const host = req.headers['x-forwarded-host'] || req.headers.host;
+      const requestBaseUrl = host ? `${proto}://${host}` : null;
+      return json(res, 200, liveReadiness(requestBaseUrl));
+    }
     if (req.method === 'GET' && url.pathname === '/api/meta/sample-payloads') return json(res, 200, sampleMetaPayloads());
     if (req.method === 'GET' && url.pathname === '/api/reports/sources') return json(res, 200, { sources: await sourceReport() });
     if (req.method === 'GET' && url.pathname === '/api/export/families.csv') return csvResponse(res, 'malachi-families.csv', await exportFamiliesCsv());

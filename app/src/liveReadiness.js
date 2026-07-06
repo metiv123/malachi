@@ -2,10 +2,10 @@ import { config } from './config.js';
 
 function has(value) { return Boolean(String(value || '').trim()); }
 
-export function liveReadiness() {
+export function liveReadiness(requestBaseUrl = null) {
   const checks = [
     { key: 'nodeEnvProduction', label: 'NODE_ENV=production', ok: process.env.NODE_ENV === 'production' },
-    { key: 'publicBaseUrl', label: 'MALACHI_PUBLIC_BASE_URL configured', ok: has(config.publicBaseUrl) && !config.publicBaseUrl.includes('localhost') },
+    { key: 'publicBaseUrl', label: 'Public base URL available', ok: has(requestBaseUrl || config.publicBaseUrl) && !(requestBaseUrl || config.publicBaseUrl).includes('localhost') },
     { key: 'providerMeta', label: 'WHATSAPP_PROVIDER=meta', ok: config.whatsappProvider === 'meta' },
     { key: 'phoneNumberId', label: 'META_PHONE_NUMBER_ID configured', ok: has(config.meta.phoneNumberId) },
     { key: 'accessToken', label: 'META_ACCESS_TOKEN configured', ok: has(config.meta.accessToken) },
@@ -19,7 +19,7 @@ export function liveReadiness() {
   return {
     ready: blockers.length === 0,
     mode: config.whatsappProvider,
-    webhookUrl: `${config.publicBaseUrl.replace(/\/$/, '')}/api/meta/webhook`,
+    webhookUrl: `${(requestBaseUrl || config.publicBaseUrl).replace(/\/$/, '')}/api/meta/webhook`,
     checks,
     blockers
   };

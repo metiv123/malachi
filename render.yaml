@@ -20,6 +20,8 @@ services:
         value: "false"
       - key: MALACHI_TIMEZONE
         value: Asia/Jerusalem
+      - key: MALACHI_PUBLIC_BASE_URL
+        value: https://malachi-v78v.onrender.com
       - key: META_GRAPH_VERSION
         value: v23.0
       - key: META_PHONE_NUMBER_ID
