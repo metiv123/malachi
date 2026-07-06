@@ -15,6 +15,7 @@ import { betaReadiness } from './betaReadiness.js';
 import { betaChecklist } from './betaChecklist.js';
 import { version } from './version.js';
 import { liveReadiness } from './liveReadiness.js';
+import { checkMetaPhoneNumber } from './metaApiCheck.js';
 import { createBackup, exportDbJson, listBackups } from './backup.js';
 import { listErrors, logError } from './errorLog.js';
 import { createFeedback, listFeedback } from './feedback.js';
@@ -78,6 +79,7 @@ async function route(req, res) {
       return json(res, 200, liveReadiness(requestBaseUrl));
     }
     if (req.method === 'GET' && url.pathname === '/api/meta/sample-payloads') return json(res, 200, sampleMetaPayloads());
+    if (req.method === 'GET' && url.pathname === '/api/meta/phone-check') return json(res, 200, await checkMetaPhoneNumber());
     if (req.method === 'GET' && url.pathname === '/api/reports/sources') return json(res, 200, { sources: await sourceReport() });
     if (req.method === 'GET' && url.pathname === '/api/export/families.csv') return csvResponse(res, 'malachi-families.csv', await exportFamiliesCsv());
     if (req.method === 'GET' && url.pathname === '/api/export/db.json') { res.writeHead(200, {'Content-Type':'application/json; charset=utf-8','Content-Disposition':'attachment; filename="malachi-db.json"'}); return res.end(await exportDbJson()); }
