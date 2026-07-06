@@ -14,6 +14,7 @@ import { metaReadiness, sampleMetaPayloads } from './metaReadiness.js';
 import { betaReadiness } from './betaReadiness.js';
 import { betaChecklist } from './betaChecklist.js';
 import { version } from './version.js';
+import { liveReadiness } from './liveReadiness.js';
 import { createBackup, exportDbJson, listBackups } from './backup.js';
 import { listErrors, logError } from './errorLog.js';
 import { createFeedback, listFeedback } from './feedback.js';
@@ -70,6 +71,7 @@ async function route(req, res) {
     if (req.method === 'GET' && url.pathname === '/api/beta/readiness') return json(res, 200, await betaReadiness());
     if (req.method === 'GET' && url.pathname === '/api/beta/checklist') return json(res, 200, await betaChecklist());
     if (req.method === 'GET' && url.pathname === '/api/meta/readiness') return json(res, 200, metaReadiness());
+    if (req.method === 'GET' && url.pathname === '/api/live/readiness') return json(res, 200, liveReadiness());
     if (req.method === 'GET' && url.pathname === '/api/meta/sample-payloads') return json(res, 200, sampleMetaPayloads());
     if (req.method === 'GET' && url.pathname === '/api/reports/sources') return json(res, 200, { sources: await sourceReport() });
     if (req.method === 'GET' && url.pathname === '/api/export/families.csv') return csvResponse(res, 'malachi-families.csv', await exportFamiliesCsv());
