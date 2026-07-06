@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>מלאכי — המלאך השומר</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body><a class="skip-link" href="#main">דלג לתוכן</a>
+  <header class="hero">
+    <nav>
+      <div class="brand"><span class="logo">מ</span> מלאכי</div>
+      <a href="#join" class="nav-cta">להצטרפות חינם</a>
+    </nav>
+    <section class="hero-grid">
+      <div>
+        <p class="eyebrow">בדיקת בוקר יומית ב־WhatsApp</p>
+        <h1>הודעת בוקר אחת שמוודאת שההורה שלכם בסדר.</h1>
+        <p class="sub">מלאכי שולח בכל בוקר הודעת WhatsApp פשוטה לאדם מבוגר. אם אין תשובה תוך שעה, או אם נלחצת מצוקה — המשפחה מקבלת עדכון.</p>
+        <div class="actions">
+          <a href="#join" class="button primary">להצטרפות חינם</a>
+          <a href="#how" class="button secondary">איך זה עובד?</a>
+        </div>
+        <p class="trust">בלי אפליקציה. בלי מצלמות. בלי מעקב. רק WhatsApp והסכמה.</p><p id="betaStatus" class="status">בודק זמינות בטא...</p>
+      </div>
+      <div class="phone-card" aria-label="דוגמת הודעת וואטסאפ">
+        <div class="bubble">בוקר טוב רחל 🌿<br/>כאן מלאכי, רק לוודא שהכול בסדר הבוקר.</div>
+        <button>הכול בסדר</button>
+        <button class="danger">מצוקה</button>
+        <p class="small">אם אין תשובה תוך שעה — קרוב משפחה מקבל עדכון.</p>
+      </div>
+    </section>
+  </header>
+
+  <main id="main">
+    <section id="how" class="section cards">
+      <h2>איך זה עובד?</h2>
+      <div class="card-grid">
+        <article><b>1</b><h3>בוחרים שעה</h3><p>מגדירים שעה יומית לבדיקה.</p></article>
+        <article><b>2</b><h3>הודעת WhatsApp</h3><p>ההורה מקבל הודעה קצרה וברורה.</p></article>
+        <article><b>3</b><h3>תגובה פשוטה</h3><p>לוחצים “הכול בסדר” או “מצוקה”.</p></article>
+        <article><b>4</b><h3>עדכון למשפחה</h3><p>אם אין תשובה או יש מצוקה — איש קשר מקבל התראה.</p></article>
+      </div>
+    </section>
+
+    <section class="section split">
+      <div>
+        <h2>למי זה מתאים?</h2>
+        <ul>
+          <li>למי שיש הורה מבוגר שגר לבד</li>
+          <li>לילדים שגרים רחוק מההורים</li>
+          <li>למשפחות אחרי אשפוז, נפילה או אירוע רפואי</li>
+          <li>למי שלא רוצה להציק כל בוקר, אבל כן רוצה לדעת שהכול בסדר</li>
+        </ul>
+      </div>
+      <div class="note">
+        <h3>חשוב לדעת</h3>
+        <p>מלאכי לא מחליף טיפול, ביקור, שיחה או מוקד חירום. הוא כלי עזר משפחתי פשוט לבדיקת קשר יומית.</p>
+      </div>
+    </section>
+
+
+    <section class="section split">
+      <div>
+        <h2>למה מלאכי חשוב?</h2>
+        <p>הרבה משפחות לא רוצות “לעקוב” אחרי ההורה, ולא רוצות להתקשר כל בוקר ולהלחיץ. מצד שני, כשאדם מבוגר חי לבד — חוסר תגובה יכול להדאיג.</p>
+        <p>מלאכי יוצר שגרת קשר עדינה: הודעה אחת, תשובה אחת, ושקט נפשי למשפחה.</p>
+      </div>
+      <div class="note">
+        <h3>העיקרון שלנו</h3>
+        <ul>
+          <li>כבוד לעצמאות של האדם המבוגר</li>
+          <li>מינימום טכנולוגיה ומינימום חיכוך</li>
+          <li>שקיפות והסכמה מלאה</li>
+          <li>כלי עזר — לא תחליף למשפחה או טיפול</li>
+        </ul>
+      </div>
+    </section>
+
+    <section id="join" class="section form-section">
+      <h2>הצטרפות לבטא החינמית של מלאכי</h2>
+      <p>לאחר ההרשמה תקבלו קישור ניהול פרטי למשפחה. בשלב הפיתוח ההודעות נשמרות במצב הדמיה; בחיבור Meta אמיתי הן יישלחו ב־WhatsApp.</p>
+      <form id="joinForm">
+        <label>שם בן/בת המשפחה<input name="ownerName" required placeholder="למשל: שלמה" /></label>
+        <label>טלפון בן/בת המשפחה<input name="ownerPhone" required placeholder="+972..." /></label>
+        <label>שם ההורה / האדם המבוגר<input name="elderName" required placeholder="למשל: רחל" /></label>
+        <label>טלפון WhatsApp של ההורה<input name="elderPhone" required placeholder="+972..." /></label>
+        <label>שעת בדיקה יומית<input type="time" name="dailyCheckTime" required value="09:00" /></label>
+        <label>שם איש קשר למצוקה<input name="contactName" required placeholder="למשל: שלמה" /></label>
+        <label>טלפון איש קשר<input name="contactPhone" required placeholder="+972..." /></label>
+        <label class="check"><input type="checkbox" name="consent" required /> יש לי הסכמה מהאדם לקבל הודעות בדיקת בוקר ממלאכי</label>
+        <input type="hidden" name="source" id="sourceField" value="direct" />
+        <button class="button primary" type="submit">יצירת קישור ניהול פרטי</button>
+      </form>
+      <pre id="formResult"></pre>
+    </section>
+
+    <section class="section note">
+      <h2>כניסה פרטית למשפחה</h2>
+      <p>לאחר יצירת משפחה מתקבל קישור ניהול פרטי. רק מי שמחזיק בקישור יכול לראות את סטטוס הבדיקות ולנהל את השירות.</p>
+    </section>
+  </main>
+
+  <footer>מלאכי — המלאך השומר של המשפחה<br><a href="/status.html">סטטוס</a> · <a href="/onboarding.html">התחלה מהירה</a> · <a href="/faq.html">שאלות נפוצות</a> · <a href="/privacy.html">מדיניות פרטיות</a> · <a href="/terms.html">תנאי שימוש</a> · <a href="/data-deletion.html">מחיקת מידע</a></footer>
+  <script src="/app.js"></script>
+</body>
+</html>

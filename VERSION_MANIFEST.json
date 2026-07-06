@@ -1,0 +1,335 @@
+{
+  "latest": 58,
+  "versions": [
+    {
+      "version": 4,
+      "file": "specs/v4_release_notes.md",
+      "title": "# מלאכי V4 - Release Notes",
+      "zip": "malachi-mvp-project-v4.zip"
+    },
+    {
+      "version": 5,
+      "file": "specs/v5_release_notes.md",
+      "title": "# מלאכי V5 - Release Notes",
+      "zip": "malachi-mvp-project-v5.zip"
+    },
+    {
+      "version": 6,
+      "file": "specs/v6_release_notes.md",
+      "title": "# מלאכי V6 - Release Notes",
+      "zip": "malachi-mvp-project-v6.zip"
+    },
+    {
+      "version": 7,
+      "file": "specs/v7_release_notes.md",
+      "title": "# מלאכי V7 - Release Notes",
+      "zip": "malachi-mvp-project-v7.zip"
+    },
+    {
+      "version": 8,
+      "file": "specs/v8_release_notes.md",
+      "title": "# מלאכי V8 - Release Notes",
+      "zip": "malachi-mvp-project-v8.zip"
+    },
+    {
+      "version": 9,
+      "file": "specs/v9_release_notes.md",
+      "title": "# מלאכי V9 - Release Notes",
+      "zip": "malachi-mvp-project-v9.zip"
+    },
+    {
+      "version": 10,
+      "file": "specs/v10_release_notes.md",
+      "title": "# מלאכי V10 - Release Notes",
+      "zip": "malachi-mvp-project-v10.zip"
+    },
+    {
+      "version": 11,
+      "file": "specs/v11_release_notes.md",
+      "title": "# מלאכי V11 - Release Notes",
+      "zip": "malachi-mvp-project-v11.zip"
+    },
+    {
+      "version": 12,
+      "file": "specs/v12_release_notes.md",
+      "title": "# מלאכי V12 - Release Notes",
+      "zip": "malachi-mvp-project-v12.zip"
+    },
+    {
+      "version": 13,
+      "file": "specs/v13_release_notes.md",
+      "title": "# מלאכי V13 - Release Notes",
+      "zip": "malachi-mvp-project-v13.zip"
+    },
+    {
+      "version": 14,
+      "file": "specs/v14_release_notes.md",
+      "title": "# מלאכי V14 - Release Notes",
+      "zip": "malachi-mvp-project-v14.zip"
+    },
+    {
+      "version": 15,
+      "file": "specs/v15_release_notes.md",
+      "title": "# מלאכי V15 - Release Notes",
+      "zip": "malachi-mvp-project-v15.zip"
+    },
+    {
+      "version": 16,
+      "file": "specs/v16_release_notes.md",
+      "title": "# מלאכי V16 - Release Notes",
+      "zip": "malachi-mvp-project-v16.zip"
+    },
+    {
+      "version": 17,
+      "file": "specs/v17_release_notes.md",
+      "title": "# מלאכי V17 - Release Notes",
+      "zip": "malachi-mvp-project-v17.zip"
+    },
+    {
+      "version": 18,
+      "file": "specs/v18_release_notes.md",
+      "title": "# מלאכי V18 - Release Notes",
+      "zip": "malachi-mvp-project-v18.zip"
+    },
+    {
+      "version": 19,
+      "file": "specs/v19_release_notes.md",
+      "title": "# מלאכי V19 - Release Notes",
+      "zip": "malachi-mvp-project-v19.zip"
+    },
+    {
+      "version": 20,
+      "file": "specs/v20_release_notes.md",
+      "title": "# מלאכי V20 - Release Notes",
+      "zip": "malachi-mvp-project-v20.zip"
+    },
+    {
+      "version": 21,
+      "file": "specs/v21_release_notes.md",
+      "title": "# מלאכי V21 - Release Notes",
+      "zip": "malachi-mvp-project-v21.zip"
+    },
+    {
+      "version": 22,
+      "file": "specs/v22_release_notes.md",
+      "title": "# מלאכי V22 - Release Notes",
+      "zip": "malachi-mvp-project-v22.zip"
+    },
+    {
+      "version": 23,
+      "file": "specs/v23_release_notes.md",
+      "title": "# מלאכי V23 - Release Notes",
+      "zip": "malachi-mvp-project-v23.zip"
+    },
+    {
+      "version": 24,
+      "file": "specs/v24_release_notes.md",
+      "title": "# מלאכי V24 - Release Notes",
+      "zip": "malachi-mvp-project-v24.zip"
+    },
+    {
+      "version": 25,
+      "file": "specs/v25_release_notes.md",
+      "title": "# מלאכי V25 - Release Notes",
+      "zip": "malachi-mvp-project-v25.zip"
+    },
+    {
+      "version": 26,
+      "file": "specs/v26_release_notes.md",
+      "title": "# מלאכי V26 - Release Notes",
+      "zip": "malachi-mvp-project-v26.zip"
+    },
+    {
+      "version": 27,
+      "file": "specs/v27_release_notes.md",
+      "title": "# מלאכי V27 - Release Notes",
+      "zip": "malachi-mvp-project-v27.zip"
+    },
+    {
+      "version": 28,
+      "file": "specs/v28_release_notes.md",
+      "title": "# מלאכי V28 - Release Notes",
+      "zip": "malachi-mvp-project-v28.zip"
+    },
+    {
+      "version": 29,
+      "file": "specs/v29_release_notes.md",
+      "title": "# מלאכי V29 - Release Notes",
+      "zip": "malachi-mvp-project-v29.zip"
+    },
+    {
+      "version": 30,
+      "file": "specs/v30_release_notes.md",
+      "title": "# מלאכי V30 - Release Notes",
+      "zip": "malachi-mvp-project-v30.zip"
+    },
+    {
+      "version": 31,
+      "file": "specs/v31_release_notes.md",
+      "title": "# מלאכי V31 - Release Notes",
+      "zip": "malachi-mvp-project-v31.zip"
+    },
+    {
+      "version": 32,
+      "file": "specs/v32_release_notes.md",
+      "title": "# מלאכי V32 - Release Notes",
+      "zip": "malachi-mvp-project-v32.zip"
+    },
+    {
+      "version": 33,
+      "file": "specs/v33_release_notes.md",
+      "title": "# מלאכי V33 - Release Notes",
+      "zip": "malachi-mvp-project-v33.zip"
+    },
+    {
+      "version": 34,
+      "file": "specs/v34_release_notes.md",
+      "title": "# מלאכי V34 - Release Notes",
+      "zip": "malachi-mvp-project-v34.zip"
+    },
+    {
+      "version": 35,
+      "file": "specs/v35_release_notes.md",
+      "title": "# מלאכי V35 - Release Notes",
+      "zip": "malachi-mvp-project-v35.zip"
+    },
+    {
+      "version": 36,
+      "file": "specs/v36_release_notes.md",
+      "title": "# מלאכי V36 - Release Notes",
+      "zip": "malachi-mvp-project-v36.zip"
+    },
+    {
+      "version": 37,
+      "file": "specs/v37_release_notes.md",
+      "title": "# מלאכי V37 - Release Notes",
+      "zip": "malachi-mvp-project-v37.zip"
+    },
+    {
+      "version": 38,
+      "file": "specs/v38_release_notes.md",
+      "title": "# מלאכי V38 - Release Notes",
+      "zip": "malachi-mvp-project-v38.zip"
+    },
+    {
+      "version": 39,
+      "file": "specs/v39_release_notes.md",
+      "title": "# מלאכי V39 - Release Notes",
+      "zip": "malachi-mvp-project-v39.zip"
+    },
+    {
+      "version": 40,
+      "file": "specs/v40_release_notes.md",
+      "title": "# מלאכי V40 - Release Notes",
+      "zip": "malachi-mvp-project-v40.zip"
+    },
+    {
+      "version": 41,
+      "file": "specs/v41_release_notes.md",
+      "title": "# מלאכי V41 - Release Notes",
+      "zip": "malachi-mvp-project-v41.zip"
+    },
+    {
+      "version": 42,
+      "file": "specs/v42_release_notes.md",
+      "title": "# מלאכי V42 - Release Notes",
+      "zip": "malachi-mvp-project-v42.zip"
+    },
+    {
+      "version": 43,
+      "file": "specs/v43_release_notes.md",
+      "title": "# מלאכי V43 - Release Notes",
+      "zip": "malachi-mvp-project-v43.zip"
+    },
+    {
+      "version": 44,
+      "file": "specs/v44_release_notes.md",
+      "title": "# מלאכי V44 - Release Notes",
+      "zip": "malachi-mvp-project-v44.zip"
+    },
+    {
+      "version": 45,
+      "file": "specs/v45_release_notes.md",
+      "title": "# מלאכי V45 - Release Notes",
+      "zip": "malachi-mvp-project-v45.zip"
+    },
+    {
+      "version": 46,
+      "file": "specs/v46_release_notes.md",
+      "title": "# מלאכי V46 - Release Notes",
+      "zip": "malachi-mvp-project-v46.zip"
+    },
+    {
+      "version": 47,
+      "file": "specs/v47_release_notes.md",
+      "title": "# מלאכי V47 - Release Notes",
+      "zip": "malachi-mvp-project-v47.zip"
+    },
+    {
+      "version": 48,
+      "file": "specs/v48_release_notes.md",
+      "title": "# מלאכי V48 - Release Notes",
+      "zip": "malachi-mvp-project-v48.zip"
+    },
+    {
+      "version": 49,
+      "file": "specs/v49_release_notes.md",
+      "title": "# מלאכי V49 - Release Notes",
+      "zip": "malachi-mvp-project-v49.zip"
+    },
+    {
+      "version": 50,
+      "file": "specs/v50_release_notes.md",
+      "title": "# מלאכי V50 - Milestone Release",
+      "zip": "malachi-mvp-project-v50.zip"
+    },
+    {
+      "version": 51,
+      "file": "specs/v51_release_notes.md",
+      "title": "# מלאכי V51 - Release Notes",
+      "zip": "malachi-mvp-project-v51.zip"
+    },
+    {
+      "version": 52,
+      "file": "specs/v52_release_notes.md",
+      "title": "# מלאכי V52 - Release Notes",
+      "zip": "malachi-mvp-project-v52.zip"
+    },
+    {
+      "version": 53,
+      "file": "specs/v53_release_notes.md",
+      "title": "# מלאכי V53 - Release Notes",
+      "zip": "malachi-mvp-project-v53.zip"
+    },
+    {
+      "version": 54,
+      "file": "specs/v54_release_notes.md",
+      "title": "# מלאכי V54 - Release Notes",
+      "zip": "malachi-mvp-project-v54.zip"
+    },
+    {
+      "version": 55,
+      "file": "specs/v55_release_notes.md",
+      "title": "# מלאכי V55 - Release Notes",
+      "zip": "malachi-mvp-project-v55.zip"
+    },
+    {
+      "version": 56,
+      "file": "specs/v56_release_notes.md",
+      "title": "# מלאכי V56 - Release Notes",
+      "zip": "malachi-mvp-project-v56.zip"
+    },
+    {
+      "version": 57,
+      "file": "specs/v57_release_notes.md",
+      "title": "# מלאכי V57 - Release Notes",
+      "zip": "malachi-mvp-project-v57.zip"
+    },
+    {
+      "version": 58,
+      "file": "specs/v58_release_notes.md",
+      "title": "# מלאכי V58 - Release Notes",
+      "zip": "malachi-mvp-project-v58.zip"
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+# dependencies
+node_modules/
+
+# runtime data / local state
+app/data/
+*.log
+npm-debug.log*
+
+# environment / secrets
+.env
+.env.*
+!.env.example
+*secret*
+*token*
+
+# archives/build artifacts
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+
+# OS/editor
+.DS_Store
+.vscode/
+.idea/

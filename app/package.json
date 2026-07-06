@@ -1,0 +1,18 @@
+{
+  "name": "malachi-mvp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Malachi - WhatsApp daily wellbeing check MVP",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "MALACHI_PORT=8787 node src/server.js",
+    "test": "node src/selftest.js",
+    "test:scheduler": "node src/loadtest-scheduler.js",
+    "test:consistency": "node src/check-project-consistency.js",
+    "version:sync": "node src/update-version.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

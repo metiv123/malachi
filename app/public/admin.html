@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>אבחון מערכת — מלאכי</title><link rel="stylesheet" href="/style.css"></head>
+<body><a class="skip-link" href="#main">דלג לתוכן</a>
+<header class="hero small-hero"><nav><a class="brand" href="/"><span class="logo">מ</span> מלאכי</a><a href="/" class="nav-cta">דף הבית</a></nav></header>
+<main id="main" class="section dashboard-page">
+  <h1>אבחון מערכת</h1>
+  <p>דף פנימי לבדיקת מוכנות המערכת לפני בטא וחיבור Meta.</p>
+  <div class="dashboard-actions">
+    <button class="button primary" onclick="loadReadiness()">בדיקת מצב</button>
+    <button class="button secondary" onclick="createDemo()">יצירת משפחת דמו</button>
+    <button class="button primary" onclick="loadBetaReadiness()">מוכנות בטא</button>
+    <button class="button primary" onclick="loadBetaChecklist()">צ׳ק ליסט בטא</button>
+    <button class="button secondary" onclick="loadSources()">דוח מקורות</button>
+    <button class="button secondary" onclick="loadWaitlist()">רשימת המתנה</button>
+    <button class="button secondary" onclick="loadFeedback()">פידבק</button>
+    <button class="button secondary" onclick="loadErrors()">שגיאות</button>
+    <button class="button secondary" onclick="loadAudit()">Audit log</button>
+    <button class="button secondary" onclick="loadMeta()">מוכנות Meta</button>
+    <button class="button secondary" onclick="loadPayloads()">דוגמאות Payload</button>
+    <a class="button secondary" href="/api/export/families.csv">ייצוא CSV</a>
+    <a class="button secondary" href="/api/export/db.json">ייצוא JSON</a>
+    <button class="button secondary" onclick="createBackup()">גיבוי DB</button>
+  </div>
+  <pre id="readinessBox">לחצו על בדיקת מצב.</pre>
+</main>
+<script>
+async function loadReadiness(){
+  const res = await fetch('/api/readiness');
+  const data = await res.json();
+  document.querySelector('#readinessBox').textContent = JSON.stringify(data, null, 2);
+}
+loadReadiness();
+
+async function loadSources(){
+  const res = await fetch('/api/reports/sources');
+  const data = await res.json();
+  document.querySelector('#readinessBox').textContent = JSON.stringify(data, null, 2);
+}
+
+async function loadMeta(){
+  const res = await fetch('/api/meta/readiness');
+  const data = await res.json();
+  document.querySelector('#readinessBox').textContent = JSON.stringify(data, null, 2);
+}
+async function loadPayloads(){
+  const res = await fetch('/api/meta/sample-payloads');
+  const data = await res.json();
+  document.querySelector('#readinessBox').textContent = JSON.stringify(data, null, 2);
+}
+
+async function createBackup(){
+  const res = await fetch('/api/backups', { method:'POST' });
+  const data = await res.json();
+  document.querySelector('#readinessBox').textContent = JSON.stringify(data, null, 2);
+}
+
+async function loadWaitlist(){
+  const res = await fetch('/api/waitlist');
+  const data = await res.json();
+  document.querySelector('#readinessBox').textContent = JSON.stringify(data, null, 2);
+}
+
+async function loadErrors(){
+  const res = await fetch('/api/errors');
+  const data = await res.json();
+  document.querySelector('#readinessBox').textContent = JSON.stringify(data, null, 2);
+}
+
+async function loadBetaReadiness(){
+  const res = await fetch('/api/beta/readiness');
+  const data = await res.json();
+  document.querySelector('#readinessBox').textContent = JSON.stringify(data, null, 2);
+}
+
+async function loadBetaChecklist(){
+  const res = await fetch('/api/beta/checklist');
+  const data = await res.json();
+  document.querySelector('#readinessBox').textContent = JSON.stringify(data, null, 2);
+}
+
+async function createDemo(){
+  const res = await fetch('/api/dev/demo-family', { method:'POST', headers:{'Content-Type':'application/json'}, body:'{}' });
+  const data = await res.json();
+  const link = data.family ? `${location.origin}/dashboard.html?token=${encodeURIComponent(data.family.managementToken)}` : JSON.stringify(data);
+  document.querySelector('#readinessBox').textContent = link;
+}
+
+async function loadAudit(){
+  const res = await fetch('/api/audit');
+  const data = await res.json();
+  document.querySelector('#readinessBox').textContent = JSON.stringify(data, null, 2);
+}
+
+async function loadFeedback(){
+  const res = await fetch('/api/feedback');
+  const data = await res.json();
+  document.querySelector('#readinessBox').textContent = JSON.stringify(data, null, 2);
+}
+</script>
+</body></html>

@@ -1,0 +1,13 @@
+services:
+  malachi:
+    build: .
+    ports:
+      - "8787:8787"
+    environment:
+      MALACHI_PORT: 8787
+      MALACHI_TIMEZONE: Asia/Jerusalem
+      WHATSAPP_PROVIDER: mock
+      MALACHI_SCHEDULER: "true"
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped

@@ -1,0 +1,189 @@
+import http from 'node:http';
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { config } from './config.js';
+import { addContactByToken, betaStatus, createFamily, deleteContactByToken, deleteFamilyByToken, exportFamiliesCsv, getCheckHistoryByToken, getFamilyByToken, getOutboundMessagesByToken, handleElderResponse, listDashboard, optOutByPhone, processDueChecks, processNoResponses, regenerateFamilyToken, revokeFamilyToken, sendCheckNow, setElderActiveByToken, setOptIn, sourceReport, systemReadiness, updateElderByToken, waitlistReport } from './malachi.js';
+import { loadDb } from './store.js';
+import { extractWhatsAppButtonEvents, extractWhatsAppTextEvents, mapButtonToResponse, mapTextToIntent } from './metaWebhook.js';
+import { processWhatsAppWebhookPayload } from './webhookProcessor.js';
+import { startScheduler } from './scheduler.js';
+import { csvResponse } from './csv.js';
+import { rateLimit } from './security.js';
+import { metaReadiness, sampleMetaPayloads } from './metaReadiness.js';
+import { betaReadiness } from './betaReadiness.js';
+import { betaChecklist } from './betaChecklist.js';
+import { version } from './version.js';
+import { createBackup, exportDbJson, listBackups } from './backup.js';
+import { listErrors, logError } from './errorLog.js';
+import { createFeedback, listFeedback } from './feedback.js';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const publicDir = path.resolve(__dirname, '../public');
+
+function json(res, status, data) {
+  res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(data, null, 2));
+}
+
+async function body(req) {
+  let raw = '';
+  for await (const chunk of req) raw += chunk;
+  if (!raw) return {};
+  return JSON.parse(raw);
+}
+
+async function staticFile(res, pathname) {
+  const file = pathname === '/' ? 'index.html' : pathname.replace(/^\//, '');
+  const target = path.resolve(publicDir, file);
+  if (!target.startsWith(publicDir)) throw new Error('Bad path');
+  const ext = path.extname(target);
+  const type = ext === '.css' ? 'text/css; charset=utf-8' : ext === '.js' ? 'text/javascript; charset=utf-8' : 'text/html; charset=utf-8';
+  const data = await readFile(target);
+  res.writeHead(200, { 'Content-Type': type });
+  res.end(data);
+}
+
+async function route(req, res) {
+  const url = new URL(req.url, `http://${req.headers.host}`);
+  try {
+    if (!rateLimit(req, { key: url.pathname, limit: url.pathname.startsWith('/api/') ? 180 : 300 })) {
+      return json(res, 429, { error: 'Too many requests' });
+    }
+    if (req.method === 'GET' && url.pathname === '/api/health') return json(res, 200, { ok: true, provider: config.whatsappProvider, version });
+    if (req.method === 'GET' && url.pathname === '/api/version') return json(res, 200, version);
+    if (req.method === 'GET' && url.pathname === '/api/beta/status') return json(res, 200, await betaStatus());
+    if (req.method === 'GET' && url.pathname === '/api/feedback') return json(res, 200, { feedback: await listFeedback() });
+    if (req.method === 'POST' && url.pathname === '/api/feedback') return json(res, 201, { feedback: await createFeedback(await body(req)) });
+    if (req.method === 'GET' && url.pathname === '/api/waitlist') return json(res, 200, { waitlist: await waitlistReport() });
+    if (req.method === 'GET' && url.pathname === '/api/dashboard') return json(res, 200, { families: await listDashboard() });
+    if (req.method === 'GET' && url.pathname === '/api/family') return json(res, 200, { family: await getFamilyByToken(url.searchParams.get('token')) });
+    if (req.method === 'GET' && url.pathname.match(/^\/api\/elders\/[^/]+\/history$/)) {
+      const elderId = url.pathname.split('/')[3];
+      return json(res, 200, { checks: await getCheckHistoryByToken(url.searchParams.get('token'), elderId) });
+    }
+    if (req.method === 'GET' && url.pathname === '/api/outbound-messages') {
+      return json(res, 200, { messages: await getOutboundMessagesByToken(url.searchParams.get('token'), url.searchParams.get('elderId')) });
+    }
+    if (req.method === 'GET' && url.pathname === '/api/debug/db') return json(res, 200, await loadDb());
+    if (req.method === 'GET' && url.pathname === '/api/readiness') return json(res, 200, await systemReadiness());
+    if (req.method === 'GET' && url.pathname === '/api/beta/readiness') return json(res, 200, await betaReadiness());
+    if (req.method === 'GET' && url.pathname === '/api/beta/checklist') return json(res, 200, await betaChecklist());
+    if (req.method === 'GET' && url.pathname === '/api/meta/readiness') return json(res, 200, metaReadiness());
+    if (req.method === 'GET' && url.pathname === '/api/meta/sample-payloads') return json(res, 200, sampleMetaPayloads());
+    if (req.method === 'GET' && url.pathname === '/api/reports/sources') return json(res, 200, { sources: await sourceReport() });
+    if (req.method === 'GET' && url.pathname === '/api/export/families.csv') return csvResponse(res, 'malachi-families.csv', await exportFamiliesCsv());
+    if (req.method === 'GET' && url.pathname === '/api/export/db.json') { res.writeHead(200, {'Content-Type':'application/json; charset=utf-8','Content-Disposition':'attachment; filename="malachi-db.json"'}); return res.end(await exportDbJson()); }
+    if (req.method === 'GET' && url.pathname === '/api/backups') return json(res, 200, { backups: await listBackups() });
+    if (req.method === 'GET' && url.pathname === '/api/errors') return json(res, 200, { errors: await listErrors(Number(url.searchParams.get('limit') || 50)) });
+    if (req.method === 'GET' && url.pathname === '/api/audit') { const db = await loadDb(); return json(res, 200, { audit: db.audit.slice().reverse().slice(0, Number(url.searchParams.get('limit') || 100)) }); }
+    if (req.method === 'POST' && url.pathname === '/api/backups') return json(res, 201, { backup: await createBackup() });
+
+    if (req.method === 'POST' && url.pathname === '/api/families') return json(res, 201, await createFamily(await body(req)));
+    if (req.method === 'POST' && url.pathname === '/api/dev/demo-family') {
+      if (!config.devToolsEnabled) return json(res, 403, { error: 'Dev tools disabled' });
+      return json(res, 201, await createFamily({ ownerName: 'משפחת דמו', ownerPhone: '+972501111111', elderName: 'רחל דמו', elderPhone: '+972502222222', dailyCheckTime: '09:00', contactName: 'איש קשר דמו', contactPhone: '+972503333333', consent: 'on', source: 'dev_demo' }));
+    }
+    if (req.method === 'POST' && url.pathname.match(/^\/api\/elders\/[^/]+\/contacts$/)) {
+      const elderId = url.pathname.split('/')[3];
+      const input = await body(req);
+      return json(res, 201, { contact: await addContactByToken(input.token, elderId, input) });
+    }
+    if (req.method === 'POST' && url.pathname.match(/^\/api\/contacts\/[^/]+\/delete$/)) {
+      const contactId = url.pathname.split('/')[3];
+      return json(res, 200, await deleteContactByToken((await body(req)).token, contactId));
+    }
+    if (req.method === 'POST' && url.pathname === '/api/family/regenerate-token') return json(res, 200, await regenerateFamilyToken((await body(req)).token));
+    if (req.method === 'POST' && url.pathname === '/api/family/revoke-token') return json(res, 200, await revokeFamilyToken((await body(req)).token));
+    if (req.method === 'POST' && url.pathname === '/api/family/delete') return json(res, 200, await deleteContactByToken, deleteFamilyByToken((await body(req)).token));
+    if (req.method === 'POST' && url.pathname.match(/^\/api\/elders\/[^/]+\/send-check$/)) {
+      const elderId = url.pathname.split('/')[3];
+      return json(res, 200, { check: await sendCheckNow(elderId) });
+    }
+    if (req.method === 'POST' && url.pathname.match(/^\/api\/elders\/[^/]+\/update$/)) {
+      const elderId = url.pathname.split('/')[3];
+      const input = await body(req);
+      return json(res, 200, await updateElderByToken(input.token, elderId, input));
+    }
+    if (req.method === 'POST' && url.pathname.match(/^\/api\/elders\/[^/]+\/active$/)) {
+      const elderId = url.pathname.split('/')[3];
+      const input = await body(req);
+      return json(res, 200, { elder: await setElderActiveByToken(input.token, elderId, input.active) });
+    }
+    if (req.method === 'POST' && url.pathname.match(/^\/api\/elders\/[^/]+\/opt-in$/)) {
+      const elderId = url.pathname.split('/')[3];
+      const input = await body(req);
+      return json(res, 200, { elder: await setOptIn(elderId, input.approved !== false) });
+    }
+    if (req.method === 'POST' && url.pathname === '/api/mock/respond') return json(res, 200, { check: await handleElderResponse(await body(req)) });
+
+    if (req.method === 'POST' && url.pathname === '/api/mock/webhook') {
+      const input = await body(req);
+      const payload = input.text
+        ? { entry: [{ changes: [{ value: { messages: [{ type: 'text', from: input.from, id: 'mock.text', timestamp: String(Math.floor(Date.now()/1000)), text: { body: input.text } }] } }] }] }
+        : { entry: [{ changes: [{ value: { messages: [{ type: 'interactive', from: input.from, id: 'mock.button', timestamp: String(Math.floor(Date.now()/1000)), interactive: { button_reply: { id: input.buttonId || 'daily_ok', title: input.buttonTitle || 'הכול בסדר' } } }] } }] }] };
+      req.url = '/api/webhooks/whatsapp';
+      // fall through by directly processing a webhook-shaped payload through the same helpers
+      const buttons = extractWhatsAppButtonEvents(payload);
+      const texts = extractWhatsAppTextEvents(payload);
+      const handled = [];
+      const db = await loadDb();
+      const findElder = (from) => db.elders.find((e) => String(e.whatsappPhone).replace(/[^0-9]/g, '').endsWith(String(from).replace(/[^0-9]/g, '')) || String(from).replace(/[^0-9]/g, '').endsWith(String(e.whatsappPhone).replace(/[^0-9]/g, '')));
+      for (const button of buttons) {
+        const mapped = mapButtonToResponse(button);
+        const elder = findElder(button.from);
+        if (!mapped || !elder) handled.push({ event: button, mapped, status: 'ignored' });
+        else if (mapped === 'approve_optin') handled.push({ event: button, mapped, status: 'opt_in_approved', elder: await setOptIn(elder.id, true) });
+        else if (mapped === 'decline_optin') handled.push({ event: button, mapped, status: 'opt_in_declined', elder: await setOptIn(elder.id, false) });
+        else handled.push({ event: button, mapped, status: 'response_recorded', check: await handleElderResponse({ elderId: elder.id, response: mapped }) });
+      }
+      for (const textEvent of texts) {
+        const mapped = mapTextToIntent(textEvent);
+        const elder = findElder(textEvent.from);
+        if (!mapped || !elder) handled.push({ event: textEvent, mapped, status: 'ignored' });
+        else if (mapped === 'opt_out') handled.push({ event: textEvent, mapped, status: 'opted_out', result: await optOutByPhone(textEvent.from) });
+        else handled.push({ event: textEvent, mapped, status: 'response_recorded', check: await handleElderResponse({ elderId: elder.id, response: mapped }) });
+      }
+      return json(res, 200, { ok: true, payload, handled });
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/jobs/due-checks') return json(res, 200, { sent: await processDueChecks() });
+    if (req.method === 'POST' && url.pathname === '/api/jobs/no-responses') return json(res, 200, { alerts: await processNoResponses(await body(req)) });
+
+    // Meta webhook verification
+    if (req.method === 'GET' && url.pathname === '/api/webhooks/whatsapp') {
+      const mode = url.searchParams.get('hub.mode');
+      const token = url.searchParams.get('hub.verify_token');
+      const challenge = url.searchParams.get('hub.challenge');
+      if (mode === 'subscribe' && token === config.meta.verifyToken) {
+        res.writeHead(200, { 'Content-Type': 'text/plain' });
+        return res.end(challenge || '');
+      }
+      return json(res, 403, { error: 'Webhook verification failed' });
+    }
+
+    if (req.method === 'POST' && url.pathname === '/api/webhooks/whatsapp') {
+      const payload = await body(req);
+      const handled = await processWhatsAppWebhookPayload(payload);
+      return json(res, 200, { ok: true, received: true, handled });
+    }
+
+    if (req.method === 'GET') return staticFile(res, url.pathname);
+    return json(res, 404, { error: 'Not found' });
+  } catch (err) {
+    await logError('http_route', err, { method: req.method, url: req.url }).catch(() => {});
+    return json(res, 500, { error: err.message });
+  }
+}
+
+export function createServer() {
+  return http.createServer(route);
+}
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  createServer().listen(config.port, () => {
+    console.log(`מלאכי MVP listening on http://localhost:${config.port}`);
+    console.log(`WhatsApp provider: ${config.whatsappProvider}`);
+    startScheduler();
+  });
+}
