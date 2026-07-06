@@ -39,7 +39,7 @@
         <article><b>1</b><h3>בוחרים שעה</h3><p>מגדירים שעה יומית לבדיקה.</p></article>
         <article><b>2</b><h3>הודעת WhatsApp</h3><p>ההורה מקבל הודעה קצרה וברורה.</p></article>
         <article><b>3</b><h3>תגובה פשוטה</h3><p>לוחצים “הכול בסדר” או “מצוקה”.</p></article>
-        <article><b>4</b><h3>עדכון למשפחה</h3><p>אם אין תשובה או יש מצוקה — איש קשר מקבל התראה.</p></article>
+        <article><b>4</b><h3>עדכון למשפחה</h3><p>אם אין תשובה או יש מצוקה — בן המשפחה הראשי ואנשי הקשר להתראה מקבלים עדכון.</p></article>
       </div>
     </section>
 
@@ -82,12 +82,13 @@
       <p>לאחר ההרשמה תקבלו קישור ניהול פרטי למשפחה. בשלב הפיתוח ההודעות נשמרות במצב הדמיה; בחיבור Meta אמיתי הן יישלחו ב־WhatsApp.</p>
       <form id="joinForm">
         <label>שם בן/בת המשפחה<input name="ownerName" required placeholder="למשל: שלמה" /></label>
-        <label>טלפון בן/בת המשפחה<input name="ownerPhone" required placeholder="+972..." /></label>
+        <label>טלפון בן/בת המשפחה הראשי/ת<input name="ownerPhone" required placeholder="+972..." /></label>
         <label>שם ההורה / האדם המבוגר<input name="elderName" required placeholder="למשל: רחל" /></label>
         <label>טלפון WhatsApp של ההורה<input name="elderPhone" required placeholder="+972..." /></label>
         <label>שעת בדיקה יומית<input type="time" name="dailyCheckTime" required value="09:00" /></label>
-        <label>שם איש קשר למצוקה<input name="contactName" required placeholder="למשל: שלמה" /></label>
-        <label>טלפון איש קשר<input name="contactPhone" required placeholder="+972..." /></label>
+        <label>שם איש קשר להתראה<input name="contactName" required placeholder="ברירת מחדל: אותו בן משפחה ראשי" /></label>
+        <label>טלפון איש קשר להתראה<input name="contactPhone" required placeholder="ברירת מחדל: אותו טלפון של בן המשפחה" /></label>
+        <p class="hint">אפשר לשים כאן את אותו בן משפחה ראשי, ובהמשך להוסיף עוד אנשי קשר כמו אח/אחות/שכן/מטפל.</p>
         <label class="check"><input type="checkbox" name="consent" required /> יש לי הסכמה מהאדם לקבל הודעות בדיקת בוקר ממלאכי</label>
         <input type="hidden" name="source" id="sourceField" value="direct" />
         <button class="button primary" type="submit">יצירת קישור ניהול פרטי</button>

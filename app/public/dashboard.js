@@ -57,15 +57,15 @@ async function load() {
             <label>שם<input name="elderName" value="${esc(elder.name)}"></label>
             <label>טלפון WhatsApp<input name="elderPhone" value="${esc(elder.whatsappPhone)}"></label>
             <label>שעה יומית<input type="time" name="dailyCheckTime" value="${esc(elder.dailyCheckTime)}"></label>
-            <label>שם איש קשר<input name="contactName" value="${esc(elder.contact?.name || '')}"></label>
-            <label>טלפון איש קשר<input name="contactPhone" value="${esc(elder.contact?.whatsappPhone || '')}"></label>
+            <label>שם איש קשר להתראה<input name="contactName" value="${esc(elder.contact?.name || '')}"></label>
+            <label>טלפון איש קשר להתראה<input name="contactPhone" value="${esc(elder.contact?.whatsappPhone || '')}"></label>
             <button class="button primary" type="submit">שמירה</button>
           </form>
         </details>
-        <details class="edit-box"><summary>הוספת איש קשר נוסף</summary>
+        <details class="edit-box"><summary>הוספת איש קשר להתראה נוסף</summary>
           <form onsubmit="addContact(event, '${elder.id}')">
-            <label>שם איש קשר<input name="contactName" required></label>
-            <label>טלפון איש קשר<input name="contactPhone" required></label>
+            <label>שם איש קשר להתראה<input name="contactName" required></label>
+            <label>טלפון איש קשר להתראה<input name="contactPhone" required></label>
             <button class="button primary" type="submit">הוספה</button>
           </form>
         </details>
