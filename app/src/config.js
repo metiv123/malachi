@@ -1,5 +1,5 @@
 export const config = {
-  port: Number(process.env.MALACHI_PORT || 8787),
+  port: Number(process.env.PORT || process.env.MALACHI_PORT || 8787),
   timezone: process.env.MALACHI_TIMEZONE || 'Asia/Jerusalem',
   publicBaseUrl: process.env.MALACHI_PUBLIC_BASE_URL || 'http://localhost:8787',
   schedulerEnabled: process.env.MALACHI_SCHEDULER !== 'false',
