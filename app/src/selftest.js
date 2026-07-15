@@ -2,6 +2,7 @@ import { rm } from 'node:fs/promises';
 import path from 'node:path';
 import { createFamily, deleteFamilyByToken, exportFamiliesCsv, getCheckHistoryByToken, getFamilyByToken, getOutboundMessagesByToken, handleElderResponse, listDashboard, optOutByPhone, processDueChecks, processNoResponses, sendCheckNow, setElderActiveByToken, setOptIn, systemReadiness, updateElderByToken } from './malachi.js';
 import { extractWhatsAppButtonEvents, extractWhatsAppTextEvents, mapButtonToResponse, mapTextToIntent } from './metaWebhook.js';
+import { processWhatsAppWebhookPayload } from './webhookProcessor.js';
 import { loadDb } from './store.js';
 
 function assert(condition, message) {
@@ -38,6 +39,12 @@ async function run() {
   assert(updatedFamily.elders[0].contact.name === 'דוד', 'contact should update');
   assert(created.elder.optInStatus === 'pending', 'opt-in should start pending');
 
+  const optInPayload = { entry: [{ changes: [{ value: { messages: [{ type: 'interactive', from: '972502222222', id: 'wamid.optin', timestamp: '1', interactive: { button_reply: { id: 'approve_optin', title: 'מאשר/ת' } } }] } }] }] };
+  const optInHandled = await processWhatsAppWebhookPayload(optInPayload);
+  assert(optInHandled[0]?.status === 'opt_in_approved', 'processor should approve opt-in from trial-number style webhook');
+  updatedFamily = await getFamilyByToken(created.family.managementToken);
+  assert(updatedFamily.elders[0].optInStatus === 'approved', 'webhook opt-in should approve elder');
+
   await setOptIn(created.elder.id, true);
   await updateElderByToken(created.family.managementToken, created.elder.id, { dailyCheckTime: new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jerusalem', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date()) });
   const scheduled = await processDueChecks(new Date());
@@ -58,6 +65,13 @@ async function run() {
   db = await loadDb();
   assert(db.checks.find((c) => c.id === check2.id).status === 'distress', 'check should become distress');
   assert(db.outboundMessages.some((m) => m.kind === 'distress_alert'), 'distress alert missing');
+
+  const checkViaWebhook = await sendCheckNow(created.elder.id);
+  const processorPayload = { entry: [{ changes: [{ value: { messages: [{ type: 'interactive', from: '972502222222', id: 'wamid.processor.ok', timestamp: '1', interactive: { button_reply: { id: 'daily_ok', title: 'הכול בסדר' } } }] } }] }] };
+  const processorHandled = await processWhatsAppWebhookPayload(processorPayload);
+  assert(processorHandled[0]?.status === 'response_recorded', 'processor should record daily check button response');
+  db = await loadDb();
+  assert(db.checks.find((c) => c.id === checkViaWebhook.id).status === 'ok', 'webhook processor should mark latest open check ok');
 
   const check3 = await sendCheckNow(created.elder.id);
   await processNoResponses({ graceMinutes: 0 });

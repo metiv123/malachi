@@ -3,9 +3,8 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { config } from './config.js';
-import { addContactByToken, betaStatus, createFamily, deleteContactByToken, deleteFamilyByToken, exportFamiliesCsv, getCheckHistoryByToken, getFamilyByToken, getOutboundMessagesByToken, handleElderResponse, listDashboard, optOutByPhone, processDueChecks, processNoResponses, regenerateFamilyToken, revokeFamilyToken, sendCheckNow, setElderActiveByToken, setOptIn, sourceReport, systemReadiness, updateElderByToken, waitlistReport } from './malachi.js';
+import { addContactByToken, betaStatus, createFamily, deleteContactByToken, deleteFamilyByToken, exportFamiliesCsv, getCheckHistoryByToken, getFamilyByToken, getOutboundMessagesByToken, handleElderResponse, listDashboard, processDueChecks, processNoResponses, regenerateFamilyToken, revokeFamilyToken, sendCheckNow, setElderActiveByToken, setOptIn, sourceReport, systemReadiness, updateElderByToken, waitlistReport } from './malachi.js';
 import { loadDb } from './store.js';
-import { extractWhatsAppButtonEvents, extractWhatsAppTextEvents, mapButtonToResponse, mapTextToIntent } from './metaWebhook.js';
 import { processWhatsAppWebhookPayload } from './webhookProcessor.js';
 import { startScheduler } from './scheduler.js';
 import { csvResponse } from './csv.js';
@@ -104,7 +103,7 @@ async function route(req, res) {
     }
     if (req.method === 'POST' && url.pathname === '/api/family/regenerate-token') return json(res, 200, await regenerateFamilyToken((await body(req)).token));
     if (req.method === 'POST' && url.pathname === '/api/family/revoke-token') return json(res, 200, await revokeFamilyToken((await body(req)).token));
-    if (req.method === 'POST' && url.pathname === '/api/family/delete') return json(res, 200, await deleteContactByToken, deleteFamilyByToken((await body(req)).token));
+    if (req.method === 'POST' && url.pathname === '/api/family/delete') return json(res, 200, await deleteFamilyByToken((await body(req)).token));
     if (req.method === 'POST' && url.pathname.match(/^\/api\/elders\/[^/]+\/send-check$/)) {
       const elderId = url.pathname.split('/')[3];
       return json(res, 200, { check: await sendCheckNow(elderId) });
@@ -131,28 +130,7 @@ async function route(req, res) {
       const payload = input.text
         ? { entry: [{ changes: [{ value: { messages: [{ type: 'text', from: input.from, id: 'mock.text', timestamp: String(Math.floor(Date.now()/1000)), text: { body: input.text } }] } }] }] }
         : { entry: [{ changes: [{ value: { messages: [{ type: 'interactive', from: input.from, id: 'mock.button', timestamp: String(Math.floor(Date.now()/1000)), interactive: { button_reply: { id: input.buttonId || 'daily_ok', title: input.buttonTitle || 'הכול בסדר' } } }] } }] }] };
-      req.url = '/api/webhooks/whatsapp';
-      // fall through by directly processing a webhook-shaped payload through the same helpers
-      const buttons = extractWhatsAppButtonEvents(payload);
-      const texts = extractWhatsAppTextEvents(payload);
-      const handled = [];
-      const db = await loadDb();
-      const findElder = (from) => db.elders.find((e) => String(e.whatsappPhone).replace(/[^0-9]/g, '').endsWith(String(from).replace(/[^0-9]/g, '')) || String(from).replace(/[^0-9]/g, '').endsWith(String(e.whatsappPhone).replace(/[^0-9]/g, '')));
-      for (const button of buttons) {
-        const mapped = mapButtonToResponse(button);
-        const elder = findElder(button.from);
-        if (!mapped || !elder) handled.push({ event: button, mapped, status: 'ignored' });
-        else if (mapped === 'approve_optin') handled.push({ event: button, mapped, status: 'opt_in_approved', elder: await setOptIn(elder.id, true) });
-        else if (mapped === 'decline_optin') handled.push({ event: button, mapped, status: 'opt_in_declined', elder: await setOptIn(elder.id, false) });
-        else handled.push({ event: button, mapped, status: 'response_recorded', check: await handleElderResponse({ elderId: elder.id, response: mapped }) });
-      }
-      for (const textEvent of texts) {
-        const mapped = mapTextToIntent(textEvent);
-        const elder = findElder(textEvent.from);
-        if (!mapped || !elder) handled.push({ event: textEvent, mapped, status: 'ignored' });
-        else if (mapped === 'opt_out') handled.push({ event: textEvent, mapped, status: 'opted_out', result: await optOutByPhone(textEvent.from) });
-        else handled.push({ event: textEvent, mapped, status: 'response_recorded', check: await handleElderResponse({ elderId: elder.id, response: mapped }) });
-      }
+      const handled = await processWhatsAppWebhookPayload(payload);
       return json(res, 200, { ok: true, payload, handled });
     }
 

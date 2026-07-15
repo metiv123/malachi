@@ -1,5 +1,5 @@
 {
-  "latest": 58,
+  "latest": 59,
   "versions": [
     {
       "version": 4,
@@ -330,6 +330,12 @@
       "file": "specs/v58_release_notes.md",
       "title": "# מלאכי V58 - Release Notes",
       "zip": "malachi-mvp-project-v58.zip"
+    },
+    {
+      "version": 59,
+      "file": "specs/v59_release_notes.md",
+      "title": "# מלאכי V59 - Release Notes",
+      "zip": "malachi-mvp-project-v59.zip"
     }
   ]
 }
