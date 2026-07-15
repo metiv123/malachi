@@ -85,6 +85,11 @@ async function run() {
   assert(buttons.length === 1, 'webhook button extraction failed');
   assert(mapButtonToResponse(buttons[0]) === 'ok', 'webhook button mapping failed');
 
+  const templateButtonPayload = { entry: [{ changes: [{ value: { messages: [{ type: 'button', from: '972502222222', id: 'wamid.template.button', timestamp: '1', button: { payload: 'daily_distress', text: 'מצוקה' } }] } }] }] };
+  const templateButtons = extractWhatsAppButtonEvents(templateButtonPayload);
+  assert(templateButtons.length === 1, 'template quick reply button extraction failed');
+  assert(mapButtonToResponse(templateButtons[0]) === 'distress', 'template quick reply button mapping failed');
+
   const history = await getCheckHistoryByToken(created.family.managementToken, created.elder.id);
   assert(history.length >= 3, 'history should include checks');
   const outbound = await getOutboundMessagesByToken(created.family.managementToken, created.elder.id);

@@ -7,14 +7,15 @@ export function extractWhatsAppButtonEvents(payload) {
       for (const message of value.messages || []) {
         const interactive = message.interactive;
         const buttonReply = interactive?.button_reply;
-        if (!buttonReply) continue;
+        const templateButton = message.type === 'button' ? message.button : null;
+        if (!buttonReply && !templateButton) continue;
         events.push({
           type: 'button',
           from: message.from,
           messageId: message.id,
           timestamp: message.timestamp,
-          buttonId: buttonReply.id,
-          buttonTitle: buttonReply.title
+          buttonId: buttonReply?.id || templateButton?.payload || '',
+          buttonTitle: buttonReply?.title || templateButton?.text || ''
         });
       }
     }
