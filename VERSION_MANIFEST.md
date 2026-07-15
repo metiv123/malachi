@@ -58,3 +58,4 @@
 - V59: specs/v59_release_notes.md -> malachi-mvp-project-v59.zip
 - V60: specs/v60_release_notes.md -> malachi-mvp-project-v60.zip
 - V61: specs/v61_release_notes.md -> malachi-mvp-project-v61.zip
+- V62: specs/v62_release_notes.md -> malachi-mvp-project-v62.zip

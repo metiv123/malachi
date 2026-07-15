@@ -74,6 +74,25 @@ async function run() {
   assert(db.checks.find((c) => c.id === checkViaWebhook.id).status === 'ok', 'webhook processor should mark latest open check ok');
   assert(db.audit.some((evt) => evt.type === 'whatsapp_webhook_received'), 'webhook processor audit event missing');
 
+  const duplicate = await createFamily({
+    ownerName: 'שלמה 2',
+    ownerPhone: '+972501111111',
+    elderName: 'רחל כפולה',
+    elderPhone: '+972502222222',
+    dailyCheckTime: '09:00',
+    contactName: 'שלמה 2',
+    contactPhone: '+972501111111',
+    consent: 'on',
+    skipOptIn: true
+  });
+  const duplicateCheck = await sendCheckNow(duplicate.elder.id);
+  const duplicatePayload = { entry: [{ changes: [{ value: { messages: [{ type: 'button', from: '972502222222', id: 'wamid.duplicate.distress', timestamp: '1', button: { payload: 'daily_distress', text: 'מצוקה' } }] } }] }] };
+  const duplicateHandled = await processWhatsAppWebhookPayload(duplicatePayload);
+  assert(duplicateHandled[0]?.check?.id === duplicateCheck.id, 'processor should prefer latest open check when phone is duplicated');
+  db = await loadDb();
+  assert(db.checks.find((c) => c.id === duplicateCheck.id).status === 'distress', 'duplicate phone latest open check should become distress');
+  await deleteFamilyByToken(duplicate.family.managementToken);
+
   const check3 = await sendCheckNow(created.elder.id);
   await processNoResponses({ graceMinutes: 0 });
   db = await loadDb();

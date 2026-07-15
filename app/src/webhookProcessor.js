@@ -7,11 +7,26 @@ export async function processWhatsAppWebhookPayload(payload) {
   const texts = extractWhatsAppTextEvents(payload);
   const handled = [];
   const db = await loadDb();
-  const findElder = (from) => db.elders.find((e) => {
-    const a = String(e.whatsappPhone).replace(/[^0-9]/g, '');
-    const b = String(from).replace(/[^0-9]/g, '');
-    return a.endsWith(b) || b.endsWith(a);
-  });
+  const findElder = (from) => {
+    const normalizedFrom = String(from).replace(/[^0-9]/g, '');
+    const candidates = db.elders.filter((elder) => {
+      const normalizedPhone = String(elder.whatsappPhone).replace(/[^0-9]/g, '');
+      return normalizedPhone.endsWith(normalizedFrom) || normalizedFrom.endsWith(normalizedPhone);
+    });
+    if (candidates.length <= 1) return candidates[0] || null;
+
+    const latestOpen = candidates
+      .map((elder) => ({
+        elder,
+        check: db.checks
+          .filter((check) => check.elderId === elder.id && check.status === 'sent')
+          .sort((a, b) => String(b.sentAt || b.scheduledAt).localeCompare(String(a.sentAt || a.scheduledAt)))[0] || null
+      }))
+      .filter((item) => item.check)
+      .sort((a, b) => String(b.check.sentAt || b.check.scheduledAt).localeCompare(String(a.check.sentAt || a.check.scheduledAt)))[0];
+
+    return latestOpen?.elder || candidates[candidates.length - 1];
+  };
 
   for (const button of buttons) {
     const mapped = mapButtonToResponse(button);
