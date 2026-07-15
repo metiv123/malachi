@@ -1,4 +1,4 @@
-import { loadDb } from './store.js';
+import { id, loadDb, mutateDb, nowIso } from './store.js';
 import { extractWhatsAppButtonEvents, extractWhatsAppTextEvents, mapButtonToResponse, mapTextToIntent } from './metaWebhook.js';
 import { handleElderResponse, optOutByPhone, setOptIn } from './malachi.js';
 
@@ -29,6 +29,23 @@ export async function processWhatsAppWebhookPayload(payload) {
     else if (mapped === 'opt_out') handled.push({ event: textEvent, mapped, status: 'opted_out', result: await optOutByPhone(textEvent.from) });
     else handled.push({ event: textEvent, mapped, status: 'response_recorded', check: await handleElderResponse({ elderId: elder.id, response: mapped }) });
   }
+
+  await mutateDb((currentDb) => {
+    currentDb.audit.push({
+      id: id('evt'),
+      type: 'whatsapp_webhook_received',
+      payload: {
+        buttonEvents: buttons.length,
+        textEvents: texts.length,
+        handled: handled.map((item) => ({
+          status: item.status,
+          mapped: item.mapped || null,
+          fromLast4: String(item.event?.from || '').replace(/[^0-9]/g, '').slice(-4)
+        }))
+      },
+      createdAt: nowIso()
+    });
+  });
 
   return handled;
 }

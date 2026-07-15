@@ -72,6 +72,7 @@ async function run() {
   assert(processorHandled[0]?.status === 'response_recorded', 'processor should record daily check button response');
   db = await loadDb();
   assert(db.checks.find((c) => c.id === checkViaWebhook.id).status === 'ok', 'webhook processor should mark latest open check ok');
+  assert(db.audit.some((evt) => evt.type === 'whatsapp_webhook_received'), 'webhook processor audit event missing');
 
   const check3 = await sendCheckNow(created.elder.id);
   await processNoResponses({ graceMinutes: 0 });
