@@ -39,6 +39,25 @@ export async function submitConnectionTemplates({ wabaId = DEFAULT_WABA_ID } = {
       ]
     },
     {
+      name: 'daily_warm_connection_he',
+      language: 'he',
+      category: 'UTILITY',
+      components: [
+        {
+          type: 'BODY',
+          text: 'בוקר טוב {{1}} 🌿\nבדיקת הקשר היומית של מלאכי. איך תרצה/י לעדכן את המשפחה?',
+          example: { body_text: [['רחל']] }
+        },
+        {
+          type: 'BUTTONS',
+          buttons: [
+            { type: 'QUICK_REPLY', text: 'הכול בסדר' },
+            { type: 'QUICK_REPLY', text: 'שלח ד״ש למשפחה' }
+          ]
+        }
+      ]
+    },
+    {
       name: 'daily_family_connection_he',
       language: 'he',
       category: 'UTILITY',
@@ -89,7 +108,7 @@ export async function submitConnectionTemplates({ wabaId = DEFAULT_WABA_ID } = {
 export async function listConnectionTemplates({ wabaId = DEFAULT_WABA_ID } = {}) {
   const fields = 'name,status,category,language,rejected_reason,components';
   const data = await metaFetch(`${wabaId}/message_templates?fields=${encodeURIComponent(fields)}&limit=100`);
-  const names = new Set(['daily_connection_check_he', 'daily_family_connection_he', 'family_greeting_message_he', 'daily_check_he', 'no_response_alert_he']);
+  const names = new Set(['daily_connection_check_he', 'daily_warm_connection_he', 'daily_family_connection_he', 'family_greeting_message_he', 'daily_check_he', 'no_response_alert_he']);
   return {
     wabaId,
     templates: (data.data || []).filter((template) => names.has(template.name))
