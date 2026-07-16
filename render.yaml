@@ -11,7 +11,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: WHATSAPP_PROVIDER
-        value: mock
+        value: meta
       - key: MALACHI_SCHEDULER
         value: "true"
       - key: MALACHI_NO_RESPONSE_GRACE_MINUTES
