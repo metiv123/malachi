@@ -66,6 +66,36 @@ async function sendMetaTemplate(to, templateName, languageCode = 'he', component
   return data;
 }
 
+async function sendMetaText(to, text) {
+  if (!config.meta.phoneNumberId || !config.meta.accessToken) {
+    throw new Error('Meta credentials missing: META_PHONE_NUMBER_ID / META_ACCESS_TOKEN');
+  }
+
+  const url = `https://graph.facebook.com/${config.meta.graphVersion}/${config.meta.phoneNumberId}/messages`;
+  const payload = {
+    messaging_product: 'whatsapp',
+    recipient_type: 'individual',
+    to: normalizePhone(to),
+    type: 'text',
+    text: { preview_url: false, body: text }
+  };
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${config.meta.accessToken}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(`Meta text send failed ${res.status}: ${JSON.stringify(data)}`);
+  }
+  return data;
+}
+
 export async function sendOptIn(elder, family) {
   const body = `שלום ${elder.name} 🌿\nכאן מלאכי. ${family.ownerName} ביקש/ה לצרף אותך לבדיקת בוקר יומית ב-WhatsApp. בכל יום בשעה ${elder.dailyCheckTime} נשלח הודעה קצרה כדי לוודא שהכול בסדר.`;
   const buttons = [{ id: 'approve_optin', title: 'מאשר/ת' }, { id: 'decline_optin', title: 'לא מעוניין/ת' }];
@@ -112,5 +142,8 @@ export async function sendNoResponseAlert(contact, elder, check) {
 
 export async function sendOkAck(elder) {
   const body = `תודה ${elder.name} ❤️\nשמחנו לשמוע שהכול בסדר. נבדוק שוב מחר בבוקר.`;
+  if (config.whatsappProvider === 'meta') {
+    await sendMetaText(elder.whatsappPhone, body);
+  }
   return recordOutbound('ok_ack', elder.whatsappPhone, body, [], { elderId: elder.id });
 }
