@@ -123,7 +123,7 @@ export async function sendDailyCheck(elder, check) {
 }
 
 export async function sendDistressAlert(contact, elder, check) {
-  const time = new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+  const time = new Date().toLocaleTimeString('he-IL', { timeZone: config.timezone || 'Asia/Jerusalem', hour: '2-digit', minute: '2-digit' });
   const body = `התראת מלאכי: ${elder.name} לחץ/ה על “מצוקה” בשעה ${time}. מומלץ ליצור קשר מיד.`;
   if (config.whatsappProvider === 'meta') {
     await sendMetaTemplate(contact.whatsappPhone, config.meta.templates.distressAlert, 'he', bodyComponent([elder.name, time]));
@@ -132,7 +132,7 @@ export async function sendDistressAlert(contact, elder, check) {
 }
 
 export async function sendNoResponseAlert(contact, elder, check) {
-  const time = new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+  const time = new Date().toLocaleTimeString('he-IL', { timeZone: config.timezone || 'Asia/Jerusalem', hour: '2-digit', minute: '2-digit' });
   const body = `התראת מלאכי: ${elder.name} לא ענה/ענתה לבדיקת הבוקר עד עכשיו. מומלץ ליצור קשר ולוודא שהכול בסדר.`;
   if (config.whatsappProvider === 'meta') {
     await sendMetaTemplate(contact.whatsappPhone, config.meta.templates.noResponseAlert, 'he', bodyComponent([elder.name, time]));
