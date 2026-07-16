@@ -39,6 +39,6 @@ services:
       - key: META_TEMPLATE_NO_RESPONSE_ALERT
         value: no_response_alert_he
       - key: META_TEMPLATE_FAMILY_GREETING
-        value: family_greeting_he
+        value: family_greeting_message_he
       - key: META_TEMPLATE_OPTIN
         value: optin_confirm_he

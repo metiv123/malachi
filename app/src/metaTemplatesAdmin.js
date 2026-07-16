@@ -39,13 +39,13 @@ export async function submitConnectionTemplates({ wabaId = DEFAULT_WABA_ID } = {
       ]
     },
     {
-      name: 'family_greeting_he',
+      name: 'family_greeting_message_he',
       language: 'he',
       category: 'UTILITY',
       components: [
         {
           type: 'BODY',
-          text: '{{1}} שולח/ת לך דרישת שלום ❤️',
+          text: 'הודעת מלאכי: {{1}} שולח/ת לך דרישת שלום ❤️',
           example: { body_text: [['רחל']] }
         }
       ]
@@ -70,7 +70,7 @@ export async function submitConnectionTemplates({ wabaId = DEFAULT_WABA_ID } = {
 export async function listConnectionTemplates({ wabaId = DEFAULT_WABA_ID } = {}) {
   const fields = 'name,status,category,language,rejected_reason,components';
   const data = await metaFetch(`${wabaId}/message_templates?fields=${encodeURIComponent(fields)}&limit=100`);
-  const names = new Set(['daily_connection_check_he', 'family_greeting_he', 'daily_check_he', 'no_response_alert_he']);
+  const names = new Set(['daily_connection_check_he', 'family_greeting_message_he', 'daily_check_he', 'no_response_alert_he']);
   return {
     wabaId,
     templates: (data.data || []).filter((template) => names.has(template.name))

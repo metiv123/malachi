@@ -141,7 +141,7 @@ export async function sendNoResponseAlert(contact, elder, check) {
 }
 
 export async function sendFamilyGreeting(contact, elder, check) {
-  const body = `${elder.name} שולח/ת לך דרישת שלום ❤️`;
+  const body = `הודעת מלאכי: ${elder.name} שולח/ת לך דרישת שלום ❤️`;
   if (config.whatsappProvider === 'meta') {
     await sendMetaTemplate(contact.whatsappPhone, config.meta.templates.familyGreeting, 'he', bodyComponent([elder.name]));
   }
