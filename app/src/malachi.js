@@ -1,6 +1,6 @@
 import { id, loadDb, mutateDb, nowIso, saveDb } from './store.js';
 import { randomUUID } from 'node:crypto';
-import { sendDailyCheck, sendDistressAlert, sendNoResponseAlert, sendOkAck, sendOptIn } from './whatsapp.js';
+import { sendDailyCheck, sendDistressAlert, sendFamilyGreeting, sendNoResponseAlert, sendOkAck, sendOptIn } from './whatsapp.js';
 import { localParts } from './time.js';
 import { validateJoinInput, isValidTime } from './validators.js';
 import { config } from './config.js';
@@ -362,6 +362,9 @@ export async function handleElderResponse({ elderId, checkId, response }) {
     if (response === 'ok') {
       check.status = 'ok';
       action = 'ok';
+    } else if (response === 'greeting') {
+      check.status = 'greeting_sent';
+      action = 'greeting';
     } else if (response === 'distress') {
       check.status = 'distress';
       check.alertSentAt = nowIso();
@@ -377,6 +380,11 @@ export async function handleElderResponse({ elderId, checkId, response }) {
   });
 
   if (result.action === 'ok') await sendOkAck(result.elder);
+  if (result.action === 'greeting') {
+    const db = await loadDb();
+    const contacts = db.contacts.filter((c) => c.elderId === result.elder.id);
+    for (const contact of contacts) await sendFamilyGreeting(contact, result.elder, result.check);
+  }
   if (result.action === 'distress' && result.contact) {
     const db = await loadDb();
     const contacts = db.contacts.filter((c) => c.elderId === result.elder.id);

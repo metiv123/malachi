@@ -110,13 +110,13 @@ export async function sendOptIn(elder, family) {
 }
 
 export async function sendDailyCheck(elder, check) {
-  const body = `בוקר טוב ${elder.name} 🌿\nכאן מלאכי, רק לוודא שהכול בסדר הבוקר.`;
-  const buttons = [{ id: 'daily_ok', title: 'הכול בסדר' }, { id: 'daily_distress', title: 'מצוקה' }];
+  const body = `בוקר טוב ${elder.name} 🌿\nכאן מלאכי, רק לוודא מה שלומך הבוקר.`;
+  const buttons = [{ id: 'daily_ok', title: 'הכול בסדר' }, { id: 'daily_greeting', title: 'שלח ד״ש למשפחה' }];
   if (config.whatsappProvider === 'meta') {
     await sendMetaTemplate(elder.whatsappPhone, config.meta.templates.dailyCheck, 'he', [
       ...bodyComponent([elder.name]),
       quickReplyButton(0, 'daily_ok'),
-      quickReplyButton(1, 'daily_distress')
+      quickReplyButton(1, 'daily_greeting')
     ]);
   }
   return recordOutbound('daily_check', elder.whatsappPhone, body, buttons, { elderId: elder.id, checkId: check.id });
@@ -133,11 +133,19 @@ export async function sendDistressAlert(contact, elder, check) {
 
 export async function sendNoResponseAlert(contact, elder, check) {
   const time = new Date().toLocaleTimeString('he-IL', { timeZone: config.timezone || 'Asia/Jerusalem', hour: '2-digit', minute: '2-digit' });
-  const body = `התראת מלאכי: ${elder.name} לא ענה/ענתה לבדיקת הבוקר עד עכשיו. מומלץ ליצור קשר ולוודא שהכול בסדר.`;
+  const body = `מלאכי: ${elder.name} לא ענה/ענתה להודעת הבוקר עד עכשיו. כדאי ליצור קשר ולוודא שהכול בסדר.`;
   if (config.whatsappProvider === 'meta') {
     await sendMetaTemplate(contact.whatsappPhone, config.meta.templates.noResponseAlert, 'he', bodyComponent([elder.name, time]));
   }
   return recordOutbound('no_response_alert', contact.whatsappPhone, body, [], { elderId: elder.id, checkId: check.id });
+}
+
+export async function sendFamilyGreeting(contact, elder, check) {
+  const body = `${elder.name} שולח/ת לך דרישת שלום ❤️`;
+  if (config.whatsappProvider === 'meta') {
+    await sendMetaTemplate(contact.whatsappPhone, config.meta.templates.familyGreeting, 'he', bodyComponent([elder.name]));
+  }
+  return recordOutbound('family_greeting', contact.whatsappPhone, body, [], { elderId: elder.id, checkId: check?.id });
 }
 
 export async function sendOkAck(elder) {

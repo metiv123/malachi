@@ -48,6 +48,7 @@ export function mapButtonToResponse(button) {
   const id = String(button.buttonId || '').toLowerCase();
   const title = String(button.buttonTitle || '').trim();
   if (id.includes('ok') || title === 'הכול בסדר' || title === 'בסדר') return 'ok';
+  if (id.includes('greeting') || id.includes('hello') || title.includes('ד״ש') || title.includes('דש') || title.includes('דרישת שלום') || title.includes('שלום למשפחה')) return 'greeting';
   if (id.includes('distress') || title === 'מצוקה') return 'distress';
   if (id.includes('approve') || title === 'מאשר/ת') return 'approve_optin';
   if (id.includes('decline') || title === 'לא מעוניין/ת') return 'decline_optin';
@@ -58,6 +59,7 @@ export function mapTextToIntent(textEvent) {
   const text = String(textEvent.text || '').trim().toLowerCase();
   if (['הסרה', 'עצור', 'stop', 'unsubscribe', 'בטל', 'ביטול'].includes(text)) return 'opt_out';
   if (['בסדר', 'הכל בסדר', 'הכול בסדר', 'ok'].includes(text)) return 'ok';
+  if (['דש', 'ד״ש', 'דרישת שלום', 'שלח דש', 'שלח ד״ש', 'שלום למשפחה'].includes(text)) return 'greeting';
   if (['מצוקה', 'עזרה', 'help', 'sos'].includes(text)) return 'distress';
   return null;
 }
