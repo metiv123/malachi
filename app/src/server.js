@@ -15,6 +15,7 @@ import { betaChecklist } from './betaChecklist.js';
 import { version } from './version.js';
 import { liveReadiness } from './liveReadiness.js';
 import { checkMetaPhoneNumber } from './metaApiCheck.js';
+import { listConnectionTemplates, submitConnectionTemplates } from './metaTemplatesAdmin.js';
 import { createBackup, exportDbJson, listBackups } from './backup.js';
 import { listErrors, logError } from './errorLog.js';
 import { createFeedback, listFeedback } from './feedback.js';
@@ -79,6 +80,16 @@ async function route(req, res) {
     }
     if (req.method === 'GET' && url.pathname === '/api/meta/sample-payloads') return json(res, 200, sampleMetaPayloads());
     if (req.method === 'GET' && url.pathname === '/api/meta/phone-check') return json(res, 200, await checkMetaPhoneNumber());
+
+    if (req.method === 'GET' && url.pathname === '/api/meta/templates/connection') {
+      if (url.searchParams.get('token') !== config.meta.verifyToken) return json(res, 403, { error: 'Forbidden' });
+      return json(res, 200, await listConnectionTemplates({ wabaId: url.searchParams.get('wabaId') || undefined }));
+    }
+    if (req.method === 'POST' && url.pathname === '/api/meta/templates/connection') {
+      const input = await body(req);
+      if (input.token !== config.meta.verifyToken) return json(res, 403, { error: 'Forbidden' });
+      return json(res, 200, await submitConnectionTemplates({ wabaId: input.wabaId }));
+    }
     if (req.method === 'GET' && url.pathname === '/api/reports/sources') return json(res, 200, { sources: await sourceReport() });
     if (req.method === 'GET' && url.pathname === '/api/export/families.csv') return csvResponse(res, 'malachi-families.csv', await exportFamiliesCsv());
     if (req.method === 'GET' && url.pathname === '/api/export/db.json') { res.writeHead(200, {'Content-Type':'application/json; charset=utf-8','Content-Disposition':'attachment; filename="malachi-db.json"'}); return res.end(await exportDbJson()); }
