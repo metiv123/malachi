@@ -24,3 +24,10 @@ button:focus,a:focus,input:focus{outline:3px solid #f7c948;outline-offset:2px}
 
 /* Improved floating accessibility button */
 .a11y-toggle{display:inline-flex;align-items:center;gap:8px;min-height:52px}.a11y-icon{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:999px;background:#fff;color:var(--blue);font-size:18px;line-height:1}.a11y-text{font-weight:900}.a11y-high-contrast .a11y-icon{background:#fff;color:#000;border:1px solid #000}@media(max-width:520px){.footer-links{flex-direction:column;align-items:stretch}.footer-links a{width:100%}.a11y-toggle{border-radius:999px;padding:10px 14px}.a11y-text{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}.a11y-icon{width:34px;height:34px;font-size:20px}}
+
+/* Inline info section to avoid fragile footer navigation on mobile browsers */
+.info-section{padding-top:40px}.info-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.info-card{background:#fff;border:1px solid #dcecf8;border-radius:20px;padding:20px;box-shadow:0 12px 30px #123c690c}.info-card h3{margin-top:0;color:var(--blue)}.info-card a{color:var(--blue);font-weight:800}
+
+/* Force floating accessibility control across in-app browsers */
+.a11y-widget{position:fixed!important;left:16px!important;bottom:16px!important;right:auto!important;top:auto!important;z-index:2147483647!important;display:block!important}.a11y-toggle{width:58px!important;height:58px!important;min-width:58px!important;min-height:58px!important;border-radius:999px!important;padding:0!important;justify-content:center!important}.a11y-toggle .a11y-text{position:absolute!important;width:1px!important;height:1px!important;overflow:hidden!important;clip:rect(0 0 0 0)!important;white-space:nowrap!important}.a11y-icon{width:38px!important;height:38px!important;font-size:22px!important}.a11y-panel{position:absolute!important;left:0!important;bottom:70px!important}
+@media(max-width:700px){.info-grid{grid-template-columns:1fr}.a11y-widget{left:12px!important;bottom:12px!important}.a11y-toggle{width:56px!important;height:56px!important}}
