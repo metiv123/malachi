@@ -13,14 +13,15 @@ function esc(value = '') {
 }
 
 function statusLabel(status) {
-  return { sent:'ממתין לתגובה', ok:'הכול בסדר', distress:'מצוקה', no_response:'לא ענה/ענתה', failed:'נכשל' }[status] || 'אין בדיקה עדיין';
+  return { sent:'ממתין לתגובה', ok:'אני בסדר', distress:'התראת מצוקה ישנה', no_response:'לא התקבלה תגובה', failed:'נכשל' }[status] || 'אין בדיקה עדיין';
 }
 function statusClass(status){ return { ok:'ok', distress:'danger', no_response:'warning', sent:'pending', failed:'danger' }[status] || 'pending'; }
+function optInLabel(status){ return { pending:'ממתין לאישור ההורה', approved:'מאושר', declined:'בוטל/הוסר' }[status] || 'לא ידוע'; }
 function actionHint(status){
-  if(status==='distress') return 'המלצה: ליצור קשר מיד עם האדם ועם איש הקשר הנוסף.';
+  if(status==='distress') return 'סטטוס ישן ממודל קודם. בגרסת הבטא החדשה ההתראה למשפחה נשלחת בעיקר כשאין תגובה.';
   if(status==='no_response') return 'המלצה: להתקשר ולוודא שהכול בסדר. ייתכן שהטלפון לא זמין או שהאדם לא ראה את ההודעה.';
   if(status==='sent') return 'ממתינים לתגובה. אם לא תהיה תגובה בזמן — תישלח התראה.';
-  if(status==='ok') return 'הכול תקין להיום.';
+  if(status==='ok') return 'הכול תקין להיום. לא נשלחה הודעה למשפחה.';
   return 'עדיין לא נשלחה בדיקה היום.';
 }
 
@@ -48,7 +49,7 @@ async function load() {
         <p>טלפון: ${esc(elder.whatsappPhone)}</p>
         <p>שעה יומית: ${esc(elder.dailyCheckTime)}</p>
         <p>אנשי קשר להתראה:</p><ul>${(elder.contacts || [elder.contact].filter(Boolean)).map((c) => `<li>${esc(c.name)} (${esc(c.whatsappPhone)}) ${elder.contacts?.length > 1 ? `<button class="tiny" onclick="deleteContact('${c.id}')">מחיקה</button>` : ''}</li>`).join('')}</ul>
-        <p>Opt-in: ${esc(elder.optInStatus)} · פעיל: ${elder.active ? 'כן' : 'לא'}</p>
+        <p>אישור WhatsApp של ההורה: ${optInLabel(elder.optInStatus)} · פעיל: ${elder.active ? 'כן' : 'לא'}</p>
         <div class="today-card ${statusClass(elder.latestCheck?.status)}"><b>מצב אחרון: ${statusLabel(elder.latestCheck?.status)}</b><p>${actionHint(elder.latestCheck?.status)}</p></div>
         <div id="history-${elder.id}" class="history-box">טוען היסטוריה...</div>
         <div id="messages-${elder.id}" class="history-box">טוען לוג הודעות...</div>
@@ -71,11 +72,9 @@ async function load() {
         </details>
         <div class="dashboard-actions">
           <button class="button secondary" onclick="sendCheck('${elder.id}')">שלח בדיקה עכשיו</button>
-          <button class="button secondary" onclick="optIn('${elder.id}')">אשר Opt-in</button>
           <button class="button secondary" onclick="setActive('${elder.id}', ${!elder.active})">${elder.active ? 'השהה שירות' : 'הפעל שירות'}</button>
           ${elder.latestCheck?.status === 'sent' ? `
-            <button class="button secondary" onclick="respond('${elder.id}','${elder.latestCheck.id}','ok')">דמה הכול בסדר</button>
-            <button class="button secondary" onclick="respond('${elder.id}','${elder.latestCheck.id}','distress')">דמה מצוקה</button>
+            <button class="button secondary" onclick="respond('${elder.id}','${elder.latestCheck.id}','ok')">דמה אני בסדר</button>
             <button class="button secondary" onclick="noResponse()">דמה אין תגובה</button>` : ''}
           <button class="button secondary" onclick="mockWebhookText('${elder.whatsappPhone}','הסרה')">דמה הסרה בוואטסאפ</button>
         </div>
@@ -112,7 +111,6 @@ window.deleteFamily = async () => {
   root.innerHTML = '<p>המידע נמחק מהמערכת.</p>';
 };
 window.sendCheck = async (elderId) => { await api(`/api/elders/${elderId}/send-check`, { method:'POST', body:'{}' }); await load(); };
-window.optIn = async (elderId) => { await api(`/api/elders/${elderId}/opt-in`, { method:'POST', body:JSON.stringify({ approved:true }) }); await load(); };
 window.setActive = async (elderId, active) => { await api(`/api/elders/${elderId}/active`, { method:'POST', body:JSON.stringify({ token, active }) }); await load(); };
 window.respond = async (elderId, checkId, response) => { await api('/api/mock/respond', { method:'POST', body:JSON.stringify({ elderId, checkId, response }) }); await load(); };
 window.noResponse = async () => { await api('/api/jobs/no-responses', { method:'POST', body:JSON.stringify({ graceMinutes:0 }) }); await load(); };

@@ -110,16 +110,23 @@ export async function sendOptIn(elder, family) {
 }
 
 export async function sendDailyCheck(elder, check) {
-  const body = `בוקר טוב ${elder.name} 🌿\nכאן מלאכי, רק לוודא מה שלומך הבוקר.`;
-  const buttons = [{ id: 'daily_ok', title: 'הכול בסדר' }, { id: 'daily_greeting', title: 'שלח ד״ש למשפחה' }];
+  const singleOkMode = config.dailyCheckMode === 'single_ok';
+  const body = singleOkMode
+    ? `בוקר טוב ${elder.name} 🌿\nכאן מלאכי. רק לסמן שהכול בסדר הבוקר.`
+    : `בוקר טוב ${elder.name} 🌿\nכאן מלאכי, רק לוודא מה שלומך הבוקר.`;
+  const buttons = singleOkMode
+    ? [{ id: 'daily_ok', title: 'אני בסדר' }]
+    : [{ id: 'daily_ok', title: 'הכול בסדר' }, { id: 'daily_greeting', title: 'שלח ד״ש למשפחה' }];
   if (config.whatsappProvider === 'meta') {
+    const templateButtons = singleOkMode
+      ? [quickReplyButton(0, 'daily_ok')]
+      : [quickReplyButton(0, 'daily_ok'), quickReplyButton(1, 'daily_greeting')];
     await sendMetaTemplate(elder.whatsappPhone, config.meta.templates.dailyCheck, 'he', [
       ...bodyComponent([elder.name]),
-      quickReplyButton(0, 'daily_ok'),
-      quickReplyButton(1, 'daily_greeting')
+      ...templateButtons
     ]);
   }
-  return recordOutbound('daily_check', elder.whatsappPhone, body, buttons, { elderId: elder.id, checkId: check.id });
+  return recordOutbound('daily_check', elder.whatsappPhone, body, buttons, { elderId: elder.id, checkId: check.id, mode: config.dailyCheckMode });
 }
 
 export async function sendDistressAlert(contact, elder, check) {

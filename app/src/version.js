@@ -1,6 +1,6 @@
 export const version = {
   name: 'malachi-mvp',
-  version: 'V72',
+  version: 'V75',
   mode: 'mock-ready',
-  updatedAt: '2026-07-16'
+  updatedAt: '2026-07-18'
 };

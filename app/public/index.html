@@ -16,7 +16,7 @@
       <div>
         <p class="eyebrow">בדיקת בוקר יומית ב־WhatsApp</p>
         <h1>הודעת בוקר אחת שמוודאת שההורה שלכם בסדר.</h1>
-        <p class="sub">מלאכי שולח בכל בוקר הודעת WhatsApp פשוטה לאדם מבוגר. אם אין תשובה תוך שעה, או אם נלחצת מצוקה — המשפחה מקבלת עדכון.</p>
+        <p class="sub">מלאכי שולח בכל בוקר הודעת WhatsApp פשוטה לאדם מבוגר. אם אין תשובה בזמן שנקבע — המשפחה מקבלת עדכון.</p>
         <div class="actions">
           <a href="#join" class="button primary">להצטרפות חינם</a>
           <a href="#how" class="button secondary">איך זה עובד?</a>
@@ -24,10 +24,9 @@
         <p class="trust">בלי אפליקציה. בלי מצלמות. בלי מעקב. רק WhatsApp והסכמה.</p><p id="betaStatus" class="status">בודק זמינות בטא...</p>
       </div>
       <div class="phone-card" aria-label="דוגמת הודעת וואטסאפ">
-        <div class="bubble">בוקר טוב רחל 🌿<br/>כאן מלאכי, רק לוודא שהכול בסדר הבוקר.</div>
-        <button>הכול בסדר</button>
-        <button class="danger">מצוקה</button>
-        <p class="small">אם אין תשובה תוך שעה — קרוב משפחה מקבל עדכון.</p>
+        <div class="bubble">בוקר טוב רחל 🌿<br/>כאן מלאכי. רק לסמן שהכול בסדר הבוקר.</div>
+        <button>אני בסדר</button>
+        <p class="small">אם אין תשובה בזמן שנקבע — קרוב משפחה מקבל עדכון.</p>
       </div>
     </section>
   </header>
@@ -38,8 +37,8 @@
       <div class="card-grid">
         <article><b>1</b><h3>בוחרים שעה</h3><p>מגדירים שעה יומית לבדיקה.</p></article>
         <article><b>2</b><h3>הודעת WhatsApp</h3><p>ההורה מקבל הודעה קצרה וברורה.</p></article>
-        <article><b>3</b><h3>תגובה פשוטה</h3><p>לוחצים “הכול בסדר” או “מצוקה”.</p></article>
-        <article><b>4</b><h3>עדכון למשפחה</h3><p>אם אין תשובה או יש מצוקה — בן המשפחה הראשי ואנשי הקשר להתראה מקבלים עדכון.</p></article>
+        <article><b>3</b><h3>תגובה פשוטה</h3><p>מסמנים “אני בסדר”.</p></article>
+        <article><b>4</b><h3>עדכון למשפחה</h3><p>אם אין תשובה בזמן שנקבע — בן המשפחה הראשי ואנשי הקשר להתראה מקבלים עדכון.</p></article>
       </div>
     </section>
 
@@ -79,7 +78,7 @@
 
     <section id="join" class="section form-section">
       <h2>הצטרפות לבטא החינמית של מלאכי</h2>
-      <p>לאחר ההרשמה תקבלו קישור ניהול פרטי למשפחה. בשלב הפיתוח ההודעות נשמרות במצב הדמיה; בחיבור Meta אמיתי הן יישלחו ב־WhatsApp.</p>
+      <p>לאחר ההרשמה תקבלו קישור ניהול פרטי למשפחה. ההורה יקבל בקשת אישור ב־WhatsApp, ורק אחרי אישור שלו/ה השירות יופעל.</p>
       <form id="joinForm">
         <label>שם בן/בת המשפחה<input name="ownerName" required placeholder="למשל: שלמה" /></label>
         <label>טלפון בן/בת המשפחה הראשי/ת<input name="ownerPhone" required placeholder="+972..." /></label>
@@ -89,8 +88,14 @@
         <label>שם איש קשר להתראה<input name="contactName" placeholder="אפשר להשאיר ריק — נשתמש בבן המשפחה הראשי" /></label>
         <label>טלפון איש קשר להתראה<input name="contactPhone" placeholder="אפשר להשאיר ריק — נשתמש בטלפון בן המשפחה" /></label>
         <p class="hint">אפשר לשים כאן את אותו בן משפחה ראשי, ובהמשך להוסיף עוד אנשי קשר כמו אח/אחות/שכן/מטפל.</p>
-        <label class="check"><input type="checkbox" name="consent" required /> יש לי הסכמה מהאדם לקבל הודעות בדיקת בוקר ממלאכי</label>
+        <label class="check"><input type="checkbox" name="consent" required /> אני מבין/ה שהשירות יופעל רק אחרי שהאדם המבוגר יאשר בעצמו/ה ב־WhatsApp</label>
         <input type="hidden" name="source" id="sourceField" value="direct" />
+        <input type="hidden" name="ref" id="refField" value="" />
+        <input type="hidden" name="utm_source" id="utmSourceField" value="" />
+        <input type="hidden" name="utm_medium" id="utmMediumField" value="" />
+        <input type="hidden" name="utm_campaign" id="utmCampaignField" value="" />
+        <input type="hidden" name="utm_content" id="utmContentField" value="" />
+        <input type="hidden" name="utm_term" id="utmTermField" value="" />
         <button class="button primary" type="submit">יצירת קישור ניהול פרטי</button>
       </form>
       <pre id="formResult"></pre>
@@ -104,5 +109,5 @@
 
   <footer>מלאכי — המלאך השומר של המשפחה<br><a href="/status.html">סטטוס</a> · <a href="/onboarding.html">התחלה מהירה</a> · <a href="/faq.html">שאלות נפוצות</a> · <a href="/privacy.html">מדיניות פרטיות</a> · <a href="/terms.html">תנאי שימוש</a> · <a href="/data-deletion.html">מחיקת מידע</a></footer>
   <script src="/app.js"></script>
-</body>
+<script src="/accessibility.js"></script></body>
 </html>

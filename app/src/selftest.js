@@ -1,9 +1,10 @@
 import { rm } from 'node:fs/promises';
 import path from 'node:path';
-import { createFamily, deleteFamilyByToken, exportFamiliesCsv, getCheckHistoryByToken, getFamilyByToken, getOutboundMessagesByToken, handleElderResponse, listDashboard, optOutByPhone, processDueChecks, processNoResponses, sendCheckNow, setElderActiveByToken, setOptIn, systemReadiness, updateElderByToken } from './malachi.js';
+import { createFamily, deleteFamilyByToken, exportFamiliesCsv, getCheckHistoryByToken, getFamilyByToken, getOutboundMessagesByToken, handleElderResponse, listDashboard, optOutByPhone, processDueChecks, processNoResponses, sendCheckNow, setElderActiveByToken, setOptIn, systemReadiness, updateElderByToken, weeklyReportByToken } from './malachi.js';
 import { extractWhatsAppButtonEvents, extractWhatsAppTextEvents, mapButtonToResponse, mapTextToIntent } from './metaWebhook.js';
 import { processWhatsAppWebhookPayload } from './webhookProcessor.js';
 import { loadDb } from './store.js';
+import { config } from './config.js';
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
@@ -23,10 +24,19 @@ async function run() {
     dailyCheckTime: '09:00',
     contactName: 'שלמה',
     contactPhone: '+972501111111',
-    consent: 'on'
+    consent: 'on',
+    source: 'facebook',
+    ref: 'metiv_page',
+    utm_source: 'facebook',
+    utm_medium: 'organic',
+    utm_campaign: 'malachi_beta',
+    utm_content: 'first_post',
+    utm_term: 'elder_check'
   });
   assert(created.family.id, 'family id missing');
   assert(created.family.managementToken, 'management token missing');
+  assert(created.family.source === 'facebook', 'family source should be tracked');
+  assert(created.family.attribution?.utm_campaign === 'malachi_beta', 'utm campaign should be tracked');
   const privateFamily = await getFamilyByToken(created.family.managementToken);
   assert(privateFamily.elders.length === 1, 'private dashboard should show elder');
   await setElderActiveByToken(created.family.managementToken, created.elder.id, false);
@@ -59,12 +69,30 @@ async function run() {
   let db = await loadDb();
   assert(db.checks.find((c) => c.id === check.id).status === 'ok', 'check should become ok');
   assert(db.outboundMessages.some((m) => m.kind === 'ok_ack'), 'ok ack missing');
+  assert(!db.outboundMessages.some((m) => ['family_greeting', 'distress_alert', 'no_response_alert'].includes(m.kind) && m.meta?.checkId === check.id), 'ok should not notify family');
 
-  const check2 = await sendCheckNow(created.elder.id);
-  await handleElderResponse({ elderId: created.elder.id, checkId: check2.id, response: 'distress' });
+  const previousDailyCheckMode = config.dailyCheckMode;
+  config.dailyCheckMode = 'single_ok';
+  const singleOkCheck = await sendCheckNow(created.elder.id);
   db = await loadDb();
-  assert(db.checks.find((c) => c.id === check2.id).status === 'distress', 'check should become distress');
-  assert(db.outboundMessages.some((m) => m.kind === 'distress_alert'), 'distress alert missing');
+  const singleOkOutbound = db.outboundMessages.find((m) => m.meta?.checkId === singleOkCheck.id && m.kind === 'daily_check');
+  assert(singleOkOutbound?.buttons?.length === 1, 'single ok mode should send one button');
+  assert(singleOkOutbound.buttons[0].id === 'daily_ok', 'single ok button id should be daily_ok');
+  assert(singleOkOutbound.buttons[0].title === 'אני בסדר', 'single ok button title should be אני בסדר');
+  assert(singleOkOutbound.meta?.mode === 'single_ok', 'single ok outbound should record mode');
+  const singleOkPayload = { entry: [{ changes: [{ value: { messages: [{ type: 'interactive', from: '972502222222', id: 'wamid.single.ok', timestamp: '1', interactive: { button_reply: { id: 'daily_ok', title: 'אני בסדר' } } }] } }] }] };
+  const singleOkHandled = await processWhatsAppWebhookPayload(singleOkPayload);
+  assert(singleOkHandled[0]?.status === 'response_recorded', 'single ok webhook should record response');
+  db = await loadDb();
+  assert(db.checks.find((c) => c.id === singleOkCheck.id).status === 'ok', 'single ok check should become ok');
+  assert(!db.outboundMessages.some((m) => ['family_greeting', 'distress_alert', 'no_response_alert'].includes(m.kind) && m.meta?.checkId === singleOkCheck.id), 'single ok should not notify family');
+  config.dailyCheckMode = previousDailyCheckMode;
+
+  const checkGreeting = await sendCheckNow(created.elder.id);
+  await handleElderResponse({ elderId: created.elder.id, checkId: checkGreeting.id, response: 'greeting' });
+  db = await loadDb();
+  assert(db.checks.find((c) => c.id === checkGreeting.id).status === 'greeting_sent', 'check should become greeting_sent');
+  assert(db.outboundMessages.some((m) => m.kind === 'family_greeting'), 'family greeting missing');
 
   const checkViaWebhook = await sendCheckNow(created.elder.id);
   const processorPayload = { entry: [{ changes: [{ value: { messages: [{ type: 'interactive', from: '972502222222', id: 'wamid.processor.ok', timestamp: '1', interactive: { button_reply: { id: 'daily_ok', title: 'הכול בסדר' } } }] } }] }] };
@@ -109,12 +137,21 @@ async function run() {
   assert(templateButtons.length === 1, 'template quick reply button extraction failed');
   assert(mapButtonToResponse(templateButtons[0]) === 'distress', 'template quick reply button mapping failed');
 
+  const greetingButtonPayload = { entry: [{ changes: [{ value: { messages: [{ type: 'button', from: '972502222222', id: 'wamid.template.greeting', timestamp: '1', button: { payload: 'daily_greeting', text: 'שלח ד״ש למשפחה' } }] } }] }] };
+  const greetingButtons = extractWhatsAppButtonEvents(greetingButtonPayload);
+  assert(mapButtonToResponse(greetingButtons[0]) === 'greeting', 'greeting button mapping failed');
+
   const history = await getCheckHistoryByToken(created.family.managementToken, created.elder.id);
   assert(history.length >= 3, 'history should include checks');
   const outbound = await getOutboundMessagesByToken(created.family.managementToken, created.elder.id);
   assert(outbound.length >= 3, 'outbound message log should include messages');
   const readiness = await systemReadiness();
   assert(readiness.counts.families === 1, 'readiness should count family');
+
+  const weekly = await weeklyReportByToken(created.family.managementToken);
+  assert(weekly.elders[0].totals.checks >= 3, 'weekly report should count checks');
+  assert(weekly.elders[0].totals.noResponses >= 1, 'weekly report should count no responses');
+  assert(weekly.elders[0].totals.greetings >= 1, 'weekly report should count greetings');
 
   const textPayload = { entry: [{ changes: [{ value: { messages: [{ type: 'text', from: '972502222222', id: 'wamid.text', timestamp: '1', text: { body: 'הסרה' } }] } }] }] };
   const texts = extractWhatsAppTextEvents(textPayload);
@@ -124,7 +161,7 @@ async function run() {
   assert(optOut.found === true, 'opt out should find elder');
 
   const csv = await exportFamiliesCsv();
-  assert(csv.includes('owner_name') && csv.includes('שלמה'), 'csv export failed');
+  assert(csv.includes('utm_campaign') && csv.includes('malachi_beta') && csv.includes('owner_name') && csv.includes('שלמה'), 'csv export failed');
 
   const dashboard = await listDashboard();
   assert(dashboard.length === 1, 'dashboard should show family');

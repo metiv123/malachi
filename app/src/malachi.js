@@ -12,6 +12,22 @@ function requireField(input, field) {
   return String(input[field]).trim();
 }
 
+function cleanOptional(input, field) {
+  return String(input?.[field] || '').trim();
+}
+
+function leadAttribution(input = {}) {
+  return {
+    source: cleanOptional(input, 'source') || cleanOptional(input, 'utm_source') || cleanOptional(input, 'ref') || 'direct',
+    ref: cleanOptional(input, 'ref'),
+    utm_source: cleanOptional(input, 'utm_source'),
+    utm_medium: cleanOptional(input, 'utm_medium'),
+    utm_campaign: cleanOptional(input, 'utm_campaign'),
+    utm_content: cleanOptional(input, 'utm_content'),
+    utm_term: cleanOptional(input, 'utm_term')
+  };
+}
+
 export async function createFamily(input) {
   validateJoinInput(input);
   const ownerName = requireField(input, 'ownerName');
@@ -21,10 +37,11 @@ export async function createFamily(input) {
   const dailyCheckTime = requireField(input, 'dailyCheckTime');
   const contactName = String(input.contactName || ownerName).trim();
   const contactPhone = String(input.contactPhone || ownerPhone).trim();
+  const attribution = leadAttribution(input);
 
   const created = await mutateDb((db) => {
     if (!config.betaOpen || db.families.length >= config.betaMaxFamilies) {
-      const wait = { id: id('wait'), ownerName, ownerPhone, elderName, source: input.source || input.ref || 'direct', createdAt: nowIso() };
+      const wait = { id: id('wait'), ownerName, ownerPhone, elderName, ...attribution, createdAt: nowIso() };
       db.waitlist = db.waitlist || [];
       db.waitlist.push(wait);
       return { waitlist: true, wait };
@@ -38,7 +55,8 @@ export async function createFamily(input) {
       tokenCreatedAt: nowIso(),
       tokenRevokedAt: null,
       tokenLastUsedAt: null,
-      source: input.source || input.ref || 'direct',
+      source: attribution.source,
+      attribution,
       createdAt: nowIso()
     };
     const elder = {
@@ -65,7 +83,7 @@ export async function createFamily(input) {
     db.families.push(family);
     db.elders.push(elder);
     db.contacts.push(contact);
-    db.audit.push({ id: id('evt'), type: 'family_created', payload: { familyId: family.id, elderId: elder.id }, createdAt: nowIso() });
+    db.audit.push({ id: id('evt'), type: 'family_created', payload: { familyId: family.id, elderId: elder.id, attribution }, createdAt: nowIso() });
 
     return { family, elder, contact };
   });
@@ -245,13 +263,14 @@ export async function optOutByPhone(phone) {
 
 export async function exportFamiliesCsv() {
   const db = await loadDb();
-  const rows = [['family_id','source','owner_name','owner_phone','owner_email','elder_name','elder_phone','daily_check_time','opt_in_status','active','contact_name','contact_phone','latest_status','created_at']];
+  const rows = [['family_id','source','ref','utm_source','utm_medium','utm_campaign','utm_content','utm_term','owner_name','owner_phone','owner_email','elder_name','elder_phone','daily_check_time','opt_in_status','active','contact_name','contact_phone','latest_status','created_at']];
   for (const family of db.families) {
     const elders = db.elders.filter((e) => e.familyId === family.id);
     for (const elder of elders) {
       const contact = db.contacts.find((c) => c.elderId === elder.id) || {};
       const latest = db.checks.filter((c) => c.elderId === elder.id).sort((a,b)=>String(b.sentAt||'').localeCompare(String(a.sentAt||'')))[0] || {};
-      rows.push([family.id, family.source || 'direct', family.ownerName, family.ownerPhone, family.ownerEmail || '', elder.name, elder.whatsappPhone, elder.dailyCheckTime, elder.optInStatus, elder.active, contact.name || '', contact.whatsappPhone || '', latest.status || '', family.createdAt]);
+      const attr = family.attribution || {};
+      rows.push([family.id, family.source || attr.source || 'direct', attr.ref || '', attr.utm_source || '', attr.utm_medium || '', attr.utm_campaign || '', attr.utm_content || '', attr.utm_term || '', family.ownerName, family.ownerPhone, family.ownerEmail || '', elder.name, elder.whatsappPhone, elder.dailyCheckTime, elder.optInStatus, elder.active, contact.name || '', contact.whatsappPhone || '', latest.status || '', family.createdAt]);
     }
   }
   return rows.map((row) => row.map((v) => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
@@ -391,6 +410,51 @@ export async function handleElderResponse({ elderId, checkId, response }) {
     for (const contact of contacts) await sendDistressAlert(contact, result.elder, result.check);
   }
   return result.check;
+}
+
+export async function weeklyReportByToken(token, { days = 7 } = {}) {
+  if (!token) throw new Error('Missing token');
+  const db = await loadDb();
+  const family = db.families.find((f) => f.managementToken === token);
+  if (!family || family.tokenRevokedAt) throw new Error('Family not found');
+  family.tokenLastUsedAt = nowIso();
+  await saveDb(db);
+
+  const since = Date.now() - Number(days || 7) * 24 * 60 * 60 * 1000;
+  const elders = db.elders.filter((e) => e.familyId === family.id).map((elder) => {
+    const checks = db.checks.filter((c) => c.elderId === elder.id && new Date(c.sentAt || c.scheduledAt || c.createdAt || 0).getTime() >= since);
+    const counts = checks.reduce((acc, check) => {
+      acc[check.status] = (acc[check.status] || 0) + 1;
+      return acc;
+    }, {});
+    return {
+      elderId: elder.id,
+      elderName: elder.name,
+      dailyCheckTime: elder.dailyCheckTime,
+      active: elder.active,
+      totals: {
+        checks: checks.length,
+        ok: counts.ok || 0,
+        greetings: counts.greeting_sent || 0,
+        noResponses: counts.no_response || 0,
+        distress: counts.distress || 0,
+        stillOpen: counts.sent || 0,
+        failed: counts.failed || 0
+      },
+      latestChecks: checks
+        .slice()
+        .sort((a, b) => String(b.sentAt || b.scheduledAt).localeCompare(String(a.sentAt || a.scheduledAt)))
+        .slice(0, 7)
+    };
+  });
+
+  return {
+    familyId: family.id,
+    ownerName: family.ownerName,
+    periodDays: Number(days || 7),
+    generatedAt: nowIso(),
+    elders
+  };
 }
 
 

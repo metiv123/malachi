@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { config } from './config.js';
-import { addContactByToken, betaStatus, createFamily, deleteContactByToken, deleteFamilyByToken, exportFamiliesCsv, getCheckHistoryByToken, getFamilyByToken, getOutboundMessagesByToken, handleElderResponse, listDashboard, processDueChecks, processNoResponses, regenerateFamilyToken, revokeFamilyToken, sendCheckNow, setElderActiveByToken, setOptIn, sourceReport, systemReadiness, updateElderByToken, waitlistReport } from './malachi.js';
+import { addContactByToken, betaStatus, createFamily, deleteContactByToken, deleteFamilyByToken, exportFamiliesCsv, getCheckHistoryByToken, getFamilyByToken, getOutboundMessagesByToken, handleElderResponse, listDashboard, processDueChecks, processNoResponses, regenerateFamilyToken, revokeFamilyToken, sendCheckNow, setElderActiveByToken, setOptIn, sourceReport, systemReadiness, updateElderByToken, waitlistReport, weeklyReportByToken } from './malachi.js';
 import { loadDb } from './store.js';
 import { processWhatsAppWebhookPayload } from './webhookProcessor.js';
 import { startScheduler } from './scheduler.js';
@@ -66,6 +66,9 @@ async function route(req, res) {
     }
     if (req.method === 'GET' && url.pathname === '/api/outbound-messages') {
       return json(res, 200, { messages: await getOutboundMessagesByToken(url.searchParams.get('token'), url.searchParams.get('elderId')) });
+    }
+    if (req.method === 'GET' && url.pathname === '/api/reports/weekly') {
+      return json(res, 200, { report: await weeklyReportByToken(url.searchParams.get('token'), { days: Number(url.searchParams.get('days') || 7) }) });
     }
     if (req.method === 'GET' && url.pathname === '/api/debug/db') return json(res, 200, await loadDb());
     if (req.method === 'GET' && url.pathname === '/api/readiness') return json(res, 200, await systemReadiness());

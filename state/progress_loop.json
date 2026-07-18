@@ -21,6 +21,13 @@
     "user says stop"
   ],
   "next_internal_backlog": [
+    "V73 one-button free MVP: daily OK only, no family message on OK",
+    "Prepare daily_one_button_check_he Utility template submission (approval required before Meta write)",
+    "Add configurable one-button daily check mode without breaking live V72 baseline",
+    "Update selftest for one-button flow and no family outbound after OK",
+    "Strengthen opt-in copy and parent approval gate before activation",
+    "Landing page lead funnel: source/UTM/ref tracking and beta CTA",
+    "Facebook business page content series: Malachi as sub-topic under Metiv brand",
     "production auth/OTP plan",
     "stronger token security",
     "PostgreSQL adapter skeleton",
@@ -32,5 +39,6 @@
     "keep-working-after-version-send guard",
     "latest build cleanup"
   ],
-  "behavior_patch": "After sending a ZIP/version update, continue to the next internal upgrade unless blocked by approval-required external action."
+  "behavior_patch": "After sending a ZIP/version update, continue to the next internal upgrade unless blocked by approval-required external action.",
+  "current_mvp_direction": "free one-button daily OK; family alert only on no-response; paid upgrades later for proactive family updates/greetings/multiple contacts/reports"
 }
