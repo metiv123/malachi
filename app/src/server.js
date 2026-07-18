@@ -42,7 +42,11 @@ async function staticFile(res, pathname) {
   const ext = path.extname(target);
   const type = ext === '.css' ? 'text/css; charset=utf-8' : ext === '.js' ? 'text/javascript; charset=utf-8' : 'text/html; charset=utf-8';
   const data = await readFile(target);
-  res.writeHead(200, { 'Content-Type': type });
+  res.writeHead(200, {
+    'Content-Type': type,
+    'Cache-Control': 'no-store, max-age=0',
+    'X-Malachi-Version': version.version
+  });
   res.end(data);
 }
 
