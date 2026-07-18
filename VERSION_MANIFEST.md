@@ -72,3 +72,4 @@
 - V73: specs/v73_release_notes.md -> malachi-mvp-project-v73.zip
 - V74: specs/v74_release_notes.md -> malachi-mvp-project-v74.zip
 - V75: specs/v75_release_notes.md -> malachi-mvp-project-v75.zip
+- V76: specs/v76_release_notes.md -> malachi-mvp-project-v76.zip

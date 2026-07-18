@@ -40,7 +40,10 @@
     wrap.className = 'a11y-widget';
     wrap.setAttribute('aria-label', 'אפשרויות נגישות');
     wrap.innerHTML = `
-      <button type="button" class="a11y-toggle" aria-expanded="false" aria-controls="a11yPanel">נגישות</button>
+      <button type="button" class="a11y-toggle" aria-expanded="false" aria-controls="a11yPanel" aria-label="פתיחת תפריט נגישות">
+        <span class="a11y-icon" aria-hidden="true">♿</span>
+        <span class="a11y-text">נגישות</span>
+      </button>
       <div id="a11yPanel" class="a11y-panel" hidden>
         <h2>אפשרויות נגישות</h2>
         <p>העדפות נשמרות בדפדפן שלך בלבד.</p>
