@@ -23,6 +23,18 @@ import { createFeedback, listFeedback } from './feedback.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.resolve(__dirname, '../public');
 
+function installProcessGuards() {
+  process.on('unhandledRejection', (reason) => {
+    const err = reason instanceof Error ? reason : new Error(String(reason));
+    console.error('[process] unhandledRejection', err.stack || err.message);
+    logError('unhandled_rejection', err).catch(() => {});
+  });
+  process.on('uncaughtException', (err) => {
+    console.error('[process] uncaughtException', err.stack || err.message);
+    logError('uncaught_exception', err).catch(() => {});
+  });
+}
+
 function json(res, status, data) {
   res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', ...corsHeaders() });
   res.end(JSON.stringify(data, null, 2));
@@ -198,6 +210,7 @@ export function createServer() {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  installProcessGuards();
   createServer().listen(config.port, () => {
     console.log(`מלאכי MVP listening on http://localhost:${config.port}`);
     console.log(`WhatsApp provider: ${config.whatsappProvider}`);

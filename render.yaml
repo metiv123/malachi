@@ -43,3 +43,9 @@ services:
         value: family_greeting_message_he
       - key: META_TEMPLATE_OPTIN
         value: optin_confirm_he
+  - type: web
+    name: malachi-static
+    runtime: static
+    buildCommand: ops/build-static-site.sh
+    staticPublishPath: static-site
+    pullRequestPreviewsEnabled: false
