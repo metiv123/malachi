@@ -1,0 +1,35 @@
+name: Render Keepalive
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: render-keepalive
+  cancel-in-progress: false
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Ping Malachi health endpoint
+        run: |
+          set -euo pipefail
+          URL="https://malachi-v78v.onrender.com/api/health"
+          for attempt in 1 2 3; do
+            code=$(curl -L -sS -o /tmp/malachi-health.json -w '%{http_code}' --max-time 20 "$URL" || true)
+            echo "attempt=$attempt status=$code"
+            cat /tmp/malachi-health.json || true
+            echo
+            if [ "$code" = "200" ]; then
+              exit 0
+            fi
+            sleep 20
+          done
+          echo "Malachi health endpoint did not return 200 after retries" >&2
+          exit 1
