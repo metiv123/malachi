@@ -17,6 +17,16 @@ function statusLabel(status) {
 }
 function statusClass(status){ return { ok:'ok', distress:'danger', no_response:'warning', sent:'pending', failed:'danger' }[status] || 'pending'; }
 function optInLabel(status){ return { pending:'ממתין לאישור ההורה', approved:'מאושר', declined:'בוטל/הוסר' }[status] || 'לא ידוע'; }
+function messageKindLabel(kind) {
+  return {
+    daily_check: 'בדיקת בוקר',
+    ok_ack: 'אישור שהתקבלה תשובת אני בסדר',
+    no_response_alert: 'התראת אין תגובה למשפחה',
+    distress_alert: 'התראת מצוקה ישנה',
+    family_greeting: 'ד״ש למשפחה',
+    opt_in: 'בקשת אישור WhatsApp'
+  }[kind] || kind || 'הודעה';
+}
 function actionHint(status){
   if(status==='distress') return 'סטטוס ישן ממודל קודם. בגרסת הבטא החדשה ההתראה למשפחה נשלחת בעיקר כשאין תגובה.';
   if(status==='no_response') return 'המלצה: להתקשר ולוודא שהכול בסדר. ייתכן שהטלפון לא זמין או שהאדם לא ראה את ההודעה.';
@@ -81,6 +91,7 @@ async function load() {
       </div>`).join('')}</article>`;
   } catch (err) { root.innerHTML = `<article class="family"><h2>לא מצאנו את המשפחה</h2><p>ייתכן שהקישור שגוי, הוחלף או נמחק.</p><p class="small">${esc(err.message)}</p><p><a class="button primary" href="/">חזרה לדף הבית</a></p></article>`; return; }
   await loadHistories();
+  await loadOutboundMessages();
 }
 
 async function loadHistories() {
@@ -92,6 +103,18 @@ async function loadHistories() {
       if (!checks.length) { box.innerHTML = '<p class="small">אין עדיין היסטוריית בדיקות.</p>'; continue; }
       box.innerHTML = `<h4>היסטוריה אחרונה</h4><ul>${checks.slice(0, 7).map((c) => `<li>${new Date(c.sentAt || c.scheduledAt).toLocaleString('he-IL')} — ${statusLabel(c.status)}</li>`).join('')}</ul>`;
     } catch (err) { box.textContent = 'לא ניתן לטעון היסטוריה'; }
+  }
+}
+
+async function loadOutboundMessages() {
+  const boxes = document.querySelectorAll('[id^="messages-"]');
+  for (const box of boxes) {
+    const elderId = box.id.replace('messages-', '');
+    try {
+      const { messages } = await api(`/api/outbound-messages?token=${encodeURIComponent(token)}&elderId=${encodeURIComponent(elderId)}`);
+      if (!messages.length) { box.innerHTML = '<p class="small">אין עדיין לוג הודעות.</p>'; continue; }
+      box.innerHTML = `<h4>לוג הודעות אחרונות</h4><ul>${messages.slice(0, 10).map((m) => `<li>${new Date(m.createdAt).toLocaleString('he-IL')} — ${esc(messageKindLabel(m.kind))} · ${esc(m.to || '')} · ${esc(m.status || 'נשלח')}</li>`).join('')}</ul>`;
+    } catch (err) { box.textContent = 'לא ניתן לטעון לוג הודעות'; }
   }
 }
 

@@ -1,5 +1,5 @@
 {
-  "latest": 79,
+  "latest": 80,
   "versions": [
     {
       "version": 4,
@@ -456,6 +456,12 @@
       "file": "specs/v79_release_notes.md",
       "title": "# מלאכי V79 - Release Notes",
       "zip": "malachi-mvp-project-v79.zip"
+    },
+    {
+      "version": 80,
+      "file": "specs/v80_release_notes.md",
+      "title": "# מלאכי V80 - Release Notes",
+      "zip": "malachi-mvp-project-v80.zip"
     }
   ]
 }
