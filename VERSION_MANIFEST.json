@@ -1,5 +1,5 @@
 {
-  "latest": 98,
+  "latest": 99,
   "versions": [
     {
       "version": 4,
@@ -570,6 +570,12 @@
       "file": "specs/v98_release_notes.md",
       "title": "# מלאכי V98 - Release Notes",
       "zip": "malachi-mvp-project-v98.zip"
+    },
+    {
+      "version": 99,
+      "file": "specs/v99_release_notes.md",
+      "title": "# מלאכי V99 - צור קשר בתחתית האתר",
+      "zip": "malachi-mvp-project-v99.zip"
     }
   ]
 }

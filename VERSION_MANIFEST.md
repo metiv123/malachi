@@ -95,3 +95,4 @@
 - V96: specs/v96_release_notes.md -> malachi-mvp-project-v96.zip
 - V97: specs/v97_release_notes.md -> malachi-mvp-project-v97.zip
 - V98: specs/v98_release_notes.md -> malachi-mvp-project-v98.zip
+- V99: specs/v99_release_notes.md -> malachi-mvp-project-v99.zip
