@@ -109,6 +109,19 @@ export async function sendOptIn(elder, family) {
   return recordOutbound('optin', elder.whatsappPhone, body, buttons, { elderId: elder.id });
 }
 
+export async function sendContactOptIn(contact, elder, family) {
+  const body = `שלום ${contact.name} 🌿\nכאן מלאכי. ${family.ownerName} צירף/ה אותך כאיש קשר להתראות עבור ${elder.name}. אם ${elder.name} לא יענה/תענה לבדיקת הבוקר — נעדכן אותך ב־WhatsApp.`;
+  const buttons = [{ id: `approve_contact_optin:${contact.id}`, title: 'מאשר/ת' }, { id: `decline_contact_optin:${contact.id}`, title: 'לא מעוניין/ת' }];
+  if (config.whatsappProvider === 'meta') {
+    await sendMetaTemplate(contact.whatsappPhone, config.meta.templates.contactOptin, 'he', [
+      ...bodyComponent([contact.name, elder.name, family.ownerName]),
+      quickReplyButton(0, `approve_contact_optin:${contact.id}`),
+      quickReplyButton(1, `decline_contact_optin:${contact.id}`)
+    ]);
+  }
+  return recordOutbound('contact_optin', contact.whatsappPhone, body, buttons, { elderId: elder.id, contactId: contact.id });
+}
+
 export async function sendDailyCheck(elder, check) {
   const singleOkMode = config.dailyCheckMode === 'single_ok';
   const body = singleOkMode

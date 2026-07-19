@@ -18,10 +18,11 @@ function pageUrl(page = '') {
 }
 
 function statusLabel(status) {
-  return { sent:'ממתין לתגובה', ok:'אני בסדר', distress:'התראת מצוקה ישנה', no_response:'לא התקבלה תגובה', failed:'נכשל' }[status] || 'אין בדיקה עדיין';
+  return { sent:'ממתין לתגובה', ok:'אני בסדר', greeting_sent:'נשלח ד״ש למשפחה', distress:'התראת מצוקה ישנה', no_response:'לא התקבלה תגובה', failed:'נכשל' }[status] || 'אין בדיקה עדיין';
 }
-function statusClass(status){ return { ok:'ok', distress:'danger', no_response:'warning', sent:'pending', failed:'danger' }[status] || 'pending'; }
+function statusClass(status){ return { ok:'ok', greeting_sent:'ok', distress:'danger', no_response:'warning', sent:'pending', failed:'danger' }[status] || 'pending'; }
 function optInLabel(status){ return { pending:'ממתין לאישור ההורה', approved:'מאושר', declined:'בוטל/הוסר' }[status] || 'לא ידוע'; }
+function contactOptInLabel(status){ return { pending:'ממתין לאישור בן/בת המשפחה', approved:'מאושר לקבלת התראות', declined:'לא אישר/ה התראות' }[status] || 'לא ידוע'; }
 function messageKindLabel(kind) {
   return {
     daily_check: 'בדיקת בוקר',
@@ -29,7 +30,8 @@ function messageKindLabel(kind) {
     no_response_alert: 'התראת אין תגובה למשפחה',
     distress_alert: 'התראת מצוקה ישנה',
     family_greeting: 'ד״ש למשפחה',
-    opt_in: 'בקשת אישור WhatsApp'
+    opt_in: 'בקשת אישור WhatsApp להורה',
+    contact_optin: 'בקשת אישור WhatsApp לבן/בת משפחה'
   }[kind] || kind || 'הודעה';
 }
 function actionHint(status){
@@ -37,6 +39,7 @@ function actionHint(status){
   if(status==='no_response') return 'המלצה: להתקשר ולוודא שהכול בסדר. ייתכן שהטלפון לא זמין או שהאדם לא ראה את ההודעה.';
   if(status==='sent') return 'ממתינים לתגובה. אם לא תהיה תגובה בזמן — תישלח התראה.';
   if(status==='ok') return 'הכול תקין להיום. לא נשלחה הודעה למשפחה.';
+  if(status==='greeting_sent') return 'נשלחה דרישת שלום לאנשי הקשר שאישרו קבלת התראות.';
   return 'עדיין לא נשלחה בדיקה היום.';
 }
 
@@ -63,8 +66,8 @@ async function load() {
         <h3>${esc(elder.name)}</h3>
         <p>טלפון: ${esc(elder.whatsappPhone)}</p>
         <p>שעה יומית: ${esc(elder.dailyCheckTime)}</p>
-        <p>אנשי קשר להתראה:</p><ul>${(elder.contacts || [elder.contact].filter(Boolean)).map((c) => `<li>${esc(c.name)} (${esc(c.whatsappPhone)}) ${elder.contacts?.length > 1 ? `<button class="tiny" onclick="deleteContact('${c.id}')">מחיקה</button>` : ''}</li>`).join('')}</ul>
-        <p>אישור WhatsApp של ההורה: ${optInLabel(elder.optInStatus)} · פעיל: ${elder.active ? 'כן' : 'לא'}</p>
+        <p>אנשי קשר להתראה:</p><ul>${(elder.contacts || [elder.contact].filter(Boolean)).map((c) => `<li>${esc(c.name)} (${esc(c.whatsappPhone)}) — ${contactOptInLabel(c.optInStatus)} <button class="tiny" onclick="resendContactOptIn('${c.id}')">שלח אישור שוב</button> ${elder.contacts?.length > 1 ? `<button class="tiny" onclick="deleteContact('${c.id}')">מחיקה</button>` : ''}</li>`).join('')}</ul>
+        <p>אישור WhatsApp של ההורה: ${optInLabel(elder.optInStatus)} <button class="tiny" onclick="resendElderOptIn('${elder.id}')">שלח אישור שוב</button> · פעיל: ${elder.active ? 'כן' : 'לא'}</p>
         <div class="today-card ${statusClass(elder.latestCheck?.status)}"><b>מצב אחרון: ${statusLabel(elder.latestCheck?.status)}</b><p>${actionHint(elder.latestCheck?.status)}</p></div>
         <div id="history-${elder.id}" class="history-box">טוען היסטוריה...</div>
         <div id="messages-${elder.id}" class="history-box">טוען לוג הודעות...</div>
@@ -139,6 +142,16 @@ window.deleteFamily = async () => {
   root.innerHTML = '<p>המידע נמחק מהמערכת.</p>';
 };
 window.sendCheck = async (elderId) => { await api(`/api/elders/${elderId}/send-check`, { method:'POST', body:'{}' }); await load(); };
+window.resendElderOptIn = async (elderId) => {
+  if (!confirm('לשלוח שוב הודעת אישור WhatsApp להורה?')) return;
+  await api(`/api/elders/${elderId}/resend-optin`, { method:'POST', body:JSON.stringify({ token }) });
+  await load();
+};
+window.resendContactOptIn = async (contactId) => {
+  if (!confirm('לשלוח שוב הודעת אישור WhatsApp לבן/בת המשפחה?')) return;
+  await api(`/api/contacts/${contactId}/resend-optin`, { method:'POST', body:JSON.stringify({ token }) });
+  await load();
+};
 window.setActive = async (elderId, active) => { await api(`/api/elders/${elderId}/active`, { method:'POST', body:JSON.stringify({ token, active }) }); await load(); };
 window.respond = async (elderId, checkId, response) => { await api('/api/mock/respond', { method:'POST', body:JSON.stringify({ elderId, checkId, response }) }); await load(); };
 window.noResponse = async () => { await api('/api/jobs/no-responses', { method:'POST', body:JSON.stringify({ graceMinutes:0 }) }); await load(); };

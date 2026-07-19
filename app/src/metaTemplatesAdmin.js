@@ -77,6 +77,25 @@ export async function submitConnectionTemplates({ wabaId = DEFAULT_WABA_ID } = {
       ]
     },
     {
+      name: 'contact_optin_he',
+      language: 'he',
+      category: 'UTILITY',
+      components: [
+        {
+          type: 'BODY',
+          text: 'שלום {{1}} 🌿\nכאן מלאכי. צורפת כאיש קשר להתראות עבור {{2}} על ידי {{3}}. אם אין מענה לבדיקת הבוקר — נעדכן אותך ב־WhatsApp.',
+          example: { body_text: [['שלמה', 'רחל', 'מטיב']] }
+        },
+        {
+          type: 'BUTTONS',
+          buttons: [
+            { type: 'QUICK_REPLY', text: 'מאשר/ת' },
+            { type: 'QUICK_REPLY', text: 'לא מעוניין/ת' }
+          ]
+        }
+      ]
+    },
+    {
       name: 'family_connection_update_he',
       language: 'he',
       category: 'UTILITY',
@@ -120,7 +139,7 @@ export async function submitConnectionTemplates({ wabaId = DEFAULT_WABA_ID } = {
 export async function listConnectionTemplates({ wabaId = DEFAULT_WABA_ID } = {}) {
   const fields = 'name,status,category,language,rejected_reason,components';
   const data = await metaFetch(`${wabaId}/message_templates?fields=${encodeURIComponent(fields)}&limit=100`);
-  const names = new Set(['daily_connection_check_he', 'daily_warm_connection_he', 'daily_family_connection_he', 'family_connection_update_he', 'family_greeting_message_he', 'daily_check_he', 'no_response_alert_he']);
+  const names = new Set(['daily_connection_check_he', 'daily_warm_connection_he', 'daily_family_connection_he', 'contact_optin_he', 'family_connection_update_he', 'family_greeting_message_he', 'daily_check_he', 'no_response_alert_he']);
   return {
     wabaId,
     templates: (data.data || []).filter((template) => names.has(template.name))

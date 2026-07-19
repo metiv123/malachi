@@ -50,6 +50,8 @@ export function mapButtonToResponse(button) {
   if (id.includes('ok') || title === 'הכול בסדר' || title === 'אני בסדר' || title === 'בסדר') return 'ok';
   if (id.includes('greeting') || id.includes('hello') || title.includes('ד״ש') || title.includes('דש') || title.includes('דרישת שלום') || title.includes('שלום למשפחה')) return 'greeting';
   if (id.includes('distress') || title === 'מצוקה') return 'distress';
+  if (id.includes('approve_contact_optin')) return 'approve_contact_optin';
+  if (id.includes('decline_contact_optin')) return 'decline_contact_optin';
   if (id.includes('approve') || title === 'מאשר/ת') return 'approve_optin';
   if (id.includes('decline') || title === 'לא מעוניין/ת') return 'decline_optin';
   return null;

@@ -43,8 +43,12 @@ if (form) {
       const data = await api('/api/families', { method: 'POST', body: JSON.stringify(payload) });
       if (data.waitlist) { if (result) result.textContent = 'הבטא מלאה כרגע. נכנסתם לרשימת המתנה וניצור קשר כשייפתח מקום.'; submittedForm.reset(); await loadBetaStatus(); return; }
       const link = new URL(`dashboard.html?token=${encodeURIComponent(data.family.managementToken)}`, location.href).href;
+      const warnings = Array.isArray(data.warnings) && data.warnings.length
+        ? `<br><strong>שים לב:</strong><br>${data.warnings.map((warning) => `• ${String(warning).replace(/[&<>\"]/g, (ch) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[ch]))}`).join('<br>')}<br>`
+        : '';
       if (result) {
         result.innerHTML = `המשפחה נוצרה בהצלחה.<br><br>
+          ${warnings}
           <strong>קישור ניהול פרטי:</strong><br>
           <a href="${link}" target="_blank" rel="noopener">פתחו את דף הניהול האישי</a><br>
           <small>${link}</small><br><br>

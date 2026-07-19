@@ -1,6 +1,6 @@
 import { id, loadDb, mutateDb, nowIso } from './store.js';
 import { extractWhatsAppButtonEvents, extractWhatsAppTextEvents, mapButtonToResponse, mapTextToIntent } from './metaWebhook.js';
-import { handleElderResponse, optOutByPhone, setOptIn } from './malachi.js';
+import { handleElderResponse, optOutByPhone, setContactOptIn, setOptIn } from './malachi.js';
 
 export async function processWhatsAppWebhookPayload(payload) {
   const buttons = extractWhatsAppButtonEvents(payload);
@@ -27,11 +27,24 @@ export async function processWhatsAppWebhookPayload(payload) {
 
     return latestOpen?.elder || candidates[candidates.length - 1];
   };
+  const findContact = (button, from) => {
+    const explicitId = String(button?.buttonId || '').split(':')[1];
+    if (explicitId) return db.contacts.find((contact) => contact.id === explicitId) || null;
+    const normalizedFrom = String(from).replace(/[^0-9]/g, '');
+    const candidates = db.contacts.filter((contact) => {
+      const normalizedPhone = String(contact.whatsappPhone).replace(/[^0-9]/g, '');
+      return normalizedPhone.endsWith(normalizedFrom) || normalizedFrom.endsWith(normalizedPhone);
+    });
+    return candidates[candidates.length - 1] || null;
+  };
 
   for (const button of buttons) {
     const mapped = mapButtonToResponse(button);
     const elder = findElder(button.from);
-    if (!mapped || !elder) handled.push({ event: button, mapped, status: 'ignored' });
+    const contact = mapped?.includes('contact_optin') ? findContact(button, button.from) : null;
+    if (!mapped || (mapped.includes('contact_optin') ? !contact : !elder)) handled.push({ event: button, mapped, status: 'ignored' });
+    else if (mapped === 'approve_contact_optin') handled.push({ event: button, mapped, status: 'contact_opt_in_approved', contact: await setContactOptIn(contact.id, true) });
+    else if (mapped === 'decline_contact_optin') handled.push({ event: button, mapped, status: 'contact_opt_in_declined', contact: await setContactOptIn(contact.id, false) });
     else if (mapped === 'approve_optin') handled.push({ event: button, mapped, status: 'opt_in_approved', elder: await setOptIn(elder.id, true) });
     else if (mapped === 'decline_optin') handled.push({ event: button, mapped, status: 'opt_in_declined', elder: await setOptIn(elder.id, false) });
     else handled.push({ event: button, mapped, status: 'response_recorded', check: await handleElderResponse({ elderId: elder.id, response: mapped }) });

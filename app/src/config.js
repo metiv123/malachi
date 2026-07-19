@@ -22,7 +22,8 @@ export const config = {
       distressAlert: process.env.META_TEMPLATE_DISTRESS_ALERT || 'distress_alert_he',
       noResponseAlert: process.env.META_TEMPLATE_NO_RESPONSE_ALERT || 'no_response_alert_he',
       familyGreeting: process.env.META_TEMPLATE_FAMILY_GREETING || 'family_greeting_message_he',
-      optin: process.env.META_TEMPLATE_OPTIN || 'optin_confirm_he'
+      optin: process.env.META_TEMPLATE_OPTIN || 'optin_confirm_he',
+      contactOptin: process.env.META_TEMPLATE_CONTACT_OPTIN || 'contact_optin_he'
     }
   }
 };

@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { config } from './config.js';
-import { addContactByToken, betaStatus, createFamily, deleteContactByToken, deleteFamilyByToken, exportFamiliesCsv, getCheckHistoryByToken, getFamilyByToken, getOutboundMessagesByToken, handleElderResponse, listDashboard, processDueChecks, processNoResponses, regenerateFamilyToken, revokeFamilyToken, sendCheckNow, setElderActiveByToken, setOptIn, sourceReport, systemReadiness, updateElderByToken, waitlistReport, weeklyReportByToken } from './malachi.js';
+import { addContactByToken, betaStatus, createFamily, deleteContactByToken, deleteFamilyByToken, exportFamiliesCsv, getCheckHistoryByToken, getFamilyByToken, getOutboundMessagesByToken, handleElderResponse, listDashboard, processDueChecks, processNoResponses, regenerateFamilyToken, resendContactOptInByToken, resendElderOptInByToken, revokeFamilyToken, sendCheckNow, setElderActiveByToken, setOptIn, sourceReport, systemReadiness, updateElderByToken, waitlistReport, weeklyReportByToken } from './malachi.js';
 import { loadDb } from './store.js';
 import { processWhatsAppWebhookPayload } from './webhookProcessor.js';
 import { startScheduler } from './scheduler.js';
@@ -163,6 +163,10 @@ async function route(req, res) {
       const contactId = url.pathname.split('/')[3];
       return json(res, 200, await deleteContactByToken((await body(req)).token, contactId));
     }
+    if (req.method === 'POST' && url.pathname.match(/^\/api\/contacts\/[^/]+\/resend-optin$/)) {
+      const contactId = url.pathname.split('/')[3];
+      return json(res, 200, await resendContactOptInByToken((await body(req)).token, contactId));
+    }
     if (req.method === 'POST' && url.pathname === '/api/family/regenerate-token') return json(res, 200, await regenerateFamilyToken((await body(req)).token));
     if (req.method === 'POST' && url.pathname === '/api/family/revoke-token') return json(res, 200, await revokeFamilyToken((await body(req)).token));
     if (req.method === 'POST' && url.pathname === '/api/family/delete') return json(res, 200, await deleteFamilyByToken((await body(req)).token));
@@ -184,6 +188,10 @@ async function route(req, res) {
       const elderId = url.pathname.split('/')[3];
       const input = await body(req);
       return json(res, 200, { elder: await setOptIn(elderId, input.approved !== false) });
+    }
+    if (req.method === 'POST' && url.pathname.match(/^\/api\/elders\/[^/]+\/resend-optin$/)) {
+      const elderId = url.pathname.split('/')[3];
+      return json(res, 200, await resendElderOptInByToken((await body(req)).token, elderId));
     }
     if (req.method === 'POST' && url.pathname === '/api/mock/respond') return json(res, 200, { check: await handleElderResponse(await body(req)) });
 

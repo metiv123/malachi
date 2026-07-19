@@ -1,6 +1,6 @@
 import { id, loadDb, mutateDb, nowIso, saveDb } from './store.js';
 import { randomUUID } from 'node:crypto';
-import { sendDailyCheck, sendDistressAlert, sendFamilyGreeting, sendNoResponseAlert, sendOkAck, sendOptIn } from './whatsapp.js';
+import { sendContactOptIn, sendDailyCheck, sendDistressAlert, sendFamilyGreeting, sendNoResponseAlert, sendOkAck, sendOptIn } from './whatsapp.js';
 import { localParts } from './time.js';
 import { validateJoinInput, isValidTime, normalizePhone } from './validators.js';
 import { config } from './config.js';
@@ -26,6 +26,24 @@ function leadAttribution(input = {}) {
     utm_content: cleanOptional(input, 'utm_content'),
     utm_term: cleanOptional(input, 'utm_term')
   };
+}
+
+async function recordSendFailure(kind, to, err, meta = {}) {
+  await mutateDb((db) => {
+    db.outboundMessages.push({
+      id: id('msg'),
+      provider: config.whatsappProvider,
+      kind,
+      to: normalizePhone(to),
+      body: '',
+      buttons: [],
+      status: 'failed',
+      error: err.message,
+      meta,
+      createdAt: nowIso()
+    });
+    db.audit.push({ id: id('evt'), type: 'whatsapp_send_failed', payload: { kind, error: err.message, ...meta }, createdAt: nowIso() });
+  });
 }
 
 export async function createFamily(input) {
@@ -76,7 +94,7 @@ export async function createFamily(input) {
       name: contactName,
       whatsappPhone: contactPhone,
       relationship: input.relationship || 'קרוב משפחה',
-      optInStatus: 'approved',
+      optInStatus: input.skipContactOptIn ? 'approved' : 'pending',
       createdAt: nowIso()
     };
 
@@ -90,9 +108,16 @@ export async function createFamily(input) {
 
   if (created.waitlist) return created;
 
+  const warnings = [];
   if (!input.skipOptIn) {
-    await sendOptIn(created.elder, created.family);
+    try { await sendOptIn(created.elder, created.family); }
+    catch (err) { warnings.push(`שליחת אישור להורה נכשלה: ${err.message}`); await recordSendFailure('optin', created.elder.whatsappPhone, err, { elderId: created.elder.id }); }
   }
+  if (!input.skipContactOptIn) {
+    try { await sendContactOptIn(created.contact, created.elder, created.family); }
+    catch (err) { warnings.push(`שליחת אישור לבן/בת המשפחה נכשלה: ${err.message}`); await recordSendFailure('contact_optin', created.contact.whatsappPhone, err, { elderId: created.elder.id, contactId: created.contact.id }); }
+  }
+  if (warnings.length) created.warnings = warnings;
 
   return created;
 }
@@ -100,16 +125,18 @@ export async function createFamily(input) {
 export async function addContactByToken(token, elderId, input) {
   const name = requireField(input, 'contactName');
   const phone = normalizePhone(requireField(input, 'contactPhone'));
-  return mutateDb((db) => {
+  const created = await mutateDb((db) => {
     const family = db.families.find((f) => f.managementToken === token);
     if (!family) throw new Error('Family not found');
     const elder = db.elders.find((e) => e.id === elderId && e.familyId === family.id);
     if (!elder) throw new Error('Elder not found');
-    const contact = { id: id('contact'), elderId, name, whatsappPhone: phone, relationship: input.relationship || 'קרוב משפחה', optInStatus: 'approved', createdAt: nowIso() };
+    const contact = { id: id('contact'), elderId, name, whatsappPhone: phone, relationship: input.relationship || 'קרוב משפחה', optInStatus: 'pending', createdAt: nowIso() };
     db.contacts.push(contact);
     db.audit.push({ id: id('evt'), type: 'contact_added', payload: { elderId, contactId: contact.id }, createdAt: nowIso() });
-    return contact;
+    return { contact: { ...contact }, elder: { ...elder }, family: { ...family } };
   });
+  await sendContactOptIn(created.contact, created.elder, created.family);
+  return created.contact;
 }
 
 export async function deleteContactByToken(token, contactId) {
@@ -173,6 +200,7 @@ export async function systemReadiness() {
   const db = await loadDb();
   const activeElders = db.elders.filter((e) => e.active).length;
   const pendingOptIns = db.elders.filter((e) => e.optInStatus === 'pending').length;
+  const pendingContactOptIns = db.contacts.filter((c) => c.optInStatus === 'pending').length;
   const openChecks = db.checks.filter((c) => c.status === 'sent').length;
   const failedChecks = db.checks.filter((c) => c.status === 'failed').length;
   const latestAudit = db.audit.slice(-10).reverse();
@@ -183,6 +211,7 @@ export async function systemReadiness() {
       elders: db.elders.length,
       activeElders,
       pendingOptIns,
+      pendingContactOptIns,
       openChecks,
       failedChecks,
       outboundMessages: db.outboundMessages.length,
@@ -301,13 +330,13 @@ export async function updateElderByToken(token, elderId, updates) {
     const contact = db.contacts.find((c) => c.elderId === elder.id);
 
     if (updates.elderName) elder.name = String(updates.elderName).trim();
-    if (updates.elderPhone) elder.whatsappPhone = String(updates.elderPhone).trim();
+    if (updates.elderPhone) elder.whatsappPhone = normalizePhone(updates.elderPhone);
     if (updates.dailyCheckTime) {
       if (!isValidTime(updates.dailyCheckTime)) throw new Error('שעה לא תקינה');
       elder.dailyCheckTime = String(updates.dailyCheckTime).trim();
     }
     if (updates.contactName && contact) contact.name = String(updates.contactName).trim();
-    if (updates.contactPhone && contact) contact.whatsappPhone = String(updates.contactPhone).trim();
+    if (updates.contactPhone && contact) contact.whatsappPhone = normalizePhone(updates.contactPhone);
 
     db.audit.push({ id: id('evt'), type: 'elder_updated', payload: { elderId }, createdAt: nowIso() });
     return { elder: { ...elder }, contact: contact ? { ...contact } : null };
@@ -392,7 +421,7 @@ export async function handleElderResponse({ elderId, checkId, response }) {
       throw new Error('Unknown response');
     }
 
-    const contacts = db.contacts.filter((c) => c.elderId === elder.id);
+    const contacts = db.contacts.filter((c) => c.elderId === elder.id && c.optInStatus === 'approved');
     const contact = contacts[0] || null;
     db.audit.push({ id: id('evt'), type: 'elder_response', payload: { elderId, checkId: check.id, response }, createdAt: nowIso() });
     return { check: { ...check }, elder: { ...elder }, contact: contact ? { ...contact } : null, action };
@@ -401,12 +430,12 @@ export async function handleElderResponse({ elderId, checkId, response }) {
   if (result.action === 'ok') await sendOkAck(result.elder);
   if (result.action === 'greeting') {
     const db = await loadDb();
-    const contacts = db.contacts.filter((c) => c.elderId === result.elder.id);
+    const contacts = db.contacts.filter((c) => c.elderId === result.elder.id && c.optInStatus === 'approved');
     for (const contact of contacts) await sendFamilyGreeting(contact, result.elder, result.check);
   }
   if (result.action === 'distress' && result.contact) {
     const db = await loadDb();
-    const contacts = db.contacts.filter((c) => c.elderId === result.elder.id);
+    const contacts = db.contacts.filter((c) => c.elderId === result.elder.id && c.optInStatus === 'approved');
     for (const contact of contacts) await sendDistressAlert(contact, result.elder, result.check);
   }
   return result.check;
@@ -467,7 +496,7 @@ export async function processNoResponses({ graceMinutes = 60 } = {}) {
       const elapsedMin = (now - new Date(check.sentAt).getTime()) / 60000;
       if (elapsedMin < graceMinutes) continue;
       const elder = db.elders.find((e) => e.id === check.elderId);
-      const contacts = db.contacts.filter((c) => c.elderId === check.elderId);
+      const contacts = db.contacts.filter((c) => c.elderId === check.elderId && c.optInStatus === 'approved');
       if (!elder || !contacts.length) continue;
       check.status = 'no_response';
       check.alertSentAt = nowIso();
@@ -508,4 +537,44 @@ export async function setOptIn(elderId, approved) {
     db.audit.push({ id: id('evt'), type: 'opt_in_changed', payload: { elderId, approved }, createdAt: nowIso() });
     return elder;
   });
+}
+
+export async function setContactOptIn(contactId, approved) {
+  return mutateDb((db) => {
+    const contact = db.contacts.find((c) => c.id === contactId);
+    if (!contact) throw new Error('Contact not found');
+    contact.optInStatus = approved ? 'approved' : 'declined';
+    db.audit.push({ id: id('evt'), type: 'contact_opt_in_changed', payload: { contactId, elderId: contact.elderId, approved }, createdAt: nowIso() });
+    return contact;
+  });
+}
+
+export async function resendElderOptInByToken(token, elderId) {
+  const data = await mutateDb((db) => {
+    const family = db.families.find((f) => f.managementToken === token);
+    if (!family) throw new Error('Family not found');
+    const elder = db.elders.find((e) => e.id === elderId && e.familyId === family.id);
+    if (!elder) throw new Error('Elder not found');
+    elder.optInStatus = 'pending';
+    db.audit.push({ id: id('evt'), type: 'elder_opt_in_resent', payload: { elderId }, createdAt: nowIso() });
+    return { family: { ...family }, elder: { ...elder } };
+  });
+  await sendOptIn(data.elder, data.family);
+  return { ok: true, elder: data.elder };
+}
+
+export async function resendContactOptInByToken(token, contactId) {
+  const data = await mutateDb((db) => {
+    const family = db.families.find((f) => f.managementToken === token);
+    if (!family) throw new Error('Family not found');
+    const elderIds = db.elders.filter((e) => e.familyId === family.id).map((e) => e.id);
+    const contact = db.contacts.find((c) => c.id === contactId && elderIds.includes(c.elderId));
+    if (!contact) throw new Error('Contact not found');
+    const elder = db.elders.find((e) => e.id === contact.elderId);
+    contact.optInStatus = 'pending';
+    db.audit.push({ id: id('evt'), type: 'contact_opt_in_resent', payload: { contactId, elderId: contact.elderId }, createdAt: nowIso() });
+    return { family: { ...family }, elder: { ...elder }, contact: { ...contact } };
+  });
+  await sendContactOptIn(data.contact, data.elder, data.family);
+  return { ok: true, contact: data.contact };
 }

@@ -83,3 +83,4 @@
 - V84: specs/v84_release_notes.md -> malachi-mvp-project-v84.zip
 - V85: specs/v85_release_notes.md -> malachi-mvp-project-v85.zip
 - V86: specs/v86_release_notes.md -> malachi-mvp-project-v86.zip
+- V87: specs/v87_release_notes.md -> malachi-mvp-project-v87.zip

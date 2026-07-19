@@ -1,6 +1,6 @@
 import { rm } from 'node:fs/promises';
 import path from 'node:path';
-import { createFamily, deleteFamilyByToken, exportFamiliesCsv, getCheckHistoryByToken, getFamilyByToken, getOutboundMessagesByToken, handleElderResponse, listDashboard, optOutByPhone, processDueChecks, processNoResponses, sendCheckNow, setElderActiveByToken, setOptIn, systemReadiness, updateElderByToken, weeklyReportByToken } from './malachi.js';
+import { createFamily, deleteFamilyByToken, exportFamiliesCsv, getCheckHistoryByToken, getFamilyByToken, getOutboundMessagesByToken, handleElderResponse, listDashboard, optOutByPhone, processDueChecks, processNoResponses, sendCheckNow, setContactOptIn, setElderActiveByToken, setOptIn, systemReadiness, updateElderByToken, weeklyReportByToken } from './malachi.js';
 import { extractWhatsAppButtonEvents, extractWhatsAppTextEvents, mapButtonToResponse, mapTextToIntent } from './metaWebhook.js';
 import { processWhatsAppWebhookPayload } from './webhookProcessor.js';
 import { loadDb } from './store.js';
@@ -48,6 +48,9 @@ async function run() {
   assert(updatedFamily.elders[0].dailyCheckTime === '10:30', 'elder time should update');
   assert(updatedFamily.elders[0].contact.name === 'דוד', 'contact should update');
   assert(created.elder.optInStatus === 'pending', 'opt-in should start pending');
+  assert(created.contact.optInStatus === 'pending', 'contact opt-in should start pending');
+  assert(created.family.ownerPhone === '+972501111111', 'owner phone should normalize');
+  assert(created.contact.whatsappPhone === '+972501111111', 'contact phone should normalize');
 
   const optInPayload = { entry: [{ changes: [{ value: { messages: [{ type: 'interactive', from: '972502222222', id: 'wamid.optin', timestamp: '1', interactive: { button_reply: { id: 'approve_optin', title: 'מאשר/ת' } } }] } }] }] };
   const optInHandled = await processWhatsAppWebhookPayload(optInPayload);
@@ -55,7 +58,14 @@ async function run() {
   updatedFamily = await getFamilyByToken(created.family.managementToken);
   assert(updatedFamily.elders[0].optInStatus === 'approved', 'webhook opt-in should approve elder');
 
+  const contactOptInPayload = { entry: [{ changes: [{ value: { messages: [{ type: 'button', from: '972501111111', id: 'wamid.contact.optin', timestamp: '1', button: { payload: `approve_contact_optin:${created.contact.id}`, text: 'מאשר/ת' } }] } }] }] };
+  const contactOptInHandled = await processWhatsAppWebhookPayload(contactOptInPayload);
+  assert(contactOptInHandled[0]?.status === 'contact_opt_in_approved', 'processor should approve contact opt-in');
+  updatedFamily = await getFamilyByToken(created.family.managementToken);
+  assert(updatedFamily.elders[0].contacts[0].optInStatus === 'approved', 'webhook contact opt-in should approve contact');
+
   await setOptIn(created.elder.id, true);
+  await setContactOptIn(created.contact.id, true);
   await updateElderByToken(created.family.managementToken, created.elder.id, { dailyCheckTime: new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jerusalem', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date()) });
   const scheduled = await processDueChecks(new Date());
   assert(scheduled.length === 1, 'scheduled due check should send once');

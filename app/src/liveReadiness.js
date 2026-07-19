@@ -13,7 +13,8 @@ export function liveReadiness(requestBaseUrl = null) {
     { key: 'dailyTemplate', label: 'Daily check template configured', ok: has(config.meta.templates.dailyCheck) },
     { key: 'distressTemplate', label: 'Distress alert template configured', ok: has(config.meta.templates.distressAlert) },
     { key: 'noResponseTemplate', label: 'No-response alert template configured', ok: has(config.meta.templates.noResponseAlert) },
-    { key: 'optinTemplate', label: 'Opt-in template configured', ok: has(config.meta.templates.optin) }
+    { key: 'optinTemplate', label: 'Opt-in template configured', ok: has(config.meta.templates.optin) },
+    { key: 'contactOptinTemplate', label: 'Contact opt-in template configured', ok: has(config.meta.templates.contactOptin) }
   ];
   const blockers = checks.filter((c) => !c.ok).map((c) => c.label);
   return {
