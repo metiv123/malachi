@@ -63,7 +63,7 @@ async function load() {
     root.innerHTML = `<article class="family"><h2>${esc(family.ownerName)}</h2>
       <p class="small">אזור אישי משפחתי · ${esc(family.ownerEmail || 'מייל כניסה עדיין לא הוגדר')}</p>
       <p class="small">קישור ניהול פרטי לגיבוי: ${esc(location.href)}</p>
-      <button class="button primary" onclick="copyShare()">העתקת הודעת שיתוף למשפחה נוספת</button> <a class="button secondary" href="${pageUrl('feedback.html')}">שליחת פידבק</a> <button class="button secondary" onclick="regenerateToken()">יצירת קישור ניהול חדש</button> <button class="button secondary" onclick="deleteFamily()">מחיקת המשפחה והמידע</button>
+      <button class="button primary" onclick="copyShare()">העתקת הודעת שיתוף למשפחה נוספת</button> <a class="button secondary" href="${pageUrl(`feedback.html?token=${encodeURIComponent(token)}`)}">שליחת פידבק</a> <button class="button secondary" onclick="regenerateToken()">יצירת קישור ניהול חדש</button> <button class="button secondary" onclick="deleteFamily()">מחיקת המשפחה והמידע</button>
       <details class="edit-box" open><summary>חשבון וכניסה</summary>
         <form onsubmit="setPassword(event)">
           <label>מייל כניסה<input type="email" name="email" required value="${esc(family.ownerEmail || '')}" autocomplete="email"></label>

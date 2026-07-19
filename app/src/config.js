@@ -10,6 +10,7 @@ export const config = {
   betaOpen: process.env.MALACHI_BETA_OPEN !== 'false',
   betaMaxFamilies: Number(process.env.MALACHI_BETA_MAX_FAMILIES || 50),
   firebaseAuthEnabled: process.env.FIREBASE_AUTH_ENABLED === 'true',
+  feedbackNotifyWebhook: process.env.MALACHI_FEEDBACK_NOTIFY_WEBHOOK || '',
   devToolsEnabled: process.env.MALACHI_DEV_TOOLS === 'true' || process.env.NODE_ENV !== 'production',
   whatsappProvider: process.env.WHATSAPP_PROVIDER || 'mock',
   dailyCheckMode: process.env.MALACHI_DAILY_CHECK_MODE || 'single_ok',

@@ -1,1 +1,33 @@
-<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>פידבק — מלאכי</title><link rel="stylesheet" href="/style.css"></head><body><main class="section legal"><h1>פידבק על מלאכי</h1><form id="feedbackForm" class="feedback-form"><label>עד כמה זה ברור ושימושי?<select name="rating"><option value="5">5 - מאוד</option><option value="4">4</option><option value="3">3</option><option value="2">2</option><option value="1">1 - לא מספיק</option></select></label><label>מה לשפר?<textarea name="text" rows="5"></textarea></label><button class="button primary">שליחת פידבק</button></form><pre id="result"></pre></main><script>document.querySelector('#feedbackForm').addEventListener('submit',async e=>{e.preventDefault();const payload=Object.fromEntries(new FormData(e.target).entries());const r=await fetch('/api/feedback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});document.querySelector('#result').textContent=r.ok?'תודה, הפידבק נשמר.':'שגיאה בשמירה';e.target.reset();});</script><script src="/accessibility.js"></script></body></html>
+<!doctype html>
+<html lang="he" dir="rtl">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>פידבק — מלאכי</title><link rel="stylesheet" href="/style.css"></head>
+<body><a class="skip-link" href="#main">דלג לתוכן</a>
+<header class="hero small-hero"><nav><a class="brand" href="/"><span class="logo">מ</span> מלאכי</a><a href="/dashboard.html" class="nav-cta">האזור האישי</a></nav></header>
+<main id="main" class="section legal">
+  <h1>פידבק על מלאכי</h1>
+  <p>הפידבק מגיע ישירות למערכת הניהול. אם נכנסת מהאזור האישי, הוא ישויך למשפחה שלך כדי שנוכל להבין את ההקשר.</p>
+  <form id="feedbackForm" class="feedback-form">
+    <label>עד כמה זה ברור ושימושי?<select name="rating"><option value="5">5 - מאוד</option><option value="4">4</option><option value="3">3</option><option value="2">2</option><option value="1">1 - לא מספיק</option></select></label>
+    <label>מה לשפר?<textarea name="text" rows="5" placeholder="מה היה לא ברור? מה חסר? מה הפריע לך?"></textarea></label>
+    <button class="button primary">שליחת פידבק</button>
+  </form>
+  <pre id="result"></pre>
+</main>
+<script>
+const params = new URLSearchParams(location.search);
+const token = params.get('token') || localStorage.getItem('malachi_management_token') || '';
+document.querySelector('#feedbackForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const payload = Object.fromEntries(new FormData(e.target).entries());
+  payload.token = token;
+  payload.source = token ? 'dashboard' : 'public_feedback_page';
+  payload.page = location.pathname;
+  payload.userAgent = navigator.userAgent;
+  const result = document.querySelector('#result');
+  result.textContent = 'שומר פידבק...';
+  const r = await fetch('/api/feedback', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+  result.textContent = r.ok ? 'תודה, הפידבק נשמר ונשלח לניהול.' : 'שגיאה בשמירה';
+  if (r.ok) e.target.reset();
+});
+</script>
+<script src="/accessibility.js"></script></body></html>
