@@ -4,6 +4,7 @@ import { sendContactOptIn, sendDailyCheck, sendDistressAlert, sendFamilyGreeting
 import { localParts } from './time.js';
 import { validateJoinInput, isValidTime, normalizePhone } from './validators.js';
 import { config } from './config.js';
+import { hashPassword, verifyPassword } from './security.js';
 
 function requireField(input, field) {
   if (!input[field] || String(input[field]).trim() === '') {
@@ -56,6 +57,10 @@ export async function createFamily(input) {
   const contactName = String(input.contactName || ownerName).trim();
   const contactPhone = normalizePhone(input.contactPhone || ownerPhone);
   const attribution = leadAttribution(input);
+  const ownerEmail = String(input.ownerEmail || '').trim().toLowerCase();
+  const password = String(input.password || '').trim();
+  if (ownerEmail && !ownerEmail.includes('@')) throw new Error('מייל לא תקין');
+  if (password && password.length < 8) throw new Error('הסיסמה צריכה לכלול לפחות 8 תווים');
 
   const created = await mutateDb((db) => {
     if (!config.betaOpen || db.families.length >= config.betaMaxFamilies) {
@@ -64,11 +69,13 @@ export async function createFamily(input) {
       db.waitlist.push(wait);
       return { waitlist: true, wait };
     }
+    if (ownerEmail && db.families.some((f) => String(f.ownerEmail || '').trim().toLowerCase() === ownerEmail)) throw new Error('המייל כבר מחובר למשפחה קיימת');
     const family = {
       id: id('fam'),
       ownerName,
       ownerPhone,
-      ownerEmail: input.ownerEmail || '',
+      ownerEmail,
+      passwordHash: password ? hashPassword(password) : '',
       managementToken: randomUUID(),
       tokenCreatedAt: nowIso(),
       tokenRevokedAt: null,
@@ -319,6 +326,34 @@ export async function getFamilyByToken(token) {
     return { ...elder, contact, contacts, latestCheck };
   });
   return { ...family, elders };
+}
+
+export async function loginFamily({ email, password }) {
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+  if (!normalizedEmail || !password) throw new Error('חסר מייל או סיסמה');
+  const db = await loadDb();
+  const family = db.families.find((f) => String(f.ownerEmail || '').trim().toLowerCase() === normalizedEmail && !f.tokenRevokedAt);
+  if (!family || !family.passwordHash || !verifyPassword(password, family.passwordHash)) throw new Error('מייל או סיסמה לא נכונים');
+  family.tokenLastUsedAt = nowIso();
+  await saveDb(db);
+  return { managementToken: family.managementToken, familyId: family.id, ownerName: family.ownerName };
+}
+
+export async function setFamilyPasswordByToken(token, { email, password }) {
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+  const cleanPassword = String(password || '').trim();
+  if (!normalizedEmail || !normalizedEmail.includes('@')) throw new Error('צריך להזין מייל תקין');
+  if (cleanPassword.length < 8) throw new Error('הסיסמה צריכה לכלול לפחות 8 תווים');
+  return mutateDb((db) => {
+    const family = db.families.find((f) => f.managementToken === token);
+    if (!family || family.tokenRevokedAt) throw new Error('Family not found');
+    const existing = db.families.find((f) => f.id !== family.id && String(f.ownerEmail || '').trim().toLowerCase() === normalizedEmail);
+    if (existing) throw new Error('המייל כבר מחובר למשפחה אחרת');
+    family.ownerEmail = normalizedEmail;
+    family.passwordHash = hashPassword(cleanPassword);
+    db.audit.push({ id: id('evt'), type: 'family_password_set', payload: { familyId: family.id }, createdAt: nowIso() });
+    return { ok: true, ownerEmail: family.ownerEmail };
+  });
 }
 
 export async function updateElderByToken(token, elderId, updates) {

@@ -1,5 +1,5 @@
 {
-  "latest": 92,
+  "latest": 93,
   "versions": [
     {
       "version": 4,
@@ -534,6 +534,12 @@
       "file": "specs/v92_release_notes.md",
       "title": "# מלאכי V92 - תמיכת Firebase Firestore לשמירת משפחות קבועה",
       "zip": "malachi-mvp-project-v92.zip"
+    },
+    {
+      "version": 93,
+      "file": "specs/v93_release_notes.md",
+      "title": "# מלאכי V93 - אזור אישי עם מייל וסיסמה",
+      "zip": "malachi-mvp-project-v93.zip"
     }
   ]
 }

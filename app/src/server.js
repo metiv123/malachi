@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { config } from './config.js';
-import { addContactByToken, betaStatus, createFamily, deleteContactByToken, deleteFamilyByToken, exportFamiliesCsv, getCheckHistoryByToken, getFamilyByToken, getOutboundMessagesByToken, handleElderResponse, listDashboard, processDueChecks, processNoResponses, regenerateFamilyToken, resendContactOptInByToken, resendElderOptInByToken, revokeFamilyToken, sendCheckNow, setElderActiveByToken, setOptIn, sourceReport, systemReadiness, updateElderByToken, waitlistReport, weeklyReportByToken } from './malachi.js';
+import { addContactByToken, betaStatus, createFamily, deleteContactByToken, deleteFamilyByToken, exportFamiliesCsv, getCheckHistoryByToken, getFamilyByToken, getOutboundMessagesByToken, handleElderResponse, listDashboard, loginFamily, processDueChecks, processNoResponses, regenerateFamilyToken, resendContactOptInByToken, resendElderOptInByToken, revokeFamilyToken, sendCheckNow, setElderActiveByToken, setFamilyPasswordByToken, setOptIn, sourceReport, systemReadiness, updateElderByToken, waitlistReport, weeklyReportByToken } from './malachi.js';
 import { loadDb } from './store.js';
 import { processWhatsAppWebhookPayload } from './webhookProcessor.js';
 import { startScheduler } from './scheduler.js';
@@ -142,6 +142,8 @@ async function route(req, res) {
       return json(res, 200, await submitConnectionTemplates({ wabaId: input.wabaId }));
     }
     if (req.method === 'GET' && url.pathname === '/api/reports/sources') return json(res, 200, { sources: await sourceReport() });
+    if (req.method === 'POST' && url.pathname === '/api/auth/login') return json(res, 200, await loginFamily(await body(req)));
+    if (req.method === 'POST' && url.pathname === '/api/auth/set-password') { const input = await body(req); return json(res, 200, await setFamilyPasswordByToken(input.token, input)); }
     if (req.method === 'GET' && url.pathname === '/api/export/families.csv') return csvResponse(res, 'malachi-families.csv', await exportFamiliesCsv());
     if (req.method === 'GET' && url.pathname === '/api/export/db.json') { res.writeHead(200, {'Content-Type':'application/json; charset=utf-8','Content-Disposition':'attachment; filename="malachi-db.json"'}); return res.end(await exportDbJson()); }
     if (req.method === 'GET' && url.pathname === '/api/backups') return json(res, 200, { backups: await listBackups() });

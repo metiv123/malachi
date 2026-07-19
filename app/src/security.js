@@ -1,4 +1,5 @@
 const buckets = new Map();
+import { pbkdf2Sync, randomBytes, timingSafeEqual } from 'node:crypto';
 
 export function rateLimit(req, { key = 'global', limit = 120, windowMs = 60_000 } = {}) {
   const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
@@ -34,4 +35,19 @@ export function maskPhone(phone = '') {
   const s = String(phone);
   if (s.length < 7) return s;
   return `${s.slice(0, 4)}***${s.slice(-3)}`;
+}
+
+export function hashPassword(password) {
+  const salt = randomBytes(16).toString('hex');
+  const hash = pbkdf2Sync(String(password), salt, 120000, 32, 'sha256').toString('hex');
+  return `pbkdf2_sha256$120000$${salt}$${hash}`;
+}
+
+export function verifyPassword(password, stored = '') {
+  const [algo, roundsRaw, salt, hash] = String(stored).split('$');
+  if (algo !== 'pbkdf2_sha256' || !roundsRaw || !salt || !hash) return false;
+  const rounds = Number(roundsRaw);
+  const actual = pbkdf2Sync(String(password), salt, rounds, Buffer.from(hash, 'hex').length, 'sha256');
+  const expected = Buffer.from(hash, 'hex');
+  return actual.length === expected.length && timingSafeEqual(actual, expected);
 }

@@ -1,4 +1,6 @@
-const token = new URLSearchParams(location.search).get('token');
+const urlToken = new URLSearchParams(location.search).get('token');
+const token = urlToken || localStorage.getItem('malachi_management_token');
+if (urlToken) localStorage.setItem('malachi_management_token', urlToken);
 const root = document.querySelector('#familyBox');
 const API_BASE = (window.MALACHI_API_BASE || '').replace(/\/$/, '');
 
@@ -55,12 +57,21 @@ async function copyShare() {
 }
 
 async function load() {
-  if (!token) { root.innerHTML = `<article class="family"><h2>חסר קישור ניהול</h2><p>כדי לראות דשבורד משפחתי צריך לפתוח את הקישור הפרטי שקיבלתם אחרי ההרשמה.</p><p><a class="button primary" href="${pageUrl('index.html')}">חזרה להרשמה</a></p></article>`; return; }
+  if (!token) { root.innerHTML = `<article class="family"><h2>צריך להתחבר</h2><p>כדי לראות את האזור האישי צריך להתחבר עם מייל וסיסמה או לפתוח את קישור הניהול הפרטי שקיבלתם אחרי ההרשמה.</p><p><a class="button primary" href="${pageUrl('login.html')}">כניסה לאזור אישי</a> <a class="button secondary" href="${pageUrl('index.html')}">חזרה להרשמה</a></p></article>`; return; }
   try {
     const { family } = await api(`/api/family?token=${encodeURIComponent(token)}`);
     root.innerHTML = `<article class="family"><h2>${esc(family.ownerName)}</h2>
-      <p class="small">קישור ניהול פרטי: ${esc(location.href)}</p>
+      <p class="small">אזור אישי משפחתי · ${esc(family.ownerEmail || 'מייל כניסה עדיין לא הוגדר')}</p>
+      <p class="small">קישור ניהול פרטי לגיבוי: ${esc(location.href)}</p>
       <button class="button primary" onclick="copyShare()">העתקת הודעת שיתוף למשפחה נוספת</button> <a class="button secondary" href="${pageUrl('feedback.html')}">שליחת פידבק</a> <button class="button secondary" onclick="regenerateToken()">יצירת קישור ניהול חדש</button> <button class="button secondary" onclick="deleteFamily()">מחיקת המשפחה והמידע</button>
+      <details class="edit-box" open><summary>חשבון וכניסה</summary>
+        <form onsubmit="setPassword(event)">
+          <label>מייל כניסה<input type="email" name="email" required value="${esc(family.ownerEmail || '')}" autocomplete="email"></label>
+          <label>סיסמה חדשה<input type="password" name="password" required placeholder="לפחות 8 תווים" autocomplete="new-password"></label>
+          <button class="button primary" type="submit">שמירת מייל וסיסמה</button>
+          <button class="button secondary" type="button" onclick="logout()">יציאה מהמכשיר הזה</button>
+        </form>
+      </details>
       ${family.elders.map((elder) => `
       <div class="elder">
         <h3>${esc(elder.name)}</h3>
@@ -140,6 +151,18 @@ window.deleteFamily = async () => {
   if (!confirm('למחוק את המשפחה וכל המידע מהמערכת? פעולה זו לא ניתנת לשחזור ב-MVP.')) return;
   await api('/api/family/delete', { method:'POST', body:JSON.stringify({ token }) });
   root.innerHTML = '<p>המידע נמחק מהמערכת.</p>';
+};
+window.setPassword = async (event) => {
+  event.preventDefault();
+  const payload = Object.fromEntries(new FormData(event.currentTarget).entries());
+  payload.token = token;
+  await api('/api/auth/set-password', { method:'POST', body:JSON.stringify(payload) });
+  alert('המייל והסיסמה נשמרו. בפעם הבאה אפשר להיכנס דרך דף הכניסה.');
+  await load();
+};
+window.logout = () => {
+  localStorage.removeItem('malachi_management_token');
+  location.href = '/login.html';
 };
 window.sendCheck = async (elderId) => { await api(`/api/elders/${elderId}/send-check`, { method:'POST', body:'{}' }); await load(); };
 window.resendElderOptIn = async (elderId) => {

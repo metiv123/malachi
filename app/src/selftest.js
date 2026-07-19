@@ -1,6 +1,6 @@
 import { rm } from 'node:fs/promises';
 import path from 'node:path';
-import { createFamily, deleteFamilyByToken, exportFamiliesCsv, getCheckHistoryByToken, getFamilyByToken, getOutboundMessagesByToken, handleElderResponse, listDashboard, optOutByPhone, processDueChecks, processNoResponses, sendCheckNow, setContactOptIn, setElderActiveByToken, setOptIn, systemReadiness, updateElderByToken, weeklyReportByToken } from './malachi.js';
+import { createFamily, deleteFamilyByToken, exportFamiliesCsv, getCheckHistoryByToken, getFamilyByToken, getOutboundMessagesByToken, handleElderResponse, listDashboard, loginFamily, optOutByPhone, processDueChecks, processNoResponses, sendCheckNow, setContactOptIn, setElderActiveByToken, setFamilyPasswordByToken, setOptIn, systemReadiness, updateElderByToken, weeklyReportByToken } from './malachi.js';
 import { extractWhatsAppButtonEvents, extractWhatsAppTextEvents, mapButtonToResponse, mapTextToIntent } from './metaWebhook.js';
 import { processWhatsAppWebhookPayload } from './webhookProcessor.js';
 import { loadDb, saveDb } from './store.js';
@@ -19,6 +19,8 @@ async function run() {
   await reset();
   const created = await createFamily({
     ownerName: 'שלמה',
+    ownerEmail: 'family@example.com',
+    password: 'strongpass123',
     ownerPhone: '+972501111111',
     elderName: 'רחל',
     elderPhone: '+972502222222',
@@ -36,7 +38,13 @@ async function run() {
   });
   assert(created.family.id, 'family id missing');
   assert(created.family.managementToken, 'management token missing');
+  assert(created.family.passwordHash, 'password hash missing');
   assert(created.family.source === 'facebook', 'family source should be tracked');
+  const login = await loginFamily({ email: 'family@example.com', password: 'strongpass123' });
+  assert(login.managementToken === created.family.managementToken, 'login should return management token');
+  await setFamilyPasswordByToken(created.family.managementToken, { email: 'family2@example.com', password: 'newpass123' });
+  const login2 = await loginFamily({ email: 'family2@example.com', password: 'newpass123' });
+  assert(login2.managementToken === created.family.managementToken, 'updated login should work');
   assert(created.family.attribution?.utm_campaign === 'malachi_beta', 'utm campaign should be tracked');
   const privateFamily = await getFamilyByToken(created.family.managementToken);
   assert(privateFamily.elders.length === 1, 'private dashboard should show elder');
