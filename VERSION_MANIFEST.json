@@ -1,5 +1,5 @@
 {
-  "latest": 105,
+  "latest": 106,
   "versions": [
     {
       "version": 4,
@@ -612,6 +612,12 @@
       "file": "specs/v105_release_notes.md",
       "title": "# מלאכי V105 - נעילת דמות מותג רובוט עם כנפיים",
       "zip": "malachi-mvp-project-v105.zip"
+    },
+    {
+      "version": 106,
+      "file": "specs/v106_release_notes.md",
+      "title": "# מלאכי V106 - הקשחה משפטית ואבטחתית",
+      "zip": "malachi-mvp-project-v106.zip"
     }
   ]
 }

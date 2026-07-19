@@ -24,7 +24,7 @@ async function run() {
   assert(accountLogin.managementToken === accountOnly.family.managementToken, 'account-only login should work');
   let emptyAccount = await getFamilyByToken(accountOnly.family.managementToken);
   assert(emptyAccount.elders.length === 0, 'new account should start without elders');
-  const addedElder = await addElderByToken(accountOnly.family.managementToken, { elderName: 'אמא', elderPhone: '0522222222', dailyCheckTime: '08:30', contactName: 'משתמש חדש', contactPhone: '0521111111', skipOptIn: true, skipContactOptIn: true });
+  const addedElder = await addElderByToken(accountOnly.family.managementToken, { elderName: 'אמא', elderPhone: '0522222222', dailyCheckTime: '08:30', contactName: 'משתמש חדש', contactPhone: '0521111111', skipOptIn: true, skipContactOptIn: true, elderConsent: true });
   assert(addedElder.elder.id && addedElder.contact.id, 'add elder should create elder and contact');
   await deleteFamilyByToken(accountOnly.family.managementToken);
 

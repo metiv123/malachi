@@ -204,6 +204,7 @@ export async function addContactByToken(token, elderId, input) {
 }
 
 export async function addElderByToken(token, input = {}) {
+  if (!input.elderConsent) throw new Error('צריך לאשר שהאדם יודע/יקבל הסבר ושהשירות יופעל רק לאחר אישור WhatsApp שלו/ה');
   const elderName = requireField(input, 'elderName');
   const elderPhone = normalizePhone(requireField(input, 'elderPhone'));
   const dailyCheckTime = requireField(input, 'dailyCheckTime');
@@ -458,6 +459,21 @@ export async function setFamilyPasswordByToken(token, { email, password }) {
     family.passwordHash = hashPassword(cleanPassword);
     db.audit.push({ id: id('evt'), type: 'family_password_set', payload: { familyId: family.id }, createdAt: nowIso() });
     return { ok: true, ownerEmail: family.ownerEmail };
+  });
+}
+
+export async function setMarketingConsentByEmail({ email, consent = false }) {
+  const normalizedEmail = String(email || '').trim().toLowerCase();
+  if (!normalizedEmail || !normalizedEmail.includes('@')) throw new Error('צריך להזין מייל תקין');
+  return mutateDb((db) => {
+    const matches = db.families.filter((f) => String(f.ownerEmail || '').trim().toLowerCase() === normalizedEmail);
+    for (const family of matches) {
+      family.marketingEmailConsent = Boolean(consent);
+      family.marketingEmailConsentAt = consent ? nowIso() : null;
+      family.marketingEmailUnsubscribedAt = consent ? null : nowIso();
+    }
+    db.audit.push({ id: id('evt'), type: consent ? 'marketing_consent_enabled' : 'marketing_unsubscribed', payload: { email: normalizedEmail, count: matches.length }, createdAt: nowIso() });
+    return { ok: true, email: normalizedEmail, updated: matches.length, marketingEmailConsent: Boolean(consent) };
   });
 }
 

@@ -105,8 +105,6 @@ async function load() {
         <div class="dashboard-actions quiet-actions">
           <button class="button secondary" onclick="sendCheck('${elder.id}')">שלח בדיקה עכשיו</button>
           <button class="button secondary" onclick="setActive('${elder.id}', ${!elder.active})">${elder.active ? 'השהה שירות' : 'הפעל שירות'}</button>
-          ${elder.latestCheck?.status === 'sent' ? `<button class="button secondary" onclick="respond('${elder.id}','${elder.latestCheck.id}','ok')">דמה אני בסדר</button><button class="button secondary" onclick="noResponse()">דמה אין תגובה</button>` : ''}
-          <button class="button secondary" onclick="mockWebhookText('${elder.whatsappPhone}','הסרה')">דמה הסרה בוואטסאפ</button>
         </div>
       </section>`;
     }).join('');
@@ -146,6 +144,7 @@ async function load() {
           <label>שעת בדיקה יומית<input type="time" name="dailyCheckTime" required value="09:00"></label>
           <label>שם איש קשר להתראה<input name="contactName" placeholder="אפשר להשאיר ריק — נשתמש בבן המשפחה הראשי"></label>
           <label>טלפון איש קשר להתראה<input name="contactPhone" placeholder="אפשר להשאיר ריק — נשתמש בטלפון בן המשפחה"></label>
+          <label class="check dashboard-consent"><input type="checkbox" name="elderConsent" required> אני מצהיר/ה שהאדם יודע או יקבל הסבר, והשירות יופעל רק לאחר אישורו/ה ב־WhatsApp.</label>
           <button class="button primary" type="submit">שמירת פרטי המשפחה</button>
         </form>
       </section>` : eldersMarkup}
@@ -206,7 +205,7 @@ window.logout = () => {
   localStorage.removeItem('malachi_management_token');
   location.href = '/login.html';
 };
-window.sendCheck = async (elderId) => { await api(`/api/elders/${elderId}/send-check`, { method:'POST', body:'{}' }); await load(); };
+window.sendCheck = async (elderId) => { await api(`/api/elders/${elderId}/send-check`, { method:'POST', body:JSON.stringify({ token }) }); await load(); };
 window.resendElderOptIn = async (elderId) => {
   if (!confirm('לשלוח שוב הודעת אישור WhatsApp להורה?')) return;
   await api(`/api/elders/${elderId}/resend-optin`, { method:'POST', body:JSON.stringify({ token }) });
@@ -218,9 +217,6 @@ window.resendContactOptIn = async (contactId) => {
   await load();
 };
 window.setActive = async (elderId, active) => { await api(`/api/elders/${elderId}/active`, { method:'POST', body:JSON.stringify({ token, active }) }); await load(); };
-window.respond = async (elderId, checkId, response) => { await api('/api/mock/respond', { method:'POST', body:JSON.stringify({ elderId, checkId, response }) }); await load(); };
-window.noResponse = async () => { await api('/api/jobs/no-responses', { method:'POST', body:JSON.stringify({ graceMinutes:0 }) }); await load(); };
-window.mockWebhookText = async (from, text) => { await api('/api/mock/webhook', { method:'POST', body:JSON.stringify({ from, text }) }); await load(); };
 window.addContact = async (event, elderId) => {
   event.preventDefault();
   const payload = Object.fromEntries(new FormData(event.currentTarget).entries());

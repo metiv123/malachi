@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { config } from './config.js';
-import { addContactByToken, addElderByToken, betaStatus, createFamily, createUserAccount, deleteContactByToken, deleteFamilyByToken, exportFamiliesCsv, getCheckHistoryByToken, getFamilyByToken, getOutboundMessagesByToken, handleElderResponse, listDashboard, loginFamily, processDueChecks, processNoResponses, regenerateFamilyToken, resendContactOptInByToken, resendElderOptInByToken, revokeFamilyToken, sendCheckNow, setElderActiveByToken, setFamilyPasswordByToken, setOptIn, sourceReport, systemReadiness, updateElderByToken, waitlistReport, weeklyReportByToken } from './malachi.js';
+import { addContactByToken, addElderByToken, betaStatus, createFamily, createUserAccount, deleteContactByToken, deleteFamilyByToken, exportFamiliesCsv, getCheckHistoryByToken, getFamilyByToken, getOutboundMessagesByToken, handleElderResponse, listDashboard, loginFamily, processDueChecks, processNoResponses, regenerateFamilyToken, resendContactOptInByToken, resendElderOptInByToken, revokeFamilyToken, sendCheckNow, setElderActiveByToken, setFamilyPasswordByToken, setMarketingConsentByEmail, setOptIn, sourceReport, systemReadiness, updateElderByToken, waitlistReport, weeklyReportByToken } from './malachi.js';
 import { loadDb } from './store.js';
 import { processWhatsAppWebhookPayload } from './webhookProcessor.js';
 import { startScheduler } from './scheduler.js';
@@ -64,8 +64,50 @@ function corsHeaders() {
   return {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type'
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Admin-Token'
   };
+}
+
+const adminPagePaths = new Set(['/admin.html', '/admin-feedback.html', '/admin-marketing.html']);
+const adminGetApiPaths = new Set([
+  '/api/dashboard', '/api/waitlist', '/api/feedback', '/api/debug/db', '/api/readiness', '/api/beta/readiness',
+  '/api/beta/checklist', '/api/meta/readiness', '/api/meta/sample-payloads', '/api/meta/phone-check',
+  '/api/meta/templates/connection', '/api/reports/sources', '/api/export/families.csv', '/api/export/db.json',
+  '/api/backups', '/api/errors', '/api/audit'
+]);
+const adminPostApiPaths = new Set([
+  '/api/backups', '/api/dev/demo-family', '/api/jobs/due-checks', '/api/jobs/no-responses',
+  '/api/mock/respond', '/api/mock/webhook', '/api/meta/templates/connection'
+]);
+
+function isAdminProtectedRoute(req, url) {
+  if (adminPagePaths.has(url.pathname)) return true;
+  if (req.method === 'GET' && adminGetApiPaths.has(url.pathname)) return true;
+  if (req.method === 'POST' && adminPostApiPaths.has(url.pathname)) return true;
+  if (req.method === 'POST' && url.pathname.match(/^\/api\/elders\/[^/]+\/opt-in$/)) return true;
+  return false;
+}
+
+function tokenFrom(req, url) {
+  const auth = req.headers.authorization || '';
+  if (auth.startsWith('Bearer ')) return auth.slice(7).trim();
+  return url.searchParams.get('adminToken') || req.headers['x-admin-token'] || '';
+}
+
+function isAdminRequest(req, url) {
+  return Boolean(config.adminToken && tokenFrom(req, url) === config.adminToken);
+}
+
+function requireAdmin(req, res, url) {
+  if (!config.adminToken) {
+    json(res, 503, { error: 'Admin access is locked until MALACHI_ADMIN_TOKEN is configured' });
+    return false;
+  }
+  if (!isAdminRequest(req, url)) {
+    json(res, 401, { error: 'Admin token required' });
+    return false;
+  }
+  return true;
 }
 
 async function body(req) {
@@ -75,19 +117,19 @@ async function body(req) {
   return JSON.parse(raw);
 }
 
-async function staticFile(res, pathname) {
+async function staticFile(res, pathname, { head = false } = {}) {
   const file = pathname === '/' ? 'index.html' : pathname.replace(/^\//, '');
   const target = path.resolve(publicDir, file);
   if (!target.startsWith(publicDir)) throw new Error('Bad path');
   const ext = path.extname(target);
-  const type = ext === '.css' ? 'text/css; charset=utf-8' : ext === '.js' ? 'text/javascript; charset=utf-8' : 'text/html; charset=utf-8';
+  const type = ext === '.css' ? 'text/css; charset=utf-8' : ext === '.js' ? 'text/javascript; charset=utf-8' : ext === '.png' ? 'image/png' : ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' : ext === '.svg' ? 'image/svg+xml' : 'text/html; charset=utf-8';
   const data = await readFile(target);
   res.writeHead(200, {
     'Content-Type': type,
     'Cache-Control': 'no-store, max-age=0',
     'X-Malachi-Version': version.version
   });
-  res.end(data);
+  res.end(head ? undefined : data);
 }
 
 async function route(req, res) {
@@ -99,6 +141,9 @@ async function route(req, res) {
     }
     if (!rateLimit(req, { key: url.pathname, limit: url.pathname.startsWith('/api/') ? 180 : 300 })) {
       return json(res, 429, { error: 'Too many requests' });
+    }
+    if (isAdminProtectedRoute(req, url)) {
+      if (!requireAdmin(req, res, url)) return;
     }
     if (req.method === 'GET' && url.pathname === '/api/health') return json(res, 200, { ok: true, provider: config.whatsappProvider, version });
     if (req.method === 'GET' && url.pathname === '/api/version') return json(res, 200, version);
@@ -144,6 +189,7 @@ async function route(req, res) {
     if (req.method === 'GET' && url.pathname === '/api/reports/sources') return json(res, 200, { sources: await sourceReport() });
     if (req.method === 'POST' && url.pathname === '/api/auth/login') return json(res, 200, await loginFamily(await body(req)));
     if (req.method === 'POST' && url.pathname === '/api/auth/set-password') { const input = await body(req); return json(res, 200, await setFamilyPasswordByToken(input.token, input)); }
+    if (req.method === 'POST' && url.pathname === '/api/marketing/consent') return json(res, 200, await setMarketingConsentByEmail(await body(req)));
     if (req.method === 'GET' && url.pathname === '/api/export/families.csv') return csvResponse(res, 'malachi-families.csv', await exportFamiliesCsv());
     if (req.method === 'GET' && url.pathname === '/api/export/db.json') { res.writeHead(200, {'Content-Type':'application/json; charset=utf-8','Content-Disposition':'attachment; filename="malachi-db.json"'}); return res.end(await exportDbJson()); }
     if (req.method === 'GET' && url.pathname === '/api/backups') return json(res, 200, { backups: await listBackups() });
@@ -176,6 +222,9 @@ async function route(req, res) {
     if (req.method === 'POST' && url.pathname === '/api/family/delete') return json(res, 200, await deleteFamilyByToken((await body(req)).token));
     if (req.method === 'POST' && url.pathname.match(/^\/api\/elders\/[^/]+\/send-check$/)) {
       const elderId = url.pathname.split('/')[3];
+      const input = await body(req);
+      const family = await getFamilyByToken(input.token);
+      if (!family.elders.some((elder) => elder.id === elderId)) return json(res, 403, { error: 'Forbidden' });
       return json(res, 200, { check: await sendCheckNow(elderId) });
     }
     if (req.method === 'POST' && url.pathname.match(/^\/api\/elders\/[^/]+\/update$/)) {
@@ -229,6 +278,8 @@ async function route(req, res) {
       return json(res, 200, { ok: true, received: true, handled });
     }
 
+    if (url.pathname.startsWith('/api/')) return json(res, 404, { error: 'Not found' });
+    if (req.method === 'HEAD') return staticFile(res, url.pathname, { head: true });
     if (req.method === 'GET') return staticFile(res, url.pathname);
     return json(res, 404, { error: 'Not found' });
   } catch (err) {

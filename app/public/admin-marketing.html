@@ -3,6 +3,19 @@
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>מאגר שיווקי — מלאכי</title><link rel="stylesheet" href="/style.css"></head>
 <body><a class="skip-link" href="#main">דלג לתוכן</a>
 <header class="hero small-hero"><nav><a class="brand" href="/"><span class="logo">מ</span> מלאכי</a><span><a href="/admin.html" class="nav-cta">אדמין</a> · <a href="/" class="nav-cta">דף הבית</a></span></nav></header>
+
+<script>
+const adminToken = new URLSearchParams(location.search).get('adminToken') || localStorage.getItem('malachi_admin_token') || '';
+if (adminToken) localStorage.setItem('malachi_admin_token', adminToken);
+function adminUrl(path){ const u = new URL(path, location.origin); if (adminToken) u.searchParams.set('adminToken', adminToken); return u.pathname + u.search; }
+function adminFetch(path, options){ return fetch(adminUrl(path), options); }
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('a[href^="/admin"]').forEach((link) => {
+    link.href = adminUrl(link.getAttribute('href'));
+  });
+});
+</script>
 <main id="main" class="section dashboard-page admin-feedback-page">
   <div class="section-title-row"><div><h1>מאגר שיווקי</h1><p>רשימת משתמשים לפי הסכמה לשימוש במייל. שיווק מותר רק למי שסימן הסכמה.</p></div><button class="button primary" onclick="loadContacts()">רענון</button></div>
   <div id="summary" class="feedback-summary"></div>
@@ -17,7 +30,7 @@ async function loadContacts(){
   const opted = document.querySelector('#optedIn');
   const service = document.querySelector('#serviceOnly');
   opted.textContent = service.textContent = 'טוען...';
-  const res = await fetch('/api/dashboard');
+  const res = await adminFetch('/api/dashboard');
   const data = await res.json();
   const families = (data.families || []).filter(f => f.ownerEmail);
   const optedIn = families.filter(f => f.marketingEmailConsent === true);

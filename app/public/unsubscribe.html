@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>הסרה מדיוור — מלאכי</title><link rel="stylesheet" href="/style.css"><link rel="icon" type="image/png" href="/assets/brand/malachi-mascot.png"></head>
+<body><a class="skip-link" href="#main">דלג לתוכן</a>
+<header class="hero small-hero"><nav><a class="brand" href="/"><img class="brand-mascot" src="/assets/brand/malachi-mascot.png" alt="" /> מלאכי</a><a href="/" class="nav-cta">דף הבית</a></nav></header>
+<main id="main" class="section legal">
+  <h1>הסרה מדיוור שיווקי</h1>
+  <p>אפשר להסיר את המייל מקבלת תוכן, עדכונים והצעות שיווקיות. הודעות שירות חיוניות הקשורות לחשבון או להפעלת מלאכי עשויות להישלח גם לאחר הסרה.</p>
+  <form id="unsubscribeForm" class="feedback-form">
+    <label>המייל להסרה<input type="email" name="email" required autocomplete="email" placeholder="name@example.com"></label>
+    <button class="button primary" type="submit">הסרה מדיוור שיווקי</button>
+  </form>
+  <pre id="result"></pre>
+</main>
+<script>
+const params = new URLSearchParams(location.search);
+if (params.get('email')) document.querySelector('input[name="email"]').value = params.get('email');
+document.querySelector('#unsubscribeForm').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const payload = Object.fromEntries(new FormData(event.currentTarget).entries());
+  payload.consent = false;
+  const result = document.querySelector('#result');
+  result.textContent = 'מעדכן...';
+  const res = await fetch('/api/marketing/consent', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+  const data = await res.json().catch(()=>({}));
+  result.textContent = res.ok ? 'המייל הוסר מדיוור שיווקי. אם אין חשבון עם המייל הזה — אין מה לעדכן.' : (data.error || 'שגיאה');
+});
+</script>
+<script src="/accessibility.js"></script></body></html>
