@@ -10,7 +10,7 @@
   <header class="hero">
     <nav>
       <div class="brand"><span class="logo">מ</span> מלאכי</div>
-      <span><a href="#join" class="nav-cta">צור משתמש</a> · <a href="/login.html" class="nav-cta">כניסת משתמש</a></span>
+      <span><a href="/create-user.html" class="nav-cta">צור משתמש</a> · <a href="/login.html" class="nav-cta">כניסת משתמש</a></span>
     </nav>
     <section class="hero-grid">
       <div>
@@ -18,7 +18,7 @@
         <h1>הודעת בוקר אחת שמוודאת שההורה שלכם בסדר.</h1>
         <p class="sub">מלאכי שולח בכל בוקר הודעת WhatsApp פשוטה לאדם מבוגר. אם אין תשובה בזמן שנקבע — המשפחה מקבלת עדכון.</p>
         <div class="actions">
-          <a href="#join" class="button primary">צור משתמש</a>
+          <a href="/create-user.html" class="button primary">צור משתמש</a>
           <a href="/login.html" class="button secondary">כניסת משתמש</a>
           <a href="#how" class="button secondary">איך זה עובד?</a>
         </div>
@@ -79,29 +79,8 @@
 
     <section id="join" class="section form-section">
       <h2>צור משתמש</h2>
-      <p>יוצרים משתמש משפחתי למלאכי, מגדירים מייל וסיסמה, ומוסיפים את פרטי ההורה ואיש הקשר לניהול.</p>
-      <form id="joinForm">
-        <label>שם בן/בת המשפחה<input name="ownerName" required placeholder="למשל: שלמה" /></label>
-        <label>מייל לכניסה לאזור אישי<input type="email" name="ownerEmail" placeholder="name@example.com" autocomplete="email" /></label>
-        <label>סיסמה לאזור אישי<input type="password" name="password" placeholder="לפחות 8 תווים" autocomplete="new-password" /></label>
-        <label>טלפון בן/בת המשפחה הראשי/ת<input name="ownerPhone" required placeholder="0521234567 או +972521234567" /></label>
-        <label>שם ההורה / האדם המבוגר<input name="elderName" required placeholder="למשל: רחל" /></label>
-        <label>טלפון WhatsApp של ההורה<input name="elderPhone" required placeholder="0521234567 או +972521234567" /></label>
-        <label>שעת בדיקה יומית<input type="time" name="dailyCheckTime" required value="09:00" /></label>
-        <label>שם איש קשר להתראה<input name="contactName" placeholder="אפשר להשאיר ריק — נשתמש בבן המשפחה הראשי" /></label>
-        <label>טלפון איש קשר להתראה<input name="contactPhone" placeholder="אפשר להשאיר ריק — נשתמש בטלפון בן המשפחה" /></label>
-        <p class="hint">אפשר לשים כאן את אותו בן משפחה ראשי, ובהמשך להוסיף עוד אנשי קשר כמו אח/אחות/שכן/מטפל.</p>
-        <label class="check"><input type="checkbox" name="consent" required /> אני מבין/ה שהשירות יופעל רק אחרי שהאדם המבוגר יאשר בעצמו/ה ב־WhatsApp, וקראתי את <a href="/terms.html">תנאי השימוש</a> ואת <a href="/privacy.html">מדיניות הפרטיות</a></label>
-        <input type="hidden" name="source" id="sourceField" value="direct" />
-        <input type="hidden" name="ref" id="refField" value="" />
-        <input type="hidden" name="utm_source" id="utmSourceField" value="" />
-        <input type="hidden" name="utm_medium" id="utmMediumField" value="" />
-        <input type="hidden" name="utm_campaign" id="utmCampaignField" value="" />
-        <input type="hidden" name="utm_content" id="utmContentField" value="" />
-        <input type="hidden" name="utm_term" id="utmTermField" value="" />
-        <button class="button primary" type="submit">צור משתמש ואזור אישי</button>
-      </form>
-      <pre id="formResult"></pre>
+      <p>יצירת המשתמש נעשית בדף נפרד. אחרי הכניסה לאזור האישי מוסיפים את פרטי ההורה, אנשי הקשר ושעת הבדיקה.</p>
+      <p><a class="button primary" href="/create-user.html">צור משתמש</a> <a class="button secondary" href="/login.html">כניסת משתמש</a></p>
     </section>
 
     <section class="section note">

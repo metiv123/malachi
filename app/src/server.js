@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { config } from './config.js';
-import { addContactByToken, betaStatus, createFamily, deleteContactByToken, deleteFamilyByToken, exportFamiliesCsv, getCheckHistoryByToken, getFamilyByToken, getOutboundMessagesByToken, handleElderResponse, listDashboard, loginFamily, processDueChecks, processNoResponses, regenerateFamilyToken, resendContactOptInByToken, resendElderOptInByToken, revokeFamilyToken, sendCheckNow, setElderActiveByToken, setFamilyPasswordByToken, setOptIn, sourceReport, systemReadiness, updateElderByToken, waitlistReport, weeklyReportByToken } from './malachi.js';
+import { addContactByToken, addElderByToken, betaStatus, createFamily, createUserAccount, deleteContactByToken, deleteFamilyByToken, exportFamiliesCsv, getCheckHistoryByToken, getFamilyByToken, getOutboundMessagesByToken, handleElderResponse, listDashboard, loginFamily, processDueChecks, processNoResponses, regenerateFamilyToken, resendContactOptInByToken, resendElderOptInByToken, revokeFamilyToken, sendCheckNow, setElderActiveByToken, setFamilyPasswordByToken, setOptIn, sourceReport, systemReadiness, updateElderByToken, waitlistReport, weeklyReportByToken } from './malachi.js';
 import { loadDb } from './store.js';
 import { processWhatsAppWebhookPayload } from './webhookProcessor.js';
 import { startScheduler } from './scheduler.js';
@@ -152,6 +152,7 @@ async function route(req, res) {
     if (req.method === 'POST' && url.pathname === '/api/backups') return json(res, 201, { backup: await createBackup() });
 
     if (req.method === 'POST' && url.pathname === '/api/families') return json(res, 201, await createFamily(await body(req)));
+    if (req.method === 'POST' && url.pathname === '/api/users') return json(res, 201, await createUserAccount(await body(req)));
     if (req.method === 'POST' && url.pathname === '/api/dev/demo-family') {
       if (!config.devToolsEnabled) return json(res, 403, { error: 'Dev tools disabled' });
       return json(res, 201, await createFamily({ ownerName: 'משפחת דמו', ownerPhone: '+972501111111', elderName: 'רחל דמו', elderPhone: '+972502222222', dailyCheckTime: '09:00', contactName: 'איש קשר דמו', contactPhone: '+972503333333', consent: 'on', source: 'dev_demo' }));
@@ -161,6 +162,7 @@ async function route(req, res) {
       const input = await body(req);
       return json(res, 201, { contact: await addContactByToken(input.token, elderId, input) });
     }
+    if (req.method === 'POST' && url.pathname === '/api/elders') { const input = await body(req); return json(res, 201, await addElderByToken(input.token, input)); }
     if (req.method === 'POST' && url.pathname.match(/^\/api\/contacts\/[^/]+\/delete$/)) {
       const contactId = url.pathname.split('/')[3];
       return json(res, 200, await deleteContactByToken((await body(req)).token, contactId));

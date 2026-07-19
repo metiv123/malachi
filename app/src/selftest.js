@@ -1,6 +1,6 @@
 import { rm } from 'node:fs/promises';
 import path from 'node:path';
-import { createFamily, deleteFamilyByToken, exportFamiliesCsv, getCheckHistoryByToken, getFamilyByToken, getOutboundMessagesByToken, handleElderResponse, listDashboard, loginFamily, optOutByPhone, processDueChecks, processNoResponses, sendCheckNow, setContactOptIn, setElderActiveByToken, setFamilyPasswordByToken, setOptIn, systemReadiness, updateElderByToken, weeklyReportByToken } from './malachi.js';
+import { addElderByToken, createFamily, createUserAccount, deleteFamilyByToken, exportFamiliesCsv, getCheckHistoryByToken, getFamilyByToken, getOutboundMessagesByToken, handleElderResponse, listDashboard, loginFamily, optOutByPhone, processDueChecks, processNoResponses, sendCheckNow, setContactOptIn, setElderActiveByToken, setFamilyPasswordByToken, setOptIn, systemReadiness, updateElderByToken, weeklyReportByToken } from './malachi.js';
 import { extractWhatsAppButtonEvents, extractWhatsAppTextEvents, mapButtonToResponse, mapTextToIntent } from './metaWebhook.js';
 import { processWhatsAppWebhookPayload } from './webhookProcessor.js';
 import { loadDb, saveDb } from './store.js';
@@ -17,6 +17,17 @@ async function reset() {
 
 async function run() {
   await reset();
+  const accountOnly = await createUserAccount({ ownerName: 'משתמש חדש', ownerEmail: 'new-user@example.com', password: 'strongpass123', ownerPhone: '0521111111', marketingEmailConsent: true, source: 'unit_test' });
+  assert(accountOnly.family.id, 'account-only family id missing');
+  assert(accountOnly.family.marketingEmailConsent === true, 'marketing consent should be saved');
+  const accountLogin = await loginFamily({ email: 'new-user@example.com', password: 'strongpass123' });
+  assert(accountLogin.managementToken === accountOnly.family.managementToken, 'account-only login should work');
+  let emptyAccount = await getFamilyByToken(accountOnly.family.managementToken);
+  assert(emptyAccount.elders.length === 0, 'new account should start without elders');
+  const addedElder = await addElderByToken(accountOnly.family.managementToken, { elderName: 'אמא', elderPhone: '0522222222', dailyCheckTime: '08:30', contactName: 'משתמש חדש', contactPhone: '0521111111', skipOptIn: true, skipContactOptIn: true });
+  assert(addedElder.elder.id && addedElder.contact.id, 'add elder should create elder and contact');
+  await deleteFamilyByToken(accountOnly.family.managementToken);
+
   const created = await createFamily({
     ownerName: 'שלמה',
     ownerEmail: 'family@example.com',

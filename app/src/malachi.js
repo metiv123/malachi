@@ -5,6 +5,7 @@ import { localParts } from './time.js';
 import { validateJoinInput, isValidTime, normalizePhone } from './validators.js';
 import { config } from './config.js';
 import { hashPassword, verifyPassword } from './security.js';
+import { createFirebaseAuthUser } from './firebaseAuth.js';
 
 function requireField(input, field) {
   if (!input[field] || String(input[field]).trim() === '') {
@@ -47,6 +48,59 @@ async function recordSendFailure(kind, to, err, meta = {}) {
   });
 }
 
+function cleanEmail(email = '') {
+  return String(email || '').trim().toLowerCase();
+}
+
+function requireAccountInput(input = {}) {
+  const ownerName = requireField(input, 'ownerName');
+  const ownerPhone = normalizePhone(requireField(input, 'ownerPhone'));
+  const ownerEmail = cleanEmail(requireField(input, 'ownerEmail'));
+  const password = String(requireField(input, 'password')).trim();
+  if (!ownerEmail.includes('@')) throw new Error('מייל לא תקין');
+  if (password.length < 8) throw new Error('הסיסמה צריכה לכלול לפחות 8 תווים');
+  return { ownerName, ownerPhone, ownerEmail, password };
+}
+
+export async function createUserAccount(input = {}) {
+  const { ownerName, ownerPhone, ownerEmail, password } = requireAccountInput(input);
+  const attribution = leadAttribution(input);
+  const authResult = await createFirebaseAuthUser({ email: ownerEmail, password, displayName: ownerName });
+  const created = await mutateDb((db) => {
+    if (!config.betaOpen || db.families.length >= config.betaMaxFamilies) {
+      const wait = { id: id('wait'), ownerName, ownerPhone, ownerEmail, ...attribution, createdAt: nowIso() };
+      db.waitlist = db.waitlist || [];
+      db.waitlist.push(wait);
+      return { waitlist: true, wait };
+    }
+    if (db.families.some((f) => cleanEmail(f.ownerEmail) === ownerEmail)) throw new Error('המייל כבר מחובר למשתמש קיים');
+    const family = {
+      id: id('fam'),
+      ownerName,
+      ownerPhone,
+      ownerEmail,
+      emailVerified: false,
+      firebaseAuthUid: authResult.uid || '',
+      marketingEmailConsent: Boolean(input.marketingEmailConsent),
+      marketingEmailConsentAt: input.marketingEmailConsent ? nowIso() : null,
+      passwordHash: hashPassword(password),
+      managementToken: randomUUID(),
+      tokenCreatedAt: nowIso(),
+      tokenRevokedAt: null,
+      tokenLastUsedAt: null,
+      source: attribution.source,
+      attribution,
+      createdAt: nowIso()
+    };
+    db.families.push(family);
+    db.audit.push({ id: id('evt'), type: 'user_account_created', payload: { familyId: family.id, attribution, marketingEmailConsent: family.marketingEmailConsent }, createdAt: nowIso() });
+    return { family };
+  });
+  if (authResult.error) created.authWarning = `Firebase Auth: ${authResult.error}`;
+  if (authResult.emailVerificationLink) created.emailVerificationLink = authResult.emailVerificationLink;
+  return created;
+}
+
 export async function createFamily(input) {
   validateJoinInput(input);
   const ownerName = requireField(input, 'ownerName');
@@ -75,6 +129,9 @@ export async function createFamily(input) {
       ownerName,
       ownerPhone,
       ownerEmail,
+      emailVerified: false,
+      marketingEmailConsent: Boolean(input.marketingEmailConsent),
+      marketingEmailConsentAt: input.marketingEmailConsent ? nowIso() : null,
       passwordHash: password ? hashPassword(password) : '',
       managementToken: randomUUID(),
       tokenCreatedAt: nowIso(),
@@ -144,6 +201,54 @@ export async function addContactByToken(token, elderId, input) {
   });
   await sendContactOptIn(created.contact, created.elder, created.family);
   return created.contact;
+}
+
+export async function addElderByToken(token, input = {}) {
+  const elderName = requireField(input, 'elderName');
+  const elderPhone = normalizePhone(requireField(input, 'elderPhone'));
+  const dailyCheckTime = requireField(input, 'dailyCheckTime');
+  if (!isValidTime(dailyCheckTime)) throw new Error('שעה לא תקינה');
+  const created = await mutateDb((db) => {
+    const family = db.families.find((f) => f.managementToken === token);
+    if (!family || family.tokenRevokedAt) throw new Error('Family not found');
+    const contactName = String(input.contactName || family.ownerName).trim();
+    const contactPhone = normalizePhone(input.contactPhone || family.ownerPhone);
+    const elder = {
+      id: id('elder'),
+      familyId: family.id,
+      name: elderName,
+      whatsappPhone: elderPhone,
+      dailyCheckTime,
+      timezone: input.timezone || 'Asia/Jerusalem',
+      optInStatus: input.skipOptIn ? 'approved' : 'pending',
+      active: true,
+      createdAt: nowIso()
+    };
+    const contact = {
+      id: id('contact'),
+      elderId: elder.id,
+      name: contactName,
+      whatsappPhone: contactPhone,
+      relationship: input.relationship || 'קרוב משפחה',
+      optInStatus: input.skipContactOptIn ? 'approved' : 'pending',
+      createdAt: nowIso()
+    };
+    db.elders.push(elder);
+    db.contacts.push(contact);
+    db.audit.push({ id: id('evt'), type: 'elder_added', payload: { familyId: family.id, elderId: elder.id, contactId: contact.id }, createdAt: nowIso() });
+    return { family: { ...family }, elder: { ...elder }, contact: { ...contact } };
+  });
+  const warnings = [];
+  if (!input.skipOptIn) {
+    try { await sendOptIn(created.elder, created.family); }
+    catch (err) { warnings.push(`שליחת אישור להורה נכשלה: ${err.message}`); await recordSendFailure('optin', created.elder.whatsappPhone, err, { elderId: created.elder.id }); }
+  }
+  if (!input.skipContactOptIn) {
+    try { await sendContactOptIn(created.contact, created.elder, created.family); }
+    catch (err) { warnings.push(`שליחת אישור לבן/בת המשפחה נכשלה: ${err.message}`); await recordSendFailure('contact_optin', created.contact.whatsappPhone, err, { elderId: created.elder.id, contactId: created.contact.id }); }
+  }
+  if (warnings.length) created.warnings = warnings;
+  return created;
 }
 
 export async function deleteContactByToken(token, contactId) {

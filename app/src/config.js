@@ -9,6 +9,7 @@ export const config = {
   noResponseGraceMinutes: Number(process.env.MALACHI_NO_RESPONSE_GRACE_MINUTES || 60),
   betaOpen: process.env.MALACHI_BETA_OPEN !== 'false',
   betaMaxFamilies: Number(process.env.MALACHI_BETA_MAX_FAMILIES || 50),
+  firebaseAuthEnabled: process.env.FIREBASE_AUTH_ENABLED === 'true',
   devToolsEnabled: process.env.MALACHI_DEV_TOOLS === 'true' || process.env.NODE_ENV !== 'production',
   whatsappProvider: process.env.WHATSAPP_PROVIDER || 'mock',
   dailyCheckMode: process.env.MALACHI_DAILY_CHECK_MODE || 'single_ok',

@@ -72,6 +72,16 @@ async function load() {
           <button class="button secondary" type="button" onclick="logout()">יציאה מהמכשיר הזה</button>
         </form>
       </details>
+      ${family.elders.length === 0 ? `<section class="note"><h3>הוספת פרטי משפחה</h3><p>עדיין לא הוגדר הורה לבדיקה. מלא/י את הפרטים כדי להפעיל את מלאכי.</p>
+        <form onsubmit="addElder(event)">
+          <label>שם ההורה / האדם המבוגר<input name="elderName" required placeholder="למשל: רחל"></label>
+          <label>טלפון WhatsApp של ההורה<input name="elderPhone" required placeholder="0521234567 או +972521234567"></label>
+          <label>שעת בדיקה יומית<input type="time" name="dailyCheckTime" required value="09:00"></label>
+          <label>שם איש קשר להתראה<input name="contactName" placeholder="אפשר להשאיר ריק — נשתמש בבן המשפחה הראשי"></label>
+          <label>טלפון איש קשר להתראה<input name="contactPhone" placeholder="אפשר להשאיר ריק — נשתמש בטלפון בן המשפחה"></label>
+          <button class="button primary" type="submit">שמירת פרטי המשפחה</button>
+        </form>
+      </section>` : ''}
       ${family.elders.map((elder) => `
       <div class="elder">
         <h3>${esc(elder.name)}</h3>
@@ -184,6 +194,13 @@ window.addContact = async (event, elderId) => {
   const payload = Object.fromEntries(new FormData(event.currentTarget).entries());
   payload.token = token;
   await api(`/api/elders/${elderId}/contacts`, { method:'POST', body:JSON.stringify(payload) });
+  await load();
+};
+window.addElder = async (event) => {
+  event.preventDefault();
+  const payload = Object.fromEntries(new FormData(event.currentTarget).entries());
+  payload.token = token;
+  await api('/api/elders', { method:'POST', body:JSON.stringify(payload) });
   await load();
 };
 window.deleteContact = async (contactId) => {
