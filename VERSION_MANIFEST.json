@@ -1,5 +1,5 @@
 {
-  "latest": 96,
+  "latest": 97,
   "versions": [
     {
       "version": 4,
@@ -556,8 +556,14 @@
     {
       "version": 96,
       "file": "specs/v96_release_notes.md",
-      "title": "# מלאכי V96 - Release Notes",
+      "title": "# מלאכי V96 - צור משתמש, כניסת משתמש ותשתית אימות מייל",
       "zip": "malachi-mvp-project-v96.zip"
+    },
+    {
+      "version": 97,
+      "file": "specs/v97_release_notes.md",
+      "title": "# מלאכי V97 - תיקון עיצוב מסכי משתמש",
+      "zip": "malachi-mvp-project-v97.zip"
     }
   ]
 }
