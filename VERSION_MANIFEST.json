@@ -1,5 +1,5 @@
 {
-  "latest": 88,
+  "latest": 89,
   "versions": [
     {
       "version": 4,
@@ -510,6 +510,12 @@
       "file": "specs/v88_release_notes.md",
       "title": "# מלאכי V88 - fallback לאישור בן משפחה",
       "zip": "malachi-mvp-project-v88.zip"
+    },
+    {
+      "version": 89,
+      "file": "specs/v89_release_notes.md",
+      "title": "# מלאכי V89 - עצירת תבנית בדיקה ישנה עם מצוקה",
+      "zip": "malachi-mvp-project-v89.zip"
     }
   ]
 }

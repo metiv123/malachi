@@ -96,6 +96,45 @@ async function sendMetaText(to, text) {
   return data;
 }
 
+async function sendMetaInteractiveButtons(to, text, buttons = []) {
+  if (!config.meta.phoneNumberId || !config.meta.accessToken) {
+    throw new Error('Meta credentials missing: META_PHONE_NUMBER_ID / META_ACCESS_TOKEN');
+  }
+
+  const url = `https://graph.facebook.com/${config.meta.graphVersion}/${config.meta.phoneNumberId}/messages`;
+  const payload = {
+    messaging_product: 'whatsapp',
+    recipient_type: 'individual',
+    to: normalizePhone(to),
+    type: 'interactive',
+    interactive: {
+      type: 'button',
+      body: { text },
+      action: {
+        buttons: buttons.slice(0, 3).map((button) => ({
+          type: 'reply',
+          reply: { id: button.id, title: button.title }
+        }))
+      }
+    }
+  };
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${config.meta.accessToken}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(`Meta interactive send failed ${res.status}: ${JSON.stringify(data)}`);
+  }
+  return data;
+}
+
 export async function sendOptIn(elder, family) {
   const body = `שלום ${elder.name} 🌿\nכאן מלאכי. ${family.ownerName} ביקש/ה לצרף אותך לבדיקת בוקר יומית ב-WhatsApp. בכל יום בשעה ${elder.dailyCheckTime} נשלח הודעה קצרה כדי לוודא שהכול בסדר.`;
   const buttons = [{ id: 'approve_optin', title: 'מאשר/ת' }, { id: 'decline_optin', title: 'לא מעוניין/ת' }];
@@ -124,13 +163,16 @@ export async function sendContactOptIn(contact, elder, family) {
 
 export async function sendDailyCheck(elder, check) {
   const singleOkMode = config.dailyCheckMode === 'single_ok';
+  const freeformMode = config.dailyCheckMode === 'freeform_connection';
   const body = singleOkMode
     ? `בוקר טוב ${elder.name} 🌿\nכאן מלאכי. רק לסמן שהכול בסדר הבוקר.`
     : `בוקר טוב ${elder.name} 🌿\nכאן מלאכי, רק לוודא מה שלומך הבוקר.`;
   const buttons = singleOkMode
     ? [{ id: 'daily_ok', title: 'אני בסדר' }]
     : [{ id: 'daily_ok', title: 'הכול בסדר' }, { id: 'daily_greeting', title: 'שלח ד״ש למשפחה' }];
-  if (config.whatsappProvider === 'meta') {
+  if (config.whatsappProvider === 'meta' && freeformMode) {
+    await sendMetaInteractiveButtons(elder.whatsappPhone, body, buttons);
+  } else if (config.whatsappProvider === 'meta') {
     const templateButtons = singleOkMode
       ? [quickReplyButton(0, 'daily_ok')]
       : [quickReplyButton(0, 'daily_ok'), quickReplyButton(1, 'daily_greeting')];

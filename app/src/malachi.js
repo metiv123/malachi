@@ -388,8 +388,33 @@ export async function sendCheckNow(elderId, { source = 'manual', scheduledLocalD
     db.audit.push({ id: id('evt'), type: 'daily_check_sent', payload: { elderId, checkId: check.id }, createdAt: nowIso() });
     return { elder: { ...elder }, check: { ...check } };
   });
-  await sendDailyCheck(elder, check);
+  try {
+    await sendDailyCheck(elder, check);
+  } catch (err) {
+    await mutateDb((db) => {
+      const failed = db.checks.find((c) => c.id === check.id);
+      if (failed) {
+        failed.status = 'failed';
+        failed.error = err.message;
+        failed.failedAt = nowIso();
+      }
+      db.audit.push({ id: id('evt'), type: 'daily_check_failed', payload: { elderId: elder.id, checkId: check.id, error: err.message }, createdAt: nowIso() });
+    });
+    throw err;
+  }
   return check;
+}
+
+export async function markCheckFailed(checkId, err) {
+  return mutateDb((db) => {
+    const check = db.checks.find((c) => c.id === checkId);
+    if (!check) throw new Error('Check not found');
+    check.status = 'failed';
+    check.error = err.message;
+    check.failedAt = nowIso();
+    db.audit.push({ id: id('evt'), type: 'daily_check_failed', payload: { checkId, error: err.message }, createdAt: nowIso() });
+    return { ...check };
+  });
 }
 
 
