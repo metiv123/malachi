@@ -27,9 +27,7 @@ export async function processWhatsAppWebhookPayload(payload) {
 
     return latestOpen?.elder || candidates[candidates.length - 1];
   };
-  const findContact = (button, from) => {
-    const explicitId = String(button?.buttonId || '').split(':')[1];
-    if (explicitId) return db.contacts.find((contact) => contact.id === explicitId) || null;
+  const findContactByPhone = (from) => {
     const normalizedFrom = String(from).replace(/[^0-9]/g, '');
     const candidates = db.contacts.filter((contact) => {
       const normalizedPhone = String(contact.whatsappPhone).replace(/[^0-9]/g, '');
@@ -37,16 +35,30 @@ export async function processWhatsAppWebhookPayload(payload) {
     });
     return candidates[candidates.length - 1] || null;
   };
+  const findContact = (button, from) => {
+    const explicitId = String(button?.buttonId || '').split(':')[1];
+    if (explicitId) return db.contacts.find((contact) => contact.id === explicitId) || null;
+    return findContactByPhone(from);
+  };
 
   for (const button of buttons) {
     const mapped = mapButtonToResponse(button);
     const elder = findElder(button.from);
-    const contact = mapped?.includes('contact_optin') ? findContact(button, button.from) : null;
-    if (!mapped || (mapped.includes('contact_optin') ? !contact : !elder)) handled.push({ event: button, mapped, status: 'ignored' });
+    const contact = mapped?.includes('contact_optin') ? findContact(button, button.from) : findContactByPhone(button.from);
+    const hasTarget = mapped?.includes('contact_optin') ? Boolean(contact) : Boolean(elder || ((mapped === 'approve_optin' || mapped === 'decline_optin') && contact));
+    if (!mapped || !hasTarget) handled.push({ event: button, mapped, status: 'ignored' });
     else if (mapped === 'approve_contact_optin') handled.push({ event: button, mapped, status: 'contact_opt_in_approved', contact: await setContactOptIn(contact.id, true) });
     else if (mapped === 'decline_contact_optin') handled.push({ event: button, mapped, status: 'contact_opt_in_declined', contact: await setContactOptIn(contact.id, false) });
-    else if (mapped === 'approve_optin') handled.push({ event: button, mapped, status: 'opt_in_approved', elder: await setOptIn(elder.id, true) });
-    else if (mapped === 'decline_optin') handled.push({ event: button, mapped, status: 'opt_in_declined', elder: await setOptIn(elder.id, false) });
+    else if (mapped === 'approve_optin' && elder) handled.push({ event: button, mapped, status: 'opt_in_approved', elder: await setOptIn(elder.id, true) });
+    else if (mapped === 'approve_optin') {
+      const fallbackContact = findContactByPhone(button.from);
+      handled.push(fallbackContact ? { event: button, mapped, status: 'contact_opt_in_approved', contact: await setContactOptIn(fallbackContact.id, true) } : { event: button, mapped, status: 'ignored' });
+    }
+    else if (mapped === 'decline_optin' && elder) handled.push({ event: button, mapped, status: 'opt_in_declined', elder: await setOptIn(elder.id, false) });
+    else if (mapped === 'decline_optin') {
+      const fallbackContact = findContactByPhone(button.from);
+      handled.push(fallbackContact ? { event: button, mapped, status: 'contact_opt_in_declined', contact: await setContactOptIn(fallbackContact.id, false) } : { event: button, mapped, status: 'ignored' });
+    }
     else handled.push({ event: button, mapped, status: 'response_recorded', check: await handleElderResponse({ elderId: elder.id, response: mapped }) });
   }
 

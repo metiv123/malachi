@@ -48,7 +48,7 @@ services:
       - key: META_TEMPLATE_OPTIN
         value: optin_confirm_he
       - key: META_TEMPLATE_CONTACT_OPTIN
-        value: contact_optin_he
+        value: optin_confirm_he
   - type: web
     name: malachi-static
     runtime: static
