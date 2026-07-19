@@ -1,5 +1,5 @@
 {
-  "latest": 107,
+  "latest": 108,
   "versions": [
     {
       "version": 4,
@@ -624,6 +624,12 @@
       "file": "specs/v107_release_notes.md",
       "title": "# מלאכי V107 - קישור גלוי להסרה מדיוור",
       "zip": "malachi-mvp-project-v107.zip"
+    },
+    {
+      "version": 108,
+      "file": "specs/v108_release_notes.md",
+      "title": "# מלאכי V108 - תמיכה ב־WABA חדש של Meta",
+      "zip": "malachi-mvp-project-v108.zip"
     }
   ]
 }

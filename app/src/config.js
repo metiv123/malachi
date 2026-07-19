@@ -17,6 +17,7 @@ export const config = {
   dailyCheckMode: process.env.MALACHI_DAILY_CHECK_MODE || 'single_ok',
   meta: {
     graphVersion: process.env.META_GRAPH_VERSION || 'v23.0',
+    wabaId: process.env.META_WABA_ID || '',
     phoneNumberId: process.env.META_PHONE_NUMBER_ID || '',
     accessToken: process.env.META_ACCESS_TOKEN || '',
     verifyToken: process.env.META_VERIFY_TOKEN || (process.env.NODE_ENV === 'production' ? '' : 'change-me'),

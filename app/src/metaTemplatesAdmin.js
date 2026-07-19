@@ -1,6 +1,10 @@
 import { config } from './config.js';
 
-const DEFAULT_WABA_ID = '1044829384773667';
+const LEGACY_WABA_ID = '1044829384773667';
+
+function defaultWabaId() {
+  return config.meta.wabaId || LEGACY_WABA_ID;
+}
 
 async function metaFetch(path, options = {}) {
   if (!config.meta.accessToken) throw new Error('META_ACCESS_TOKEN missing');
@@ -17,7 +21,7 @@ async function metaFetch(path, options = {}) {
   return data;
 }
 
-export async function submitConnectionTemplates({ wabaId = DEFAULT_WABA_ID } = {}) {
+export async function submitConnectionTemplates({ wabaId = defaultWabaId() } = {}) {
   const templates = [
     {
       name: 'daily_connection_check_he',
@@ -136,7 +140,7 @@ export async function submitConnectionTemplates({ wabaId = DEFAULT_WABA_ID } = {
   return { wabaId, results };
 }
 
-export async function listConnectionTemplates({ wabaId = DEFAULT_WABA_ID } = {}) {
+export async function listConnectionTemplates({ wabaId = defaultWabaId() } = {}) {
   const fields = 'name,status,category,language,rejected_reason,components';
   const data = await metaFetch(`${wabaId}/message_templates?fields=${encodeURIComponent(fields)}&limit=100`);
   const names = new Set(['daily_connection_check_he', 'daily_warm_connection_he', 'daily_family_connection_he', 'contact_optin_he', 'family_connection_update_he', 'family_greeting_message_he', 'daily_check_he', 'no_response_alert_he']);
