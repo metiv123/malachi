@@ -7,6 +7,17 @@ export function isLikelyPhone(value) {
   return digits.length >= 9 && digits.length <= 15;
 }
 
+export function normalizePhone(value) {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  let digits = raw.replace(/[^0-9]/g, '');
+  if (digits.startsWith('00')) digits = digits.slice(2);
+  if (digits.startsWith('972')) return `+${digits}`;
+  if (digits.startsWith('0') && digits.length >= 9 && digits.length <= 10) return `+972${digits.slice(1)}`;
+  if (digits.startsWith('5') && digits.length === 9) return `+972${digits}`;
+  return raw.startsWith('+') ? `+${digits}` : digits;
+}
+
 export function validateJoinInput(input) {
   const errors = [];
   for (const field of ['ownerName','ownerPhone','elderName','elderPhone','dailyCheckTime']) {

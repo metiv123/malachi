@@ -2,7 +2,7 @@ import { id, loadDb, mutateDb, nowIso, saveDb } from './store.js';
 import { randomUUID } from 'node:crypto';
 import { sendDailyCheck, sendDistressAlert, sendFamilyGreeting, sendNoResponseAlert, sendOkAck, sendOptIn } from './whatsapp.js';
 import { localParts } from './time.js';
-import { validateJoinInput, isValidTime } from './validators.js';
+import { validateJoinInput, isValidTime, normalizePhone } from './validators.js';
 import { config } from './config.js';
 
 function requireField(input, field) {
@@ -31,12 +31,12 @@ function leadAttribution(input = {}) {
 export async function createFamily(input) {
   validateJoinInput(input);
   const ownerName = requireField(input, 'ownerName');
-  const ownerPhone = requireField(input, 'ownerPhone');
+  const ownerPhone = normalizePhone(requireField(input, 'ownerPhone'));
   const elderName = requireField(input, 'elderName');
-  const elderPhone = requireField(input, 'elderPhone');
+  const elderPhone = normalizePhone(requireField(input, 'elderPhone'));
   const dailyCheckTime = requireField(input, 'dailyCheckTime');
   const contactName = String(input.contactName || ownerName).trim();
-  const contactPhone = String(input.contactPhone || ownerPhone).trim();
+  const contactPhone = normalizePhone(input.contactPhone || ownerPhone);
   const attribution = leadAttribution(input);
 
   const created = await mutateDb((db) => {
@@ -99,7 +99,7 @@ export async function createFamily(input) {
 
 export async function addContactByToken(token, elderId, input) {
   const name = requireField(input, 'contactName');
-  const phone = requireField(input, 'contactPhone');
+  const phone = normalizePhone(requireField(input, 'contactPhone'));
   return mutateDb((db) => {
     const family = db.families.find((f) => f.managementToken === token);
     if (!family) throw new Error('Family not found');

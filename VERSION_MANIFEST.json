@@ -1,5 +1,5 @@
 {
-  "latest": 85,
+  "latest": 86,
   "versions": [
     {
       "version": 4,
@@ -492,6 +492,12 @@
       "file": "specs/v85_release_notes.md",
       "title": "# מלאכי V85 - Release Notes",
       "zip": "malachi-mvp-project-v85.zip"
+    },
+    {
+      "version": 86,
+      "file": "specs/v86_release_notes.md",
+      "title": "# מלאכי V86 - תיקון הרשמה, טלפונים ודף ניהול",
+      "zip": "malachi-mvp-project-v86.zip"
     }
   ]
 }

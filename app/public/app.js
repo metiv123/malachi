@@ -34,19 +34,36 @@ loadBetaStatus();
 if (form) {
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
-    const payload = Object.fromEntries(new FormData(event.currentTarget).entries());
+    const submittedForm = event.currentTarget;
+    const submitButton = submittedForm.querySelector('button[type="submit"], button:not([type])');
+    const payload = Object.fromEntries(new FormData(submittedForm).entries());
+    if (submitButton) submitButton.disabled = true;
+    if (result) result.textContent = 'שולח הרשמה...';
     try {
       const data = await api('/api/families', { method: 'POST', body: JSON.stringify(payload) });
-      if (data.waitlist) { result.textContent = 'הבטא מלאה כרגע. נכנסתם לרשימת המתנה וניצור קשר כשייפתח מקום.'; event.currentTarget.reset(); await loadBetaStatus(); return; }
+      if (data.waitlist) { if (result) result.textContent = 'הבטא מלאה כרגע. נכנסתם לרשימת המתנה וניצור קשר כשייפתח מקום.'; submittedForm.reset(); await loadBetaStatus(); return; }
       const link = new URL(`dashboard.html?token=${encodeURIComponent(data.family.managementToken)}`, location.href).href;
-      result.innerHTML = `המשפחה נוצרה בהצלחה.\n\nקישור ניהול פרטי:\n${link}\n\nחשוב: שמרו את הקישור. דרכו מנהלים את המשפחה, השעה היומית, היסטוריית הבדיקות והשהיית השירות.\n\nהשלבים הבאים:\n1. פתחו את קישור הניהול.\n2. ודאו שהאדם המבוגר מאשר ב־WhatsApp לפני הפעלה.\n3. אחרי אישור, שלחו בדיקה כדי לוודא שהכול עובד.\n4. ודאו שאיש הקשר להתראה נכון.`;
-      event.currentTarget.reset();
+      if (result) {
+        result.innerHTML = `המשפחה נוצרה בהצלחה.<br><br>
+          <strong>קישור ניהול פרטי:</strong><br>
+          <a href="${link}" target="_blank" rel="noopener">פתחו את דף הניהול האישי</a><br>
+          <small>${link}</small><br><br>
+          חשוב: שמרו את הקישור. דרכו מנהלים את המשפחה, השעה היומית, היסטוריית הבדיקות והשהיית השירות.<br><br>
+          השלבים הבאים:<br>
+          1. פתחו את קישור הניהול.<br>
+          2. ודאו שהאדם המבוגר מאשר ב־WhatsApp לפני הפעלה.<br>
+          3. אחרי אישור, שלחו בדיקה כדי לוודא שהכול עובד.<br>
+          4. ודאו שאיש הקשר להתראה נכון.`;
+      }
+      submittedForm.reset();
       for (const [id, value] of Object.entries(trackingFields)) {
         const field = document.querySelector(`#${id}`);
         if (field) field.value = value;
       }
     } catch (err) {
-      result.textContent = err.message;
+      if (result) result.textContent = err.message;
+    } finally {
+      if (submitButton) submitButton.disabled = false;
     }
   });
 }
