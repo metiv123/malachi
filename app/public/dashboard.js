@@ -1,8 +1,9 @@
 const token = new URLSearchParams(location.search).get('token');
 const root = document.querySelector('#familyBox');
+const API_BASE = (window.MALACHI_API_BASE || '').replace(/\/$/, '');
 
 async function api(path, options = {}) {
-  const res = await fetch(path, { headers: { 'Content-Type': 'application/json' }, ...options });
+  const res = await fetch(`${API_BASE}${path}`, { headers: { 'Content-Type': 'application/json' }, ...options });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'API error');
   return data;
@@ -10,6 +11,10 @@ async function api(path, options = {}) {
 
 function esc(value = '') {
   return String(value).replace(/[&<>"]/g, (ch) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[ch]));
+}
+
+function pageUrl(page = '') {
+  return new URL(page || './', location.href).href;
 }
 
 function statusLabel(status) {
@@ -37,7 +42,7 @@ function actionHint(status){
 
 function shareText() {
   const ref = token ? `family_referral_${token.slice(0,8)}` : 'family_referral';
-  return `מצאתי כלי חינמי בשם מלאכי.\nהוא שולח להורה מבוגר הודעת WhatsApp כל בוקר, ואם אין תשובה — מעדכן בן משפחה.\nבלי אפליקציה ובלי מצלמות.\n${location.origin}/?ref=${encodeURIComponent(ref)}`;
+  return `מצאתי כלי חינמי בשם מלאכי.\nהוא שולח להורה מבוגר הודעת WhatsApp כל בוקר, ואם אין תשובה — מעדכן בן משפחה.\nבלי אפליקציה ובלי מצלמות.\n${new URL(`./?ref=${encodeURIComponent(ref)}`, location.href).href}`;
 }
 
 async function copyShare() {
@@ -47,12 +52,12 @@ async function copyShare() {
 }
 
 async function load() {
-  if (!token) { root.innerHTML = '<article class="family"><h2>חסר קישור ניהול</h2><p>כדי לראות דשבורד משפחתי צריך לפתוח את הקישור הפרטי שקיבלתם אחרי ההרשמה.</p><p><a class="button primary" href="/">חזרה להרשמה</a></p></article>'; return; }
+  if (!token) { root.innerHTML = `<article class="family"><h2>חסר קישור ניהול</h2><p>כדי לראות דשבורד משפחתי צריך לפתוח את הקישור הפרטי שקיבלתם אחרי ההרשמה.</p><p><a class="button primary" href="${pageUrl('index.html')}">חזרה להרשמה</a></p></article>`; return; }
   try {
     const { family } = await api(`/api/family?token=${encodeURIComponent(token)}`);
     root.innerHTML = `<article class="family"><h2>${esc(family.ownerName)}</h2>
       <p class="small">קישור ניהול פרטי: ${esc(location.href)}</p>
-      <button class="button primary" onclick="copyShare()">העתקת הודעת שיתוף למשפחה נוספת</button> <a class="button secondary" href="/feedback.html">שליחת פידבק</a> <button class="button secondary" onclick="regenerateToken()">יצירת קישור ניהול חדש</button> <button class="button secondary" onclick="deleteFamily()">מחיקת המשפחה והמידע</button>
+      <button class="button primary" onclick="copyShare()">העתקת הודעת שיתוף למשפחה נוספת</button> <a class="button secondary" href="${pageUrl('feedback.html')}">שליחת פידבק</a> <button class="button secondary" onclick="regenerateToken()">יצירת קישור ניהול חדש</button> <button class="button secondary" onclick="deleteFamily()">מחיקת המשפחה והמידע</button>
       ${family.elders.map((elder) => `
       <div class="elder">
         <h3>${esc(elder.name)}</h3>
@@ -89,7 +94,7 @@ async function load() {
           <button class="button secondary" onclick="mockWebhookText('${elder.whatsappPhone}','הסרה')">דמה הסרה בוואטסאפ</button>
         </div>
       </div>`).join('')}</article>`;
-  } catch (err) { root.innerHTML = `<article class="family"><h2>לא מצאנו את המשפחה</h2><p>ייתכן שהקישור שגוי, הוחלף או נמחק.</p><p class="small">${esc(err.message)}</p><p><a class="button primary" href="/">חזרה לדף הבית</a></p></article>`; return; }
+  } catch (err) { root.innerHTML = `<article class="family"><h2>לא מצאנו את המשפחה</h2><p>ייתכן שהקישור שגוי, הוחלף או נמחק.</p><p class="small">${esc(err.message)}</p><p><a class="button primary" href="${pageUrl('index.html')}">חזרה לדף הבית</a></p></article>`; return; }
   await loadHistories();
   await loadOutboundMessages();
 }
@@ -123,7 +128,7 @@ window.copyShare = copyShare;
 window.regenerateToken = async () => {
   if (!confirm('ליצור קישור ניהול חדש? הקישור הישן יפסיק להיות שימושי רק אחרי שתשתמשו בחדש.')) return;
   const data = await api('/api/family/regenerate-token', { method:'POST', body:JSON.stringify({ token }) });
-  const newUrl = `${location.origin}/dashboard.html?token=${encodeURIComponent(data.managementToken)}`;
+  const newUrl = new URL(`dashboard.html?token=${encodeURIComponent(data.managementToken)}`, location.href).href;
   alert(`קישור חדש נוצר. שמרו אותו עכשיו:
 ${newUrl}`);
   location.href = newUrl;

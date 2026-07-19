@@ -18,6 +18,7 @@ npm-debug.log*
 *.tar
 *.tar.gz
 *.tgz
+static-site/
 
 # OS/editor
 .DS_Store

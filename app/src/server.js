@@ -24,8 +24,16 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.resolve(__dirname, '../public');
 
 function json(res, status, data) {
-  res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' });
+  res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', ...corsHeaders() });
   res.end(JSON.stringify(data, null, 2));
+}
+
+function corsHeaders() {
+  return {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type'
+  };
 }
 
 async function body(req) {
@@ -53,6 +61,10 @@ async function staticFile(res, pathname) {
 async function route(req, res) {
   const url = new URL(req.url, `http://${req.headers.host}`);
   try {
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204, corsHeaders());
+      return res.end();
+    }
     if (!rateLimit(req, { key: url.pathname, limit: url.pathname.startsWith('/api/') ? 180 : 300 })) {
       return json(res, 429, { error: 'Too many requests' });
     }
