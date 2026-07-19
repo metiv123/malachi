@@ -1,5 +1,5 @@
 {
-  "latest": 90,
+  "latest": 91,
   "versions": [
     {
       "version": 4,
@@ -522,6 +522,12 @@
       "file": "specs/v90_release_notes.md",
       "title": "# מלאכי V90 - בדיקת בוקר עם כפתור אחד בלבד",
       "zip": "malachi-mvp-project-v90.zip"
+    },
+    {
+      "version": 91,
+      "file": "specs/v91_release_notes.md",
+      "title": "# מלאכי V91 - תיקון משתני הודעת אישור לבן משפחה",
+      "zip": "malachi-mvp-project-v91.zip"
     }
   ]
 }

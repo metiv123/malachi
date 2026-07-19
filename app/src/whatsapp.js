@@ -152,8 +152,12 @@ export async function sendContactOptIn(contact, elder, family) {
   const body = `שלום ${contact.name} 🌿\nכאן מלאכי. ${family.ownerName} צירף/ה אותך כאיש קשר להתראות עבור ${elder.name}. אם ${elder.name} לא יענה/תענה לבדיקת הבוקר — נעדכן אותך ב־WhatsApp.`;
   const buttons = [{ id: `approve_contact_optin:${contact.id}`, title: 'מאשר/ת' }, { id: `decline_contact_optin:${contact.id}`, title: 'לא מעוניין/ת' }];
   if (config.whatsappProvider === 'meta') {
+    const usesElderOptInTemplate = config.meta.templates.contactOptin === config.meta.templates.optin;
+    const params = usesElderOptInTemplate
+      ? [contact.name, family.ownerName, elder.dailyCheckTime]
+      : [contact.name, elder.name, family.ownerName];
     await sendMetaTemplate(contact.whatsappPhone, config.meta.templates.contactOptin, 'he', [
-      ...bodyComponent([contact.name, elder.name, family.ownerName]),
+      ...bodyComponent(params),
       quickReplyButton(0, `approve_contact_optin:${contact.id}`),
       quickReplyButton(1, `decline_contact_optin:${contact.id}`)
     ]);
