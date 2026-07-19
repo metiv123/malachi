@@ -15,6 +15,10 @@ services:
         value: meta
       - key: MALACHI_SCHEDULER
         value: "true"
+      - key: MALACHI_SELF_KEEPALIVE
+        value: "true"
+      - key: MALACHI_SELF_KEEPALIVE_INTERVAL_MS
+        value: "240000"
       - key: MALACHI_NO_RESPONSE_GRACE_MINUTES
         value: "7"
       - key: MALACHI_BETA_OPEN

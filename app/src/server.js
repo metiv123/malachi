@@ -35,6 +35,26 @@ function installProcessGuards() {
   });
 }
 
+let selfKeepaliveTimer = null;
+
+export function startSelfKeepalive() {
+  if (!config.selfKeepaliveEnabled || selfKeepaliveTimer) return;
+  if (!config.publicBaseUrl || config.publicBaseUrl.includes('localhost')) return;
+  const url = `${config.publicBaseUrl.replace(/\/$/, '')}/api/health`;
+  async function ping() {
+    try {
+      const res = await fetch(url, { headers: { 'User-Agent': 'Malachi-Self-Keepalive/1.0' } });
+      console.log(`[self-keepalive] ${url} status=${res.status}`);
+    } catch (err) {
+      console.error('[self-keepalive] error', err.message);
+      logError('self_keepalive', err, { url }).catch(() => {});
+    }
+  }
+  selfKeepaliveTimer = setInterval(ping, config.selfKeepaliveIntervalMs);
+  setTimeout(ping, 30000);
+  console.log(`[self-keepalive] enabled interval=${config.selfKeepaliveIntervalMs}ms url=${url}`);
+}
+
 function json(res, status, data) {
   res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', ...corsHeaders() });
   res.end(JSON.stringify(data, null, 2));
@@ -215,5 +235,6 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     console.log(`מלאכי MVP listening on http://localhost:${config.port}`);
     console.log(`WhatsApp provider: ${config.whatsappProvider}`);
     startScheduler();
+    startSelfKeepalive();
   });
 }

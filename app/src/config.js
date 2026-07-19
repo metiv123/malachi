@@ -4,6 +4,8 @@ export const config = {
   publicBaseUrl: process.env.MALACHI_PUBLIC_BASE_URL || 'http://localhost:8787',
   schedulerEnabled: process.env.MALACHI_SCHEDULER !== 'false',
   schedulerIntervalMs: Number(process.env.MALACHI_SCHEDULER_INTERVAL_MS || 60000),
+  selfKeepaliveEnabled: process.env.MALACHI_SELF_KEEPALIVE === 'true',
+  selfKeepaliveIntervalMs: Number(process.env.MALACHI_SELF_KEEPALIVE_INTERVAL_MS || 240000),
   noResponseGraceMinutes: Number(process.env.MALACHI_NO_RESPONSE_GRACE_MINUTES || 60),
   betaOpen: process.env.MALACHI_BETA_OPEN !== 'false',
   betaMaxFamilies: Number(process.env.MALACHI_BETA_MAX_FAMILIES || 50),
