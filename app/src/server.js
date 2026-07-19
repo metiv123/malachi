@@ -178,12 +178,12 @@ async function route(req, res) {
     if (req.method === 'GET' && url.pathname === '/api/meta/phone-check') return json(res, 200, await checkMetaPhoneNumber());
 
     if (req.method === 'GET' && url.pathname === '/api/meta/templates/connection') {
-      if (url.searchParams.get('token') !== config.meta.verifyToken) return json(res, 403, { error: 'Forbidden' });
+      if (!isAdminRequest(req, url) && url.searchParams.get('token') !== config.meta.verifyToken) return json(res, 403, { error: 'Forbidden' });
       return json(res, 200, await listConnectionTemplates({ wabaId: url.searchParams.get('wabaId') || undefined }));
     }
     if (req.method === 'POST' && url.pathname === '/api/meta/templates/connection') {
       const input = await body(req);
-      if (input.token !== config.meta.verifyToken) return json(res, 403, { error: 'Forbidden' });
+      if (!isAdminRequest(req, url) && input.token !== config.meta.verifyToken) return json(res, 403, { error: 'Forbidden' });
       return json(res, 200, await submitConnectionTemplates({ wabaId: input.wabaId }));
     }
     if (req.method === 'GET' && url.pathname === '/api/reports/sources') return json(res, 200, { sources: await sourceReport() });
