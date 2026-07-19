@@ -1,5 +1,5 @@
 {
-  "latest": 106,
+  "latest": 107,
   "versions": [
     {
       "version": 4,
@@ -618,6 +618,12 @@
       "file": "specs/v106_release_notes.md",
       "title": "# מלאכי V106 - הקשחה משפטית ואבטחתית",
       "zip": "malachi-mvp-project-v106.zip"
+    },
+    {
+      "version": 107,
+      "file": "specs/v107_release_notes.md",
+      "title": "# מלאכי V107 - קישור גלוי להסרה מדיוור",
+      "zip": "malachi-mvp-project-v107.zip"
     }
   ]
 }
