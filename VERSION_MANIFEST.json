@@ -1,5 +1,5 @@
 {
-  "latest": 91,
+  "latest": 92,
   "versions": [
     {
       "version": 4,
@@ -528,6 +528,12 @@
       "file": "specs/v91_release_notes.md",
       "title": "# מלאכי V91 - תיקון משתני הודעת אישור לבן משפחה",
       "zip": "malachi-mvp-project-v91.zip"
+    },
+    {
+      "version": 92,
+      "file": "specs/v92_release_notes.md",
+      "title": "# מלאכי V92 - תמיכת Firebase Firestore לשמירת משפחות קבועה",
+      "zip": "malachi-mvp-project-v92.zip"
     }
   ]
 }

@@ -88,3 +88,4 @@
 - V89: specs/v89_release_notes.md -> malachi-mvp-project-v89.zip
 - V90: specs/v90_release_notes.md -> malachi-mvp-project-v90.zip
 - V91: specs/v91_release_notes.md -> malachi-mvp-project-v91.zip
+- V92: specs/v92_release_notes.md -> malachi-mvp-project-v92.zip

@@ -3,7 +3,7 @@ import path from 'node:path';
 import { createFamily, deleteFamilyByToken, exportFamiliesCsv, getCheckHistoryByToken, getFamilyByToken, getOutboundMessagesByToken, handleElderResponse, listDashboard, optOutByPhone, processDueChecks, processNoResponses, sendCheckNow, setContactOptIn, setElderActiveByToken, setOptIn, systemReadiness, updateElderByToken, weeklyReportByToken } from './malachi.js';
 import { extractWhatsAppButtonEvents, extractWhatsAppTextEvents, mapButtonToResponse, mapTextToIntent } from './metaWebhook.js';
 import { processWhatsAppWebhookPayload } from './webhookProcessor.js';
-import { loadDb } from './store.js';
+import { loadDb, saveDb } from './store.js';
 import { config } from './config.js';
 
 function assert(condition, message) {
@@ -12,6 +12,7 @@ function assert(condition, message) {
 
 async function reset() {
   await rm(path.resolve(process.cwd(), 'data/db.json'), { force: true });
+  await saveDb({ families: [], elders: [], contacts: [], checks: [], audit: [], outboundMessages: [], waitlist: [], feedback: [], errors: [] });
 }
 
 async function run() {

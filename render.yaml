@@ -31,6 +31,12 @@ services:
         value: Asia/Jerusalem
       - key: MALACHI_PUBLIC_BASE_URL
         value: https://malachi-v78v.onrender.com
+      - key: FIREBASE_SERVICE_ACCOUNT_JSON
+        sync: false
+      - key: FIRESTORE_COLLECTION
+        value: malachi_runtime
+      - key: FIRESTORE_DOCUMENT
+        value: main
       - key: META_GRAPH_VERSION
         value: v23.0
       - key: META_PHONE_NUMBER_ID
