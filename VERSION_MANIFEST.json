@@ -1,5 +1,5 @@
 {
-  "latest": 109,
+  "latest": 110,
   "versions": [
     {
       "version": 4,
@@ -636,6 +636,12 @@
       "file": "specs/v109_release_notes.md",
       "title": "# מלאכי V109 - תיקון גישת Admin לניהול תבניות Meta",
       "zip": "malachi-mvp-project-v109.zip"
+    },
+    {
+      "version": 110,
+      "file": "specs/v110_release_notes.md",
+      "title": "# V110 - WhatsApp inbound message capture",
+      "zip": "malachi-mvp-project-v110.zip"
     }
   ]
 }

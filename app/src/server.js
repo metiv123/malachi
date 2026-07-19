@@ -73,7 +73,7 @@ const adminGetApiPaths = new Set([
   '/api/dashboard', '/api/waitlist', '/api/feedback', '/api/debug/db', '/api/readiness', '/api/beta/readiness',
   '/api/beta/checklist', '/api/meta/readiness', '/api/meta/sample-payloads', '/api/meta/phone-check',
   '/api/meta/templates/connection', '/api/reports/sources', '/api/export/families.csv', '/api/export/db.json',
-  '/api/backups', '/api/errors', '/api/audit'
+  '/api/backups', '/api/errors', '/api/audit', '/api/inbound-messages'
 ]);
 const adminPostApiPaths = new Set([
   '/api/backups', '/api/dev/demo-family', '/api/jobs/due-checks', '/api/jobs/no-responses',
@@ -195,6 +195,7 @@ async function route(req, res) {
     if (req.method === 'GET' && url.pathname === '/api/backups') return json(res, 200, { backups: await listBackups() });
     if (req.method === 'GET' && url.pathname === '/api/errors') return json(res, 200, { errors: await listErrors(Number(url.searchParams.get('limit') || 50)) });
     if (req.method === 'GET' && url.pathname === '/api/audit') { const db = await loadDb(); return json(res, 200, { audit: db.audit.slice().reverse().slice(0, Number(url.searchParams.get('limit') || 100)) }); }
+    if (req.method === 'GET' && url.pathname === '/api/inbound-messages') { const db = await loadDb(); return json(res, 200, { messages: (db.inboundMessages || []).slice().reverse().slice(0, Number(url.searchParams.get('limit') || 100)) }); }
     if (req.method === 'POST' && url.pathname === '/api/backups') return json(res, 201, { backup: await createBackup() });
 
     if (req.method === 'POST' && url.pathname === '/api/families') return json(res, 201, await createFamily(await body(req)));

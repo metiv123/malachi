@@ -17,6 +17,7 @@ const emptyDb = () => ({
   contacts: [],
   checks: [],
   audit: [],
+  inboundMessages: [],
   outboundMessages: [],
   waitlist: [],
   feedback: [],

@@ -71,6 +71,24 @@ export async function processWhatsAppWebhookPayload(payload) {
   }
 
   await mutateDb((currentDb) => {
+    currentDb.inboundMessages = currentDb.inboundMessages || [];
+    for (const item of handled) {
+      const event = item.event || {};
+      currentDb.inboundMessages.push({
+        id: id('in'),
+        type: event.type || 'unknown',
+        from: String(event.from || '').replace(/[^0-9]/g, ''),
+        fromLast4: String(event.from || '').replace(/[^0-9]/g, '').slice(-4),
+        messageId: event.messageId || null,
+        timestamp: event.timestamp || null,
+        text: event.type === 'text' ? String(event.text || '') : '',
+        buttonId: event.type === 'button' ? String(event.buttonId || '') : '',
+        buttonTitle: event.type === 'button' ? String(event.buttonTitle || '') : '',
+        mapped: item.mapped || null,
+        status: item.status || 'unknown',
+        createdAt: nowIso()
+      });
+    }
     currentDb.audit.push({
       id: id('evt'),
       type: 'whatsapp_webhook_received',
