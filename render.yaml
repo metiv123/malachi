@@ -22,7 +22,7 @@ services:
       - key: MALACHI_NO_RESPONSE_GRACE_MINUTES
         value: "7"
       - key: MALACHI_DAILY_CHECK_MODE
-        value: freeform_connection
+        value: single_ok
       - key: MALACHI_BETA_OPEN
         value: "true"
       - key: MALACHI_DEV_TOOLS

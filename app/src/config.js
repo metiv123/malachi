@@ -11,7 +11,7 @@ export const config = {
   betaMaxFamilies: Number(process.env.MALACHI_BETA_MAX_FAMILIES || 50),
   devToolsEnabled: process.env.MALACHI_DEV_TOOLS === 'true' || process.env.NODE_ENV !== 'production',
   whatsappProvider: process.env.WHATSAPP_PROVIDER || 'mock',
-  dailyCheckMode: process.env.MALACHI_DAILY_CHECK_MODE || 'freeform_connection',
+  dailyCheckMode: process.env.MALACHI_DAILY_CHECK_MODE || 'single_ok',
   meta: {
     graphVersion: process.env.META_GRAPH_VERSION || 'v23.0',
     phoneNumberId: process.env.META_PHONE_NUMBER_ID || '',
