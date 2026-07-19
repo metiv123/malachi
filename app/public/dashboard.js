@@ -60,39 +60,28 @@ async function load() {
   if (!token) { root.innerHTML = `<article class="family"><h2>צריך להתחבר</h2><p>כדי לראות את האזור האישי צריך להתחבר עם מייל וסיסמה או לפתוח את קישור הניהול הפרטי שקיבלתם אחרי ההרשמה.</p><p><a class="button primary" href="${pageUrl('login.html')}">כניסה לאזור אישי</a> <a class="button secondary" href="${pageUrl('index.html')}">חזרה להרשמה</a></p></article>`; return; }
   try {
     const { family } = await api(`/api/family?token=${encodeURIComponent(token)}`);
-    root.innerHTML = `<article class="family"><h2>${esc(family.ownerName)}</h2>
-      <p class="small">אזור אישי משפחתי · ${esc(family.ownerEmail || 'מייל כניסה עדיין לא הוגדר')}</p>
-      <p class="small">קישור ניהול פרטי לגיבוי: ${esc(location.href)}</p>
-      <button class="button primary" onclick="copyShare()">העתקת הודעת שיתוף למשפחה נוספת</button> <a class="button secondary" href="${pageUrl(`feedback.html?token=${encodeURIComponent(token)}`)}">שליחת פידבק</a> <button class="button secondary" onclick="regenerateToken()">יצירת קישור ניהול חדש</button> <button class="button secondary" onclick="deleteFamily()">מחיקת המשפחה והמידע</button>
-      <details class="edit-box" open><summary>חשבון וכניסה</summary>
-        <form onsubmit="setPassword(event)">
-          <label>מייל כניסה<input type="email" name="email" required value="${esc(family.ownerEmail || '')}" autocomplete="email"></label>
-          <label>סיסמה חדשה<input type="password" name="password" required placeholder="לפחות 8 תווים" autocomplete="new-password"></label>
-          <button class="button primary" type="submit">שמירת מייל וסיסמה</button>
-          <button class="button secondary" type="button" onclick="logout()">יציאה מהמכשיר הזה</button>
-        </form>
-      </details>
-      ${family.elders.length === 0 ? `<section class="note"><h3>הוספת פרטי משפחה</h3><p>עדיין לא הוגדר הורה לבדיקה. מלא/י את הפרטים כדי להפעיל את מלאכי.</p>
-        <form onsubmit="addElder(event)">
-          <label>שם ההורה / האדם המבוגר<input name="elderName" required placeholder="למשל: רחל"></label>
-          <label>טלפון WhatsApp של ההורה<input name="elderPhone" required placeholder="0521234567 או +972521234567"></label>
-          <label>שעת בדיקה יומית<input type="time" name="dailyCheckTime" required value="09:00"></label>
-          <label>שם איש קשר להתראה<input name="contactName" placeholder="אפשר להשאיר ריק — נשתמש בבן המשפחה הראשי"></label>
-          <label>טלפון איש קשר להתראה<input name="contactPhone" placeholder="אפשר להשאיר ריק — נשתמש בטלפון בן המשפחה"></label>
-          <button class="button primary" type="submit">שמירת פרטי המשפחה</button>
-        </form>
-      </section>` : ''}
-      ${family.elders.map((elder) => `
-      <div class="elder">
-        <h3>${esc(elder.name)}</h3>
-        <p>טלפון: ${esc(elder.whatsappPhone)}</p>
-        <p>שעה יומית: ${esc(elder.dailyCheckTime)}</p>
-        <p>אנשי קשר להתראה:</p><ul>${(elder.contacts || [elder.contact].filter(Boolean)).map((c) => `<li>${esc(c.name)} (${esc(c.whatsappPhone)}) — ${contactOptInLabel(c.optInStatus)} <button class="tiny" onclick="resendContactOptIn('${c.id}')">שלח אישור שוב</button> ${elder.contacts?.length > 1 ? `<button class="tiny" onclick="deleteContact('${c.id}')">מחיקה</button>` : ''}</li>`).join('')}</ul>
-        <p>אישור WhatsApp של ההורה: ${optInLabel(elder.optInStatus)} <button class="tiny" onclick="resendElderOptIn('${elder.id}')">שלח אישור שוב</button> · פעיל: ${elder.active ? 'כן' : 'לא'}</p>
-        <div class="today-card ${statusClass(elder.latestCheck?.status)}"><b>מצב אחרון: ${statusLabel(elder.latestCheck?.status)}</b><p>${actionHint(elder.latestCheck?.status)}</p></div>
-        <div id="history-${elder.id}" class="history-box">טוען היסטוריה...</div>
-        <div id="messages-${elder.id}" class="history-box">טוען לוג הודעות...</div>
-        <details class="edit-box"><summary>עריכת פרטים</summary>
+    const eldersMarkup = family.elders.map((elder) => {
+      const contacts = (elder.contacts || [elder.contact].filter(Boolean));
+      return `<section class="dashboard-card elder-card">
+        <div class="card-head">
+          <div>
+            <span class="card-kicker">הורה / אדם מבוגר</span>
+            <h3>${esc(elder.name)}</h3>
+          </div>
+          <span class="status ${elder.active ? 'ok' : 'warning'}">${elder.active ? 'פעיל' : 'מושהה'}</span>
+        </div>
+        <div class="dashboard-grid compact-grid">
+          <div><b>טלפון</b><span>${esc(elder.whatsappPhone)}</span></div>
+          <div><b>שעה יומית</b><span>${esc(elder.dailyCheckTime)}</span></div>
+          <div><b>אישור ההורה</b><span>${optInLabel(elder.optInStatus)}</span></div>
+          <div><b>מצב אחרון</b><span>${statusLabel(elder.latestCheck?.status)}</span></div>
+        </div>
+        <div class="today-card ${statusClass(elder.latestCheck?.status)}"><b>${statusLabel(elder.latestCheck?.status)}</b><p>${actionHint(elder.latestCheck?.status)}</p></div>
+        <section class="mini-section">
+          <div class="mini-title"><h4>אנשי קשר להתראה</h4><button class="tiny" onclick="resendElderOptIn('${elder.id}')">שלח אישור להורה</button></div>
+          <div class="contact-list">${contacts.map((c) => `<article><b>${esc(c.name)}</b><span>${esc(c.whatsappPhone)}</span><small>${contactOptInLabel(c.optInStatus)}</small><div><button class="tiny" onclick="resendContactOptIn('${c.id}')">שלח אישור</button> ${contacts.length > 1 ? `<button class="tiny danger-text" onclick="deleteContact('${c.id}')">מחיקה</button>` : ''}</div></article>`).join('')}</div>
+        </section>
+        <details class="edit-box"><summary>עריכת פרטי ההורה</summary>
           <form onsubmit="updateElder(event, '${elder.id}')">
             <label>שם<input name="elderName" value="${esc(elder.name)}"></label>
             <label>טלפון WhatsApp<input name="elderPhone" value="${esc(elder.whatsappPhone)}"></label>
@@ -102,22 +91,65 @@ async function load() {
             <button class="button primary" type="submit">שמירה</button>
           </form>
         </details>
-        <details class="edit-box"><summary>הוספת איש קשר להתראה נוסף</summary>
+        <details class="edit-box"><summary>הוספת איש קשר נוסף</summary>
           <form onsubmit="addContact(event, '${elder.id}')">
-            <label>שם איש קשר להתראה<input name="contactName" required></label>
-            <label>טלפון איש קשר להתראה<input name="contactPhone" required></label>
+            <label>שם איש קשר<input name="contactName" required></label>
+            <label>טלפון איש קשר<input name="contactPhone" required></label>
             <button class="button primary" type="submit">הוספה</button>
           </form>
         </details>
-        <div class="dashboard-actions">
+        <details class="edit-box"><summary>היסטוריה ולוג הודעות</summary>
+          <div id="history-${elder.id}" class="history-box">טוען היסטוריה...</div>
+          <div id="messages-${elder.id}" class="history-box">טוען לוג הודעות...</div>
+        </details>
+        <div class="dashboard-actions quiet-actions">
           <button class="button secondary" onclick="sendCheck('${elder.id}')">שלח בדיקה עכשיו</button>
           <button class="button secondary" onclick="setActive('${elder.id}', ${!elder.active})">${elder.active ? 'השהה שירות' : 'הפעל שירות'}</button>
-          ${elder.latestCheck?.status === 'sent' ? `
-            <button class="button secondary" onclick="respond('${elder.id}','${elder.latestCheck.id}','ok')">דמה אני בסדר</button>
-            <button class="button secondary" onclick="noResponse()">דמה אין תגובה</button>` : ''}
+          ${elder.latestCheck?.status === 'sent' ? `<button class="button secondary" onclick="respond('${elder.id}','${elder.latestCheck.id}','ok')">דמה אני בסדר</button><button class="button secondary" onclick="noResponse()">דמה אין תגובה</button>` : ''}
           <button class="button secondary" onclick="mockWebhookText('${elder.whatsappPhone}','הסרה')">דמה הסרה בוואטסאפ</button>
         </div>
-      </div>`).join('')}</article>`;
+      </section>`;
+    }).join('');
+    root.innerHTML = `<section class="personal-dashboard">
+      <section class="dashboard-card hero-card">
+        <div>
+          <span class="card-kicker">אזור אישי</span>
+          <h2>${esc(family.ownerName)}</h2>
+          <p>${esc(family.ownerEmail || 'מייל כניסה עדיין לא הוגדר')}</p>
+        </div>
+        <div class="dashboard-actions top-actions">
+          <button class="button primary" onclick="copyShare()">שיתוף</button>
+          <a class="button secondary" href="${pageUrl(`feedback.html?token=${encodeURIComponent(token)}`)}">פידבק</a>
+        </div>
+      </section>
+      <section class="dashboard-card account-card">
+        <div class="card-head"><div><span class="card-kicker">חשבון</span><h3>כניסה וניהול</h3></div><button class="tiny" onclick="logout()">יציאה</button></div>
+        <details class="edit-box"><summary>עדכון מייל או סיסמה</summary>
+          <form onsubmit="setPassword(event)">
+            <label>מייל כניסה<input type="email" name="email" required value="${esc(family.ownerEmail || '')}" autocomplete="email"></label>
+            <label>סיסמה חדשה<input type="password" name="password" required placeholder="לפחות 8 תווים" autocomplete="new-password"></label>
+            <button class="button primary" type="submit">שמירת מייל וסיסמה</button>
+          </form>
+        </details>
+        <details class="edit-box"><summary>פעולות מתקדמות</summary>
+          <div class="dashboard-actions quiet-actions">
+            <button class="button secondary" onclick="regenerateToken()">קישור ניהול חדש</button>
+            <button class="button secondary danger-action" onclick="deleteFamily()">מחיקת המשפחה והמידע</button>
+          </div>
+          <p class="small">קישור ניהול פרטי לגיבוי: ${esc(location.href)}</p>
+        </details>
+      </section>
+      ${family.elders.length === 0 ? `<section class="dashboard-card setup-card"><span class="card-kicker">שלב 2 מתוך 2</span><h3>הוספת פרטי משפחה</h3><p>עדיין לא הוגדר הורה לבדיקה. מלא/י את הפרטים כדי להפעיל את מלאכי.</p>
+        <form class="dashboard-form" onsubmit="addElder(event)">
+          <label>שם ההורה / האדם המבוגר<input name="elderName" required placeholder="למשל: רחל"></label>
+          <label>טלפון WhatsApp של ההורה<input name="elderPhone" required placeholder="0521234567 או +972521234567"></label>
+          <label>שעת בדיקה יומית<input type="time" name="dailyCheckTime" required value="09:00"></label>
+          <label>שם איש קשר להתראה<input name="contactName" placeholder="אפשר להשאיר ריק — נשתמש בבן המשפחה הראשי"></label>
+          <label>טלפון איש קשר להתראה<input name="contactPhone" placeholder="אפשר להשאיר ריק — נשתמש בטלפון בן המשפחה"></label>
+          <button class="button primary" type="submit">שמירת פרטי המשפחה</button>
+        </form>
+      </section>` : eldersMarkup}
+    </section>`
   } catch (err) { root.innerHTML = `<article class="family"><h2>לא מצאנו את המשפחה</h2><p>ייתכן שהקישור שגוי, הוחלף או נמחק.</p><p class="small">${esc(err.message)}</p><p><a class="button primary" href="${pageUrl('index.html')}">חזרה לדף הבית</a></p></article>`; return; }
   await loadHistories();
   await loadOutboundMessages();

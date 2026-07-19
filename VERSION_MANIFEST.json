@@ -1,5 +1,5 @@
 {
-  "latest": 101,
+  "latest": 102,
   "versions": [
     {
       "version": 4,
@@ -588,6 +588,12 @@
       "file": "specs/v101_release_notes.md",
       "title": "# מלאכי V101 - ניהול פידבקים ברור",
       "zip": "malachi-mvp-project-v101.zip"
+    },
+    {
+      "version": 102,
+      "file": "specs/v102_release_notes.md",
+      "title": "# מלאכי V102 - סידור האזור האישי",
+      "zip": "malachi-mvp-project-v102.zip"
     }
   ]
 }

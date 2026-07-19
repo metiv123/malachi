@@ -1,5 +1,5 @@
 # מלאכי - Latest Build
 
-הגרסה האחרונה שנארזה: V101
+הגרסה האחרונה שנארזה: V102
 
-קובץ ZIP אחרון: malachi-mvp-project-v101.zip
+קובץ ZIP אחרון: malachi-mvp-project-v102.zip
