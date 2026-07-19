@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>מאגר שיווקי — מלאכי</title><link rel="stylesheet" href="/style.css"></head>
+<body><a class="skip-link" href="#main">דלג לתוכן</a>
+<header class="hero small-hero"><nav><a class="brand" href="/"><span class="logo">מ</span> מלאכי</a><span><a href="/admin.html" class="nav-cta">אדמין</a> · <a href="/" class="nav-cta">דף הבית</a></span></nav></header>
+<main id="main" class="section dashboard-page admin-feedback-page">
+  <div class="section-title-row"><div><h1>מאגר שיווקי</h1><p>רשימת משתמשים לפי הסכמה לשימוש במייל. שיווק מותר רק למי שסימן הסכמה.</p></div><button class="button primary" onclick="loadContacts()">רענון</button></div>
+  <div id="summary" class="feedback-summary"></div>
+  <section class="dashboard-card"><h2>מאשרים דיוור שיווקי</h2><div id="optedIn" class="lead-list">טוען...</div></section>
+  <section class="dashboard-card"><h2>מיילים לשירות בלבד</h2><p class="small">מותר להשתמש בהם רק לצורכי חשבון/שירות/אבטחה, לא לשיווק.</p><div id="serviceOnly" class="lead-list">טוען...</div></section>
+</main>
+<script>
+function esc(value = '') { return String(value).replace(/[&<>\"]/g, (ch) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[ch])); }
+function row(f){ return `<article class="lead-card"><b>${esc(f.ownerName || '')}</b><span>${esc(f.ownerEmail || 'אין מייל')}</span><small>${esc(f.ownerPhone || '')} · ${esc(f.source || 'direct')}</small></article>`; }
+async function loadContacts(){
+  const summary = document.querySelector('#summary');
+  const opted = document.querySelector('#optedIn');
+  const service = document.querySelector('#serviceOnly');
+  opted.textContent = service.textContent = 'טוען...';
+  const res = await fetch('/api/dashboard');
+  const data = await res.json();
+  const families = (data.families || []).filter(f => f.ownerEmail);
+  const optedIn = families.filter(f => f.marketingEmailConsent === true);
+  const serviceOnly = families.filter(f => f.marketingEmailConsent !== true);
+  summary.innerHTML = `<article><b>${families.length}</b><span>משתמשים עם מייל</span></article><article><b>${optedIn.length}</b><span>מאשרים שיווק</span></article>`;
+  opted.innerHTML = optedIn.length ? optedIn.map(row).join('') : '<p class="small">אין עדיין מאשרים לדיוור שיווקי.</p>';
+  service.innerHTML = serviceOnly.length ? serviceOnly.map(row).join('') : '<p class="small">אין משתמשים לשירות בלבד.</p>';
+}
+loadContacts();
+</script>
+<script src="/accessibility.js"></script></body></html>

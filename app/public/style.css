@@ -84,3 +84,6 @@ body.auth-screen .logo{width:36px;height:36px;border-radius:12px}
 /* V103: proportional consent checkboxes on auth screens */
 .auth-page .check{display:flex!important;align-items:flex-start!important;gap:10px!important;text-align:right!important;padding:11px 12px!important;border-radius:14px!important}.auth-page .check input[type="checkbox"]{appearance:auto!important;width:18px!important;height:18px!important;min-width:18px!important;min-height:18px!important;margin:3px 0 0 0!important;padding:0!important;flex:0 0 18px!important}.auth-page .check a{color:var(--blue);font-weight:900;text-decoration:underline;text-underline-offset:2px}.auth-page .check{font-size:13.5px!important;line-height:1.45!important;color:#33475b!important}.auth-page .check+ .check{margin-top:-2px}
 @media(max-width:520px){.auth-page .check{font-size:12.8px!important;padding:10px!important}.auth-page .check input[type="checkbox"]{width:17px!important;height:17px!important;min-width:17px!important;min-height:17px!important}}
+
+/* Marketing contacts admin */
+.lead-list{display:grid;gap:10px}.lead-card{display:grid;gap:4px;background:#f8fcff;border:1px solid #e2edf5;border-radius:16px;padding:12px}.lead-card b{color:var(--blue)}.lead-card span{overflow-wrap:anywhere}.lead-card small{color:var(--muted)}

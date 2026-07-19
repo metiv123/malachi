@@ -100,3 +100,4 @@
 - V101: specs/v101_release_notes.md -> malachi-mvp-project-v101.zip
 - V102: specs/v102_release_notes.md -> malachi-mvp-project-v102.zip
 - V103: specs/v103_release_notes.md -> malachi-mvp-project-v103.zip
+- V104: specs/v104_release_notes.md -> malachi-mvp-project-v104.zip
