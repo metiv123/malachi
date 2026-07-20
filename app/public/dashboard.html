@@ -1,13 +1,22 @@
 <!doctype html>
 <html lang="he" dir="rtl">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>דשבורד משפחתי — מלאכי</title><link rel="stylesheet" href="/style.css"><link rel="icon" type="image/png" href="/assets/brand/malachi-mascot.png"><link rel="apple-touch-icon" href="/assets/brand/malachi-mascot.png"></head>
-<body><a class="skip-link" href="#main">דלג לתוכן</a>
+<body class="dashboard-screen"><a class="skip-link" href="#main">דלג לתוכן</a>
 <header class="hero small-hero"><nav><a class="brand" href="/"><img class="brand-mascot" src="/assets/brand/malachi-mascot.png" alt="" /> מלאכי</a><span><a href="/login.html" class="nav-cta">כניסה</a> · <a href="/" class="nav-cta">דף הבית</a></span></nav></header>
 <main id="main" class="section dashboard-page">
-  <h1>אזור אישי למשפחה</h1>
-  <p>כאן מנהלים את פרטי המשפחה, שעות הבדיקה, אנשי קשר, אישורי WhatsApp והיסטוריית הפעילות.</p>
-  <div id="familyBox"></div>
+  <section class="dashboard-intro">
+    <span class="card-kicker">האזור המשפחתי</span>
+    <h1>אזור אישי למשפחה</h1>
+    <p>כאן רואים מי נמצא במעקב, מי מקבל התראות ומה צריך לעשות עכשיו.</p>
+  </section>
+  <div id="familyBox">
+    <article class="dashboard-card loading-card">
+      <span class="card-kicker">טוען</span>
+      <h2>טוען את האזור המשפחתי…</h2>
+      <p>אם זה נשאר כך יותר מכמה שניות, רעננו את הדף או פתחו מחדש את קישור הניהול.</p>
+    </article>
+  </div>
 </main>
-<footer>מלאכי — המלאך השומר של המשפחה<br><a href="/privacy.html">מדיניות פרטיות</a> · <a href="/terms.html">תנאי שימוש</a></footer>
-<script src="/dashboard.js"></script>
-<script src="/accessibility.js"></script></body></html>
+<footer class="dashboard-footer">מלאכי — המלאך השומר של המשפחה<br><a href="/privacy.html">מדיניות פרטיות</a> · <a href="/terms.html">תנאי שימוש</a></footer>
+<script src="/dashboard.js?v=117" defer></script>
+<script src="/accessibility.js" defer></script></body></html>

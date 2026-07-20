@@ -298,4 +298,13 @@ window.updateElder = async (event, elderId) => {
   await api(`/api/elders/${elderId}/update`, { method:'POST', body:JSON.stringify(payload) });
   await load();
 };
-load();
+load().catch((err) => {
+  if (!root) return;
+  root.innerHTML = `<article class="dashboard-card error-card">
+    <span class="card-kicker">שגיאה</span>
+    <h2>לא הצלחנו לטעון את האזור המשפחתי</h2>
+    <p>נסו לרענן את הדף או לפתוח מחדש את קישור הניהול.</p>
+    <p class="small">${esc(err.message || 'שגיאה לא ידועה')}</p>
+    <button class="button primary" onclick="location.reload()">רענון הדף</button>
+  </article>`;
+});
