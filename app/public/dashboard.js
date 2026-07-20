@@ -92,9 +92,9 @@ function addElderCard(open = false) {
   </form>`;
   return `<section class="dashboard-card setup-card quiet-setup">
     <span class="card-kicker">הוספה</span>
-    <h3>הוספת מבוגר לבדיקה יומית</h3>
-    <p>אפשר לנהל כמה הורים/מבוגרים באותו אזור אישי. לכל אחד תהיה שעת בדיקה ואפשר להוסיף לו כמה בני משפחה להתראות.</p>
-    ${open ? form : `<details class="clean-details"><summary>+ פתיחת טופס הוספת מבוגר</summary>${form}</details>`}
+    <h3>${open ? 'הוספת מבוגר לבדיקה יומית' : 'הוספת אדם נוסף'}</h3>
+    <p>${open ? 'מגדירים למי נשלחת הבדיקה, באיזו שעה ומי יקבל עדכון במקרה שאין מענה.' : 'צרפו הורה או אדם מבוגר נוסף לאזור המשפחתי.'}</p>
+    ${open ? form : `<details class="clean-details"><summary>פתיחת טופס הוספה</summary>${form}</details>`}
   </section>`;
 }
 
@@ -126,68 +126,56 @@ async function load() {
       const visibleContacts = contacts.slice(0, 3);
       const hiddenContactsCount = Math.max(0, contacts.length - visibleContacts.length);
       return `<section class="dashboard-card elder-card">
-        <div class="card-head">
+        <div class="card-head elder-card-head">
           <div>
             <span class="card-kicker">הורה / אדם מבוגר</span>
-            <h3>${esc(elder.name)}</h3>
+            <div class="elder-title-row"><h3>${esc(elder.name)}</h3><span class="status ${elder.active ? 'ok' : 'warning'}">${elder.active ? 'פעיל' : 'מושהה'}</span></div>
           </div>
-          <span class="status ${elder.active ? 'ok' : 'warning'}">${elder.active ? 'פעיל' : 'מושהה'}</span>
+          <button class="button primary elder-primary-action" onclick="sendCheck('${elder.id}')">שליחת בדיקה עכשיו</button>
         </div>
-        <div class="dashboard-grid compact-grid">
-          <div><b>שעה יומית</b><span>${esc(elder.dailyCheckTime)}</span></div>
-          <div><b>טלפון</b><span>${esc(elder.whatsappPhone)}</span></div>
-          <div><b>התראת אי־מענה</b><span>אחרי ${Number(elder.noResponseGraceMinutes || 30) === 60 ? 'שעה' : `${esc(elder.noResponseGraceMinutes || 30)} דקות`}</span></div>
-          <div><b>מספר התראות</b><span>${Number(elder.noResponseAlertRepeatCount || 2) === 1 ? 'פעם אחת' : Number(elder.noResponseAlertRepeatCount || 2) === 2 ? 'פעמיים' : 'שלוש פעמים'}</span></div>
-          <div><b>אישור ההורה</b><span>${optInLabel(elder.optInStatus)}</span></div>
-          <div><b>מצב אחרון</b><span>${statusLabel(elder.latestCheck?.status)}</span></div>
+        <div class="elder-summary-layout">
+          <div class="today-card ${statusClass(elder.latestCheck?.status)}"><span class="today-label">המצב היום</span><b>${statusLabel(elder.latestCheck?.status)}</b><p>${actionHint(elder.latestCheck?.status)}</p></div>
+          <dl class="elder-facts">
+            <div><dt>בדיקה יומית</dt><dd>${esc(elder.dailyCheckTime)}</dd></div>
+            <div><dt>התראה</dt><dd>אחרי ${Number(elder.noResponseGraceMinutes || 30) === 60 ? 'שעה' : `${esc(elder.noResponseGraceMinutes || 30)} דקות`} · ${Number(elder.noResponseAlertRepeatCount || 2) === 1 ? 'פעם אחת' : Number(elder.noResponseAlertRepeatCount || 2) === 2 ? 'פעמיים' : 'שלוש פעמים'}</dd></div>
+            <div><dt>WhatsApp</dt><dd>${esc(elder.whatsappPhone)}</dd></div>
+            <div><dt>אישור ההורה</dt><dd>${optInLabel(elder.optInStatus)} <button class="text-action" onclick="resendElderOptIn('${elder.id}')">שליחה מחדש</button></dd></div>
+          </dl>
         </div>
-        <div class="today-card ${statusClass(elder.latestCheck?.status)}"><b>${statusLabel(elder.latestCheck?.status)}</b><p>${actionHint(elder.latestCheck?.status)}</p></div>
-        <section class="mini-section">
-          <div class="mini-title"><h4>בני משפחה להתראות</h4><button class="tiny" onclick="resendElderOptIn('${elder.id}')">שלח אישור להורה</button></div>
+        <section class="mini-section contact-section">
+          <div class="mini-title"><h4>בני משפחה להתראות</h4><span class="contact-count">${contacts.length}</span></div>
           <p class="small">אם אין תגובה מהמבוגר — בני המשפחה שאישרו יקבלו התראה.</p>
-          <div class="contact-list clean-contact-list">${visibleContacts.map((c) => `<article><b>${esc(c.name)}</b><span>${esc(c.whatsappPhone)}</span><small>${contactOptInLabel(c.optInStatus)}</small></article>`).join('')}${hiddenContactsCount ? `<article class="more-card"><b>ועוד ${hiddenContactsCount}</b><span>מופיעים בניהול בני המשפחה</span></article>` : ''}</div>
-          <details class="clean-details"><summary>ניהול בני משפחה והוספה</summary>
+          <div class="contact-list clean-contact-list">${visibleContacts.map((c) => `<article class="contact-row"><span class="contact-avatar" aria-hidden="true">${esc(String(c.name || '').trim().charAt(0) || 'א')}</span><span class="contact-identity"><b>${esc(c.name)}</b><span>${esc(c.whatsappPhone)}</span></span><small class="contact-state">${contactOptInLabel(c.optInStatus)}</small></article>`).join('')}${hiddenContactsCount ? `<article class="contact-row more-card"><span class="contact-avatar" aria-hidden="true">+${hiddenContactsCount}</span><span class="contact-identity"><b>אנשי קשר נוספים</b><span>מופיעים באזור הניהול</span></span></article>` : ''}</div>
+          <details class="clean-details manage-contacts"><summary>ניהול והוספת בני משפחה</summary>
             <div class="contact-list manage-contact-list">${contacts.map((c) => `<article><b>${esc(c.name)}</b><span>${esc(c.whatsappPhone)}</span><small>${contactOptInLabel(c.optInStatus)}</small><div><button class="tiny" onclick="resendContactOptIn('${c.id}')">שלח אישור</button> ${contacts.length > 1 ? `<button class="tiny danger-text" onclick="deleteContact('${c.id}')">מחיקה</button>` : ''}</div></article>`).join('')}</div>
             <div class="inline-add-contact"><h4>הוספת בן/בת משפחה נוסף</h4>${addContactForm(elder.id)}</div>
           </details>
         </section>
-        <details class="edit-box"><summary>עריכת פרטי ההורה</summary>
-          <form onsubmit="updateElder(event, '${elder.id}')">
-            <label>שם<input name="elderName" value="${esc(elder.name)}"></label>
-            <label>טלפון WhatsApp<input name="elderPhone" value="${esc(elder.whatsappPhone)}"></label>
-            <label>שעה יומית<input type="time" name="dailyCheckTime" value="${esc(elder.dailyCheckTime)}"></label>
-            <label>מתי להתריע אם אין מענה<select name="noResponseGraceMinutes">${alertDelayOptions(elder.noResponseGraceMinutes || 30)}</select></label>
-            <label>כמה פעמים לשלוח התראת אי־מענה<select name="noResponseAlertRepeatCount">${alertRepeatOptions(elder.noResponseAlertRepeatCount || 2)}</select></label>
-            <label>שם איש קשר להתראה<input name="contactName" value="${esc(elder.contact?.name || '')}"></label>
-            <label>טלפון איש קשר להתראה<input name="contactPhone" value="${esc(elder.contact?.whatsappPhone || '')}"></label>
-            <button class="button primary" type="submit">שמירה</button>
-          </form>
-        </details>
-        <details class="edit-box"><summary>היסטוריה ולוג הודעות</summary>
-          <div id="history-${elder.id}" class="history-box">טוען היסטוריה...</div>
-          <div id="messages-${elder.id}" class="history-box">טוען לוג הודעות...</div>
-        </details>
+        <div class="elder-secondary-tools">
+          <details class="edit-box"><summary>עריכת פרטים והגדרות</summary>
+            <form onsubmit="updateElder(event, '${elder.id}')">
+              <label>שם<input name="elderName" value="${esc(elder.name)}"></label>
+              <label>טלפון WhatsApp<input name="elderPhone" value="${esc(elder.whatsappPhone)}"></label>
+              <label>שעה יומית<input type="time" name="dailyCheckTime" value="${esc(elder.dailyCheckTime)}"></label>
+              <label>מתי להתריע אם אין מענה<select name="noResponseGraceMinutes">${alertDelayOptions(elder.noResponseGraceMinutes || 30)}</select></label>
+              <label>כמה פעמים לשלוח התראת אי־מענה<select name="noResponseAlertRepeatCount">${alertRepeatOptions(elder.noResponseAlertRepeatCount || 2)}</select></label>
+              <label>שם איש קשר להתראה<input name="contactName" value="${esc(elder.contact?.name || '')}"></label>
+              <label>טלפון איש קשר להתראה<input name="contactPhone" value="${esc(elder.contact?.whatsappPhone || '')}"></label>
+              <button class="button primary" type="submit">שמירה</button>
+            </form>
+          </details>
+          <details class="edit-box"><summary>היסטוריה והודעות</summary>
+            <div id="history-${elder.id}" class="history-box">טוען היסטוריה...</div>
+            <div id="messages-${elder.id}" class="history-box">טוען לוג הודעות...</div>
+          </details>
+        </div>
         <div class="dashboard-actions quiet-actions">
-          <button class="button secondary" onclick="sendCheck('${elder.id}')">שלח בדיקה עכשיו</button>
           <button class="button secondary" onclick="setActive('${elder.id}', ${!elder.active})">${elder.active ? 'השהה שירות' : 'הפעל שירות'}</button>
         </div>
       </section>`;
     }).join('');
-    root.innerHTML = `<section class="personal-dashboard">
-      <section class="dashboard-card hero-card">
-        <div>
-          <span class="card-kicker">אזור אישי</span>
-          <h2>${esc(family.ownerName)}</h2>
-          <p>${esc(family.ownerEmail || 'מייל כניסה עדיין לא הוגדר')}</p>
-        </div>
-        <div class="dashboard-actions top-actions">
-          <button class="button primary" onclick="copyShare()">שיתוף</button>
-          <a class="button secondary" href="${pageUrl(`feedback.html?token=${encodeURIComponent(token)}`)}">פידבק</a>
-        </div>
-      </section>
-      ${family.elders.length === 0 ? addElderCard(true) : `${eldersMarkup}${addElderCard(false)}`}
-      <section class="dashboard-card account-card quiet-account">
-        <div class="card-head"><div><span class="card-kicker">ניהול מתקדם</span><h3>חשבון וקישור ניהול</h3></div><button class="tiny" onclick="logout()">יציאה</button></div>
+    const accountMarkup = `<section class="dashboard-card account-card quiet-account">
+        <div class="card-head"><div><span class="card-kicker">חשבון</span><h3>הגדרות חשבון</h3></div><button class="tiny" onclick="logout()">יציאה</button></div>
         <details class="edit-box"><summary>עדכון מייל או סיסמה</summary>
           <form onsubmit="setPassword(event)">
             <label>מייל כניסה<input type="email" name="email" required value="${esc(family.ownerEmail || '')}" autocomplete="email"></label>
@@ -202,7 +190,20 @@ async function load() {
           </div>
           <p class="small">קישור ניהול פרטי לגיבוי: ${esc(location.href)}</p>
         </details>
+      </section>`;
+    root.innerHTML = `<section class="personal-dashboard">
+      <section class="dashboard-card hero-card family-header-card">
+        <div>
+          <span class="card-kicker">המשפחה שלי</span>
+          <h2>${esc(family.ownerName)}</h2>
+          <p>${esc(family.ownerEmail || 'מייל כניסה עדיין לא הוגדר')}</p>
+        </div>
+        <div class="dashboard-actions top-actions">
+          <button class="button primary" onclick="copyShare()">שיתוף</button>
+          <a class="button secondary" href="${pageUrl(`feedback.html?token=${encodeURIComponent(token)}`)}">פידבק</a>
+        </div>
       </section>
+      ${family.elders.length === 0 ? `${addElderCard(true)}${accountMarkup}` : `${eldersMarkup}<div class="dashboard-utility-grid">${addElderCard(false)}${accountMarkup}</div>`}
     </section>`
   } catch (err) { root.innerHTML = `<article class="family"><h2>לא מצאנו את המשפחה</h2><p>ייתכן שהקישור שגוי, הוחלף או נמחק.</p><p class="small">${esc(err.message)}</p><p><a class="button primary" href="${pageUrl('index.html')}">חזרה לדף הבית</a></p></article>`; return; }
   await loadHistories();
