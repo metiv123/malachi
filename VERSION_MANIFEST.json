@@ -1,5 +1,5 @@
 {
-  "latest": 114,
+  "latest": 115,
   "versions": [
     {
       "version": 4,
@@ -666,6 +666,12 @@
       "file": "specs/v114_release_notes.md",
       "title": "# מלאכי V114 - טפסי הוספה גלויים ללא טאבים",
       "zip": "malachi-mvp-project-v114.zip"
+    },
+    {
+      "version": 115,
+      "file": "specs/v115_release_notes.md",
+      "title": "# מלאכי V115 - הבהרת בן משפחה ראשון בטופס הוספת מבוגר",
+      "zip": "malachi-mvp-project-v115.zip"
     }
   ]
 }

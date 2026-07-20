@@ -76,15 +76,19 @@ function alertRepeatOptions(value = 2) {
 
 function addElderCard() {
   const form = `<form class="dashboard-form" onsubmit="addElder(event)">
+    <div class="form-subtitle">פרטי האדם לבדיקה</div>
     <label>שם ההורה / האדם המבוגר<input name="elderName" required placeholder="למשל: רחל"></label>
     <label>טלפון WhatsApp של ההורה<input name="elderPhone" required placeholder="0521234567 או +972521234567"></label>
     <label>שעת בדיקה יומית<input type="time" name="dailyCheckTime" required value="09:00"></label>
+    <div class="form-subtitle">בן משפחה ראשון להתראות</div>
+    <p class="form-help">זה האדם הראשון שיקבל התראה אם אין מענה. אחרי שמירת המבוגר אפשר להוסיף בני משפחה נוספים.</p>
     <label>שם בן/בת משפחה ראשון להתראה<input name="contactName" placeholder="אפשר להשאיר ריק — נשתמש בבן המשפחה הראשי"></label>
     <label>טלפון בן/בת משפחה ראשון להתראה<input name="contactPhone" placeholder="אפשר להשאיר ריק — נשתמש בטלפון בן המשפחה"></label>
+    <div class="form-subtitle">הגדרות אי־מענה</div>
     <label>מתי להתריע אם אין מענה<select name="noResponseGraceMinutes">${alertDelayOptions(30)}</select></label>
     <label>כמה פעמים לשלוח התראת אי־מענה<select name="noResponseAlertRepeatCount">${alertRepeatOptions(2)}</select></label>
     <label class="check dashboard-consent"><input type="checkbox" name="elderConsent" required><span>אני מצהיר/ה שהאדם יודע או יקבל הסבר, והשירות יופעל רק לאחר אישורו/ה ב־WhatsApp.</span></label>
-    <button class="button primary" type="submit">שמירת המבוגר</button>
+    <button class="button primary save-main" type="submit">שמירת המבוגר ובן המשפחה הראשון</button>
   </form>`;
   return `<section class="dashboard-card setup-card">
     <span class="card-kicker">הוספה</span>
