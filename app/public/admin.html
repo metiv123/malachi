@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
     <button class="button primary" onclick="loadReadiness()">בדיקת מצב</button>
     <button class="button secondary" onclick="createDemo()">יצירת משפחת דמו</button>
     <button class="button primary" onclick="loadBetaReadiness()">מוכנות בטא</button>
+    <button class="button primary" onclick="loadSimpleOverview()">תמונת מצב פשוטה</button>
     <button class="button primary" onclick="loadBetaChecklist()">צ׳ק ליסט בטא</button>
     <button class="button secondary" onclick="loadSources()">דוח מקורות</button>
     <button class="button secondary" onclick="loadWaitlist()">רשימת המתנה</button>
@@ -38,79 +39,137 @@ document.addEventListener('DOMContentLoaded', () => {
     <button class="button secondary" onclick="createBackup()">גיבוי DB</button>
   </div>
   <pre id="readinessBox">לחצו על בדיקת מצב.</pre>
+  <div id="simpleOverview" class="admin-simple hidden"></div>
 </main>
 <script>
+function showJson(data){
+  document.querySelector('#simpleOverview').classList.add('hidden');
+  const box = document.querySelector('#readinessBox');
+  box.classList.remove('hidden');
+  box.textContent = JSON.stringify(data, null, 2);
+}
+
+function escapeHtml(value){
+  return String(value ?? '').replace(/[&<>\"]/g, (ch) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[ch]));
+}
+
+function formatDate(value){
+  if (!value) return '';
+  try { return new Date(value).toLocaleString('he-IL', { dateStyle:'short', timeStyle:'short' }); }
+  catch { return value; }
+}
+
+function statusBadge(status){
+  const raw = String(status || '').toLowerCase();
+  const cls = raw.includes('approved') || raw.includes('sent') || raw.includes('אישור') || raw.includes('נשלח') ? 'ok' : raw.includes('failed') || raw.includes('נכשל') ? 'bad' : 'warn';
+  return `<span class="status-badge ${cls}">${escapeHtml(status || 'לא ידוע')}</span>`;
+}
+
+async function loadSimpleOverview(){
+  const res = await adminFetch('/api/admin/simple-overview');
+  const data = await res.json();
+  document.querySelector('#readinessBox').classList.add('hidden');
+  const root = document.querySelector('#simpleOverview');
+  root.classList.remove('hidden');
+  root.innerHTML = `
+    <section class="admin-cards">
+      <article><strong>${data.summary.families}</strong><span>נרשמים</span></article>
+      <article><strong>${data.summary.elders}</strong><span>אנשים לבדיקה</span></article>
+      <article><strong>${data.summary.contacts}</strong><span>אנשי קשר</span></article>
+      <article><strong>${data.summary.pendingOptIns}</strong><span>ממתינים לאישור</span></article>
+      <article><strong>${data.summary.failedOutbound}</strong><span>שליחות שנכשלו</span></article>
+    </section>
+    <h2>מי נרשם</h2>
+    <div class="simple-list">${data.families.map((family) => `
+      <article class="simple-item">
+        <h3>${escapeHtml(family.name)} <small>${escapeHtml(family.phone)}</small></h3>
+        <p>${escapeHtml(family.email || 'אין מייל')} · ${formatDate(family.createdAt)}</p>
+        <p>קשישים: ${family.counts.elders} · אנשי קשר: ${family.counts.contacts} · הודעות שנשלחו: ${family.counts.sent} · נכשלו: ${family.counts.failed}</p>
+        ${(family.elders || []).map((elder) => `<p>👤 ${escapeHtml(elder.name)} ${escapeHtml(elder.phone)} · אישור: ${statusBadge(elder.optInStatus)} · שעה: ${escapeHtml(elder.dailyCheckTime)}</p>`).join('')}
+        ${(family.contacts || []).map((contact) => `<p>☎️ ${escapeHtml(contact.name)} ${escapeHtml(contact.phone)} · אישור: ${statusBadge(contact.optInStatus)}</p>`).join('')}
+      </article>`).join('') || '<p>אין עדיין נרשמים.</p>'}</div>
+    <h2>הודעות נכנסות אחרונות</h2>
+    <div class="simple-list">${data.inbound.map((message) => `
+      <article class="simple-item compact"><strong>${escapeHtml(message.from)}</strong> · ${formatDate(message.createdAt)} · ${statusBadge(message.status)}<br>${escapeHtml(message.content)}</article>`).join('') || '<p>אין הודעות נכנסות.</p>'}</div>
+    <h2>הודעות שנשלחו / ניסיונות שליחה</h2>
+    <div class="simple-list">${data.outbound.map((message) => `
+      <article class="simple-item compact"><strong>${escapeHtml(message.to)}</strong> · ${formatDate(message.createdAt)} · ${escapeHtml(message.kind)} · ${statusBadge(message.status)}<br>${escapeHtml(message.body || message.error)}</article>`).join('') || '<p>אין הודעות יוצאות.</p>'}</div>
+    <h2>תבניות WhatsApp — מה באמת צריך</h2>
+    <div class="simple-list">${data.templatePlan.map((template) => `<article class="simple-item compact"><strong>${escapeHtml(template.name)}</strong> · ${template.required ? 'חובה' : 'אופציונלי'}<br>${escapeHtml(template.purpose)}</article>`).join('')}</div>
+  `;
+}
+
 async function loadReadiness(){
   const res = await adminFetch('/api/readiness');
   const data = await res.json();
-  document.querySelector('#readinessBox').textContent = JSON.stringify(data, null, 2);
+  showJson(data);
 }
 loadReadiness();
 
 async function loadSources(){
   const res = await adminFetch('/api/reports/sources');
   const data = await res.json();
-  document.querySelector('#readinessBox').textContent = JSON.stringify(data, null, 2);
+  showJson(data);
 }
 
 async function loadMeta(){
   const res = await adminFetch('/api/meta/readiness');
   const data = await res.json();
-  document.querySelector('#readinessBox').textContent = JSON.stringify(data, null, 2);
+  showJson(data);
 }
 async function loadPayloads(){
   const res = await adminFetch('/api/meta/sample-payloads');
   const data = await res.json();
-  document.querySelector('#readinessBox').textContent = JSON.stringify(data, null, 2);
+  showJson(data);
 }
 
 async function createBackup(){
   const res = await adminFetch('/api/backups', { method:'POST' });
   const data = await res.json();
-  document.querySelector('#readinessBox').textContent = JSON.stringify(data, null, 2);
+  showJson(data);
 }
 
 async function loadWaitlist(){
   const res = await adminFetch('/api/waitlist');
   const data = await res.json();
-  document.querySelector('#readinessBox').textContent = JSON.stringify(data, null, 2);
+  showJson(data);
 }
 
 async function loadErrors(){
   const res = await adminFetch('/api/errors');
   const data = await res.json();
-  document.querySelector('#readinessBox').textContent = JSON.stringify(data, null, 2);
+  showJson(data);
 }
 
 async function loadBetaReadiness(){
   const res = await adminFetch('/api/beta/readiness');
   const data = await res.json();
-  document.querySelector('#readinessBox').textContent = JSON.stringify(data, null, 2);
+  showJson(data);
 }
 
 async function loadBetaChecklist(){
   const res = await adminFetch('/api/beta/checklist');
   const data = await res.json();
-  document.querySelector('#readinessBox').textContent = JSON.stringify(data, null, 2);
+  showJson(data);
 }
 
 async function createDemo(){
   const res = await adminFetch('/api/dev/demo-family', { method:'POST', headers:{'Content-Type':'application/json'}, body:'{}' });
   const data = await res.json();
   const link = data.family ? `${location.origin}/dashboard.html?token=${encodeURIComponent(data.family.managementToken)}` : JSON.stringify(data);
-  document.querySelector('#readinessBox').textContent = link;
+  showJson({ link });
 }
 
 async function loadAudit(){
   const res = await adminFetch('/api/audit');
   const data = await res.json();
-  document.querySelector('#readinessBox').textContent = JSON.stringify(data, null, 2);
+  showJson(data);
 }
 
 async function loadFeedback(){
   const res = await adminFetch('/api/feedback');
   const data = await res.json();
-  document.querySelector('#readinessBox').textContent = JSON.stringify(data, null, 2);
+  showJson(data);
 }
 
 if (document.querySelector('#familiesCsvLink')) document.querySelector('#familiesCsvLink').href = adminUrl('/api/export/families.csv');

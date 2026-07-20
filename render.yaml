@@ -54,9 +54,9 @@ services:
       - key: META_TEMPLATE_FAMILY_GREETING
         value: family_greeting_message_he
       - key: META_TEMPLATE_OPTIN
-        value: optin_confirm_he
+        value: contact_optin_he
       - key: META_TEMPLATE_CONTACT_OPTIN
-        value: optin_confirm_he
+        value: contact_optin_he
   - type: web
     name: malachi-static
     runtime: static

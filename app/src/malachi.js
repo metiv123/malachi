@@ -295,6 +295,97 @@ export async function waitlistReport() {
   return (db.waitlist || []).slice().reverse();
 }
 
+function maskPhone(phone = '') {
+  const digits = String(phone || '').replace(/[^0-9]/g, '');
+  return digits ? `•••${digits.slice(-4)}` : '';
+}
+
+function messageStatusLabel(status = '') {
+  const labels = {
+    failed: 'נכשל',
+    ignored: 'נקלט בלי שיוך',
+    sent: 'נשלח',
+    opt_in_approved: 'אישור התקבל',
+    contact_opt_in_approved: 'אישור איש קשר התקבל',
+    owner_opt_in_approved: 'אישור בעל חשבון התקבל',
+    response_recorded: 'תגובה נשמרה'
+  };
+  return labels[status] || status || 'לא ידוע';
+}
+
+export async function adminSimpleOverview() {
+  const db = await loadDb();
+  const families = db.families
+    .slice()
+    .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))
+    .map((family) => {
+      const elders = db.elders.filter((elder) => elder.familyId === family.id);
+      const contacts = db.contacts.filter((contact) => elders.some((elder) => elder.id === contact.elderId));
+      const elderIds = new Set(elders.map((elder) => elder.id));
+      const messagesSent = db.outboundMessages.filter((message) => !message.meta?.elderId || elderIds.has(message.meta.elderId));
+      const failedMessages = messagesSent.filter((message) => message.status === 'failed');
+      return {
+        id: family.id,
+        name: family.ownerName || 'ללא שם',
+        phone: maskPhone(family.ownerPhone),
+        email: family.ownerEmail || '',
+        createdAt: family.createdAt,
+        elders: elders.map((elder) => ({ name: elder.name, phone: maskPhone(elder.whatsappPhone), optInStatus: elder.optInStatus, active: elder.active, dailyCheckTime: elder.dailyCheckTime })),
+        contacts: contacts.map((contact) => ({ name: contact.name, phone: maskPhone(contact.whatsappPhone), optInStatus: contact.optInStatus, relationship: contact.relationship })),
+        counts: { elders: elders.length, contacts: contacts.length, sent: messagesSent.length, failed: failedMessages.length }
+      };
+    });
+  const inbound = (db.inboundMessages || [])
+    .slice()
+    .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))
+    .slice(0, 30)
+    .map((message) => ({
+      createdAt: message.createdAt,
+      from: maskPhone(message.from),
+      content: message.buttonTitle || message.text || '(ריק)',
+      type: message.type,
+      status: messageStatusLabel(message.status),
+      rawStatus: message.status,
+      mapped: message.mapped || ''
+    }));
+  const outbound = (db.outboundMessages || [])
+    .slice()
+    .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))
+    .slice(0, 30)
+    .map((message) => ({
+      createdAt: message.createdAt,
+      to: maskPhone(message.to),
+      kind: message.kind,
+      status: messageStatusLabel(message.status || 'sent'),
+      rawStatus: message.status || 'sent',
+      body: String(message.body || '').slice(0, 180),
+      error: message.error || ''
+    }));
+  const templatePlan = [
+    { name: 'contact_optin_he', purpose: 'אישור הצטרפות לשירות / איש קשר', required: true },
+    { name: 'daily_check_he', purpose: 'בדיקת בוקר יומית', required: true },
+    { name: 'no_response_alert_he', purpose: 'עדכון משפחה כשאין מענה', required: true },
+    { name: 'family_greeting_message_he', purpose: 'ד״ש למשפחה — אופציונלי, אפשר לדחות', required: false },
+    { name: 'family_connection_update_he', purpose: 'עדכון כללי למשפחה — אופציונלי', required: false },
+    { name: 'daily_warm_connection_he', purpose: 'נוסח חלופי לבדיקה — אופציונלי', required: false }
+  ];
+  return {
+    summary: {
+      families: families.length,
+      elders: db.elders.length,
+      contacts: db.contacts.length,
+      inbound: (db.inboundMessages || []).length,
+      outbound: (db.outboundMessages || []).length,
+      failedOutbound: (db.outboundMessages || []).filter((message) => message.status === 'failed').length,
+      pendingOptIns: db.elders.filter((elder) => elder.optInStatus !== 'approved').length + db.contacts.filter((contact) => contact.optInStatus !== 'approved').length
+    },
+    families,
+    inbound,
+    outbound,
+    templatePlan
+  };
+}
+
 export async function sourceReport() {
   const db = await loadDb();
   const report = {};

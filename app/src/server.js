@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { config } from './config.js';
-import { addContactByToken, addElderByToken, betaStatus, createFamily, createUserAccount, deleteContactByToken, deleteFamilyByToken, exportFamiliesCsv, getCheckHistoryByToken, getFamilyByToken, getOutboundMessagesByToken, handleElderResponse, listDashboard, loginFamily, processDueChecks, processNoResponses, regenerateFamilyToken, resendContactOptInByToken, resendElderOptInByToken, revokeFamilyToken, sendCheckNow, setElderActiveByToken, setFamilyPasswordByToken, setMarketingConsentByEmail, setOptIn, sourceReport, systemReadiness, updateElderByToken, waitlistReport, weeklyReportByToken } from './malachi.js';
+import { addContactByToken, addElderByToken, adminSimpleOverview, betaStatus, createFamily, createUserAccount, deleteContactByToken, deleteFamilyByToken, exportFamiliesCsv, getCheckHistoryByToken, getFamilyByToken, getOutboundMessagesByToken, handleElderResponse, listDashboard, loginFamily, processDueChecks, processNoResponses, regenerateFamilyToken, resendContactOptInByToken, resendElderOptInByToken, revokeFamilyToken, sendCheckNow, setElderActiveByToken, setFamilyPasswordByToken, setMarketingConsentByEmail, setOptIn, sourceReport, systemReadiness, updateElderByToken, waitlistReport, weeklyReportByToken } from './malachi.js';
 import { loadDb } from './store.js';
 import { processWhatsAppWebhookPayload } from './webhookProcessor.js';
 import { startScheduler } from './scheduler.js';
@@ -73,7 +73,7 @@ const adminGetApiPaths = new Set([
   '/api/dashboard', '/api/waitlist', '/api/feedback', '/api/debug/db', '/api/readiness', '/api/beta/readiness',
   '/api/beta/checklist', '/api/meta/readiness', '/api/meta/sample-payloads', '/api/meta/phone-check',
   '/api/meta/templates/connection', '/api/reports/sources', '/api/export/families.csv', '/api/export/db.json',
-  '/api/backups', '/api/errors', '/api/audit', '/api/inbound-messages'
+  '/api/backups', '/api/errors', '/api/audit', '/api/inbound-messages', '/api/admin/simple-overview'
 ]);
 const adminPostApiPaths = new Set([
   '/api/backups', '/api/dev/demo-family', '/api/jobs/due-checks', '/api/jobs/no-responses',
@@ -163,6 +163,7 @@ async function route(req, res) {
     if (req.method === 'GET' && url.pathname === '/api/reports/weekly') {
       return json(res, 200, { report: await weeklyReportByToken(url.searchParams.get('token'), { days: Number(url.searchParams.get('days') || 7) }) });
     }
+    if (req.method === 'GET' && url.pathname === '/api/admin/simple-overview') return json(res, 200, await adminSimpleOverview());
     if (req.method === 'GET' && url.pathname === '/api/debug/db') return json(res, 200, await loadDb());
     if (req.method === 'GET' && url.pathname === '/api/readiness') return json(res, 200, await systemReadiness());
     if (req.method === 'GET' && url.pathname === '/api/beta/readiness') return json(res, 200, await betaReadiness());

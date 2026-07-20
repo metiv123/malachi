@@ -40,6 +40,27 @@ export async function processWhatsAppWebhookPayload(payload) {
     if (explicitId) return db.contacts.find((contact) => contact.id === explicitId) || null;
     return findContactByPhone(from);
   };
+  const findOwnerFamilyByPhone = (from) => {
+    const normalizedFrom = String(from).replace(/[^0-9]/g, '');
+    const candidates = db.families.filter((family) => {
+      const normalizedPhone = String(family.ownerPhone || '').replace(/[^0-9]/g, '');
+      return normalizedPhone && (normalizedPhone.endsWith(normalizedFrom) || normalizedFrom.endsWith(normalizedPhone));
+    });
+    return candidates[candidates.length - 1] || null;
+  };
+  const approveOwnerContacts = async (from, approved) => {
+    const family = findOwnerFamilyByPhone(from);
+    if (!family) return null;
+    const elderIds = db.elders.filter((elder) => elder.familyId === family.id).map((elder) => elder.id);
+    const ownerPhone = String(family.ownerPhone || '').replace(/[^0-9]/g, '');
+    const matchingContacts = db.contacts.filter((contact) => {
+      const contactPhone = String(contact.whatsappPhone || '').replace(/[^0-9]/g, '');
+      return elderIds.includes(contact.elderId) && contactPhone && (contactPhone.endsWith(ownerPhone) || ownerPhone.endsWith(contactPhone));
+    });
+    if (!matchingContacts.length) return { family, updated: 0 };
+    for (const contact of matchingContacts) await setContactOptIn(contact.id, approved);
+    return { family, updated: matchingContacts.length };
+  };
 
   for (const button of buttons) {
     const mapped = mapButtonToResponse(button);
@@ -52,12 +73,20 @@ export async function processWhatsAppWebhookPayload(payload) {
     else if (mapped === 'approve_optin' && elder) handled.push({ event: button, mapped, status: 'opt_in_approved', elder: await setOptIn(elder.id, true) });
     else if (mapped === 'approve_optin') {
       const fallbackContact = findContactByPhone(button.from);
-      handled.push(fallbackContact ? { event: button, mapped, status: 'contact_opt_in_approved', contact: await setContactOptIn(fallbackContact.id, true) } : { event: button, mapped, status: 'ignored' });
+      if (fallbackContact) handled.push({ event: button, mapped, status: 'contact_opt_in_approved', contact: await setContactOptIn(fallbackContact.id, true) });
+      else {
+        const ownerResult = await approveOwnerContacts(button.from, true);
+        handled.push(ownerResult ? { event: button, mapped, status: 'owner_opt_in_approved', result: ownerResult } : { event: button, mapped, status: 'ignored' });
+      }
     }
     else if (mapped === 'decline_optin' && elder) handled.push({ event: button, mapped, status: 'opt_in_declined', elder: await setOptIn(elder.id, false) });
     else if (mapped === 'decline_optin') {
       const fallbackContact = findContactByPhone(button.from);
-      handled.push(fallbackContact ? { event: button, mapped, status: 'contact_opt_in_declined', contact: await setContactOptIn(fallbackContact.id, false) } : { event: button, mapped, status: 'ignored' });
+      if (fallbackContact) handled.push({ event: button, mapped, status: 'contact_opt_in_declined', contact: await setContactOptIn(fallbackContact.id, false) });
+      else {
+        const ownerResult = await approveOwnerContacts(button.from, false);
+        handled.push(ownerResult ? { event: button, mapped, status: 'owner_opt_in_declined', result: ownerResult } : { event: button, mapped, status: 'ignored' });
+      }
     }
     else handled.push({ event: button, mapped, status: 'response_recorded', check: await handleElderResponse({ elderId: elder.id, response: mapped }) });
   }
@@ -98,7 +127,9 @@ export async function processWhatsAppWebhookPayload(payload) {
         handled: handled.map((item) => ({
           status: item.status,
           mapped: item.mapped || null,
-          fromLast4: String(item.event?.from || '').replace(/[^0-9]/g, '').slice(-4)
+          fromLast4: String(item.event?.from || '').replace(/[^0-9]/g, '').slice(-4),
+          matched: Boolean(item.elder || item.contact || item.result?.family),
+          updated: item.result?.updated ?? null
         }))
       },
       createdAt: nowIso()

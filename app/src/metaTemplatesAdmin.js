@@ -24,71 +24,14 @@ async function metaFetch(path, options = {}) {
 export async function submitConnectionTemplates({ wabaId = defaultWabaId() } = {}) {
   const templates = [
     {
-      name: 'daily_connection_check_he',
-      language: 'he',
-      category: 'UTILITY',
-      components: [
-        {
-          type: 'BODY',
-          text: 'בוקר טוב {{1}} 🌿\nכאן מלאכי, רק לוודא מה שלומך הבוקר.',
-          example: { body_text: [['רחל']] }
-        },
-        {
-          type: 'BUTTONS',
-          buttons: [
-            { type: 'QUICK_REPLY', text: 'הכול בסדר' },
-            { type: 'QUICK_REPLY', text: 'שלח ד״ש למשפחה' }
-          ]
-        }
-      ]
-    },
-    {
-      name: 'daily_warm_connection_he',
-      language: 'he',
-      category: 'UTILITY',
-      components: [
-        {
-          type: 'BODY',
-          text: 'בוקר טוב {{1}} 🌿\nבדיקת הקשר היומית של מלאכי. איך תרצה/י לעדכן את המשפחה?',
-          example: { body_text: [['רחל']] }
-        },
-        {
-          type: 'BUTTONS',
-          buttons: [
-            { type: 'QUICK_REPLY', text: 'הכול בסדר' },
-            { type: 'QUICK_REPLY', text: 'שלח ד״ש למשפחה' }
-          ]
-        }
-      ]
-    },
-    {
-      name: 'daily_family_connection_he',
-      language: 'he',
-      category: 'UTILITY',
-      components: [
-        {
-          type: 'BODY',
-          text: 'בדיקת הקשר היומית עבור {{1}}.\nנא לבחור אפשרות לעדכון המשפחה.',
-          example: { body_text: [['רחל']] }
-        },
-        {
-          type: 'BUTTONS',
-          buttons: [
-            { type: 'QUICK_REPLY', text: 'הכול בסדר' },
-            { type: 'QUICK_REPLY', text: 'שלח ד״ש למשפחה' }
-          ]
-        }
-      ]
-    },
-    {
       name: 'contact_optin_he',
       language: 'he',
       category: 'UTILITY',
       components: [
         {
           type: 'BODY',
-          text: 'שלום {{1}} 🌿\nכאן מלאכי. צורפת כאיש קשר להתראות עבור {{2}} על ידי {{3}}. אם אין מענה לבדיקת הבוקר — נעדכן אותך ב־WhatsApp.',
-          example: { body_text: [['שלמה', 'רחל', 'מטיב']] }
+          text: 'שלום {{1}} 🌿\nכאן מלאכי. {{2}} ביקש/ה לצרף אותך לשירות קשר משפחתי ב־WhatsApp. ההודעות יישלחו לפי ההגדרות בשעה {{3}}.',
+          example: { body_text: [['רחל', 'מטיב', '09:00']] }
         },
         {
           type: 'BUTTONS',
@@ -100,26 +43,32 @@ export async function submitConnectionTemplates({ wabaId = defaultWabaId() } = {
       ]
     },
     {
-      name: 'family_connection_update_he',
+      name: 'daily_check_he',
       language: 'he',
       category: 'UTILITY',
       components: [
         {
           type: 'BODY',
-          text: 'עדכון קשר יומי ממלאכי: {{1}} ביקש/ה לעדכן את המשפחה.',
+          text: 'בוקר טוב {{1}} 🌿\nכאן מלאכי. רק לסמן שהכול בסדר הבוקר.',
           example: { body_text: [['רחל']] }
+        },
+        {
+          type: 'BUTTONS',
+          buttons: [
+            { type: 'QUICK_REPLY', text: 'אני בסדר' }
+          ]
         }
       ]
     },
     {
-      name: 'family_greeting_message_he',
+      name: 'no_response_alert_he',
       language: 'he',
       category: 'UTILITY',
       components: [
         {
           type: 'BODY',
-          text: 'הודעת מלאכי: {{1}} שולח/ת לך דרישת שלום ❤️',
-          example: { body_text: [['רחל']] }
+          text: 'מלאכי: {{1}} לא ענה/ענתה להודעת הבוקר עד השעה {{2}}. כדאי ליצור קשר ולוודא שהכול בסדר.',
+          example: { body_text: [['רחל', '09:30']] }
         }
       ]
     }

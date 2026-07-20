@@ -47,7 +47,11 @@ if (form) {
         ? `<br><strong>שים לב:</strong><br>${data.warnings.map((warning) => `• ${String(warning).replace(/[&<>\"]/g, (ch) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[ch]))}`).join('<br>')}<br>`
         : '';
       if (result) {
-        result.innerHTML = `המשתמש והאזור האישי נוצרו בהצלחה.<br><br>
+        result.innerHTML = `<section class="success-card" role="status" aria-live="polite">
+          <h2>נרשמת בהצלחה ✅</h2>
+          <p><strong>הפרטים נשמרו במערכת מלאכי.</strong></p>
+          <p>אנחנו מחכים לאישור הרשמי של WhatsApp/Meta להפעלת ההודעות האוטומטיות. לכן ייתכן שבשלב הבטא הודעות WhatsApp עדיין לא יישלחו מיד — זו לא תקלה בהרשמה.</p>
+          <p>אפשר להמשיך לאזור האישי, להשלים פרטים ולראות את מצב ההפעלה.</p>
           ${warnings}
           <strong>קישור ניהול פרטי:</strong><br>
           <a href="${link}" target="_blank" rel="noopener">פתחו את דף הניהול האישי</a><br>
@@ -58,7 +62,8 @@ if (form) {
           1. פתחו את קישור הניהול.<br>
           2. ודאו שהאדם המבוגר מאשר ב־WhatsApp לפני הפעלה.<br>
           3. אחרי אישור, שלחו בדיקה כדי לוודא שהכול עובד.<br>
-          4. ודאו שאיש הקשר להתראה נכון.`;
+          4. ודאו שאיש הקשר להתראה נכון.
+        </section>`;
       }
       submittedForm.reset();
       for (const [id, value] of Object.entries(trackingFields)) {
