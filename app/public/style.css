@@ -105,3 +105,6 @@ body.auth-screen .logo{width:36px;height:36px;border-radius:12px}
 
 /* V115: make first family contact explicit inside add-adult form */
 .form-subtitle{grid-column:1/-1;margin-top:8px;color:var(--blue);font-weight:950;font-size:17px;background:#eef6ff;border-radius:14px;padding:10px 12px}.form-help{grid-column:1/-1;margin:0;color:var(--muted);font-size:14px;line-height:1.45}.save-main{font-size:17px!important;min-height:52px}
+
+/* V116: calmer family dashboard */
+.quiet-account{background:#fbfdff}.quiet-setup{background:#fbfdff;border-style:dashed}.clean-details{margin-top:12px;border:1px solid #dcecf8;border-radius:18px;background:#f8fcff;padding:12px}.clean-details>summary{cursor:pointer;font-weight:950;color:var(--blue);list-style:none}.clean-details>summary::-webkit-details-marker{display:none}.clean-details[open]>summary{margin-bottom:12px}.clean-contact-list article{min-height:92px}.more-card{background:#eef6ff!important;color:var(--blue)}.manage-contact-list{margin:12px 0}.elder-card .quiet-actions{border-top:1px solid #edf4fa;margin-top:14px;padding-top:14px}.quiet-setup .dashboard-form{margin-top:12px}.personal-dashboard{gap:18px}@media(max-width:760px){.quiet-setup{padding:15px}.clean-details{padding:12px}.clean-contact-list article{min-height:auto}}
