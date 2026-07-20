@@ -304,10 +304,15 @@ function messageStatusLabel(status = '') {
   const labels = {
     failed: 'נכשל',
     ignored: 'נקלט בלי שיוך',
-    sent: 'נשלח',
+    sent: 'נשלח ל־WhatsApp',
+    delivered: 'נמסר לנמען',
+    read: 'נקרא',
     opt_in_approved: 'אישור התקבל',
+    opt_in_declined: 'אישור נדחה',
     contact_opt_in_approved: 'אישור איש קשר התקבל',
+    contact_opt_in_declined: 'אישור איש קשר נדחה',
     owner_opt_in_approved: 'אישור בעל חשבון התקבל',
+    owner_opt_in_declined: 'אישור בעל חשבון נדחה',
     response_recorded: 'תגובה נשמרה'
   };
   return labels[status] || status || 'לא ידוע';

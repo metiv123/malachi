@@ -61,7 +61,7 @@ function formatDate(value){
 
 function statusBadge(status){
   const raw = String(status || '').toLowerCase();
-  const cls = raw.includes('approved') || raw.includes('sent') || raw.includes('אישור') || raw.includes('נשלח') ? 'ok' : raw.includes('failed') || raw.includes('נכשל') ? 'bad' : 'warn';
+  const cls = raw.includes('read') || raw.includes('delivered') || raw.includes('approved') || raw.includes('נקרא') || raw.includes('נמסר') || raw.includes('אישור') ? 'ok' : raw.includes('failed') || raw.includes('נכשל') ? 'bad' : 'warn';
   return `<span class="status-badge ${cls}">${escapeHtml(status || 'לא ידוע')}</span>`;
 }
 
@@ -84,14 +84,14 @@ async function loadSimpleOverview(){
       <article class="simple-item">
         <h3>${escapeHtml(family.name)} <small>${escapeHtml(family.phone)}</small></h3>
         <p>${escapeHtml(family.email || 'אין מייל')} · ${formatDate(family.createdAt)}</p>
-        <p>קשישים: ${family.counts.elders} · אנשי קשר: ${family.counts.contacts} · הודעות שנשלחו: ${family.counts.sent} · נכשלו: ${family.counts.failed}</p>
+        <p>מבוגרים לבדיקה: ${family.counts.elders} · בני משפחה להתראות: ${family.counts.contacts} · ניסיונות שליחה: ${family.counts.sent} · נכשלו: ${family.counts.failed}</p>
         ${(family.elders || []).map((elder) => `<p>👤 ${escapeHtml(elder.name)} ${escapeHtml(elder.phone)} · אישור: ${statusBadge(elder.optInStatus)} · שעה: ${escapeHtml(elder.dailyCheckTime)}</p>`).join('')}
         ${(family.contacts || []).map((contact) => `<p>☎️ ${escapeHtml(contact.name)} ${escapeHtml(contact.phone)} · אישור: ${statusBadge(contact.optInStatus)}</p>`).join('')}
       </article>`).join('') || '<p>אין עדיין נרשמים.</p>'}</div>
     <h2>הודעות נכנסות אחרונות</h2>
     <div class="simple-list">${data.inbound.map((message) => `
       <article class="simple-item compact"><strong>${escapeHtml(message.from)}</strong> · ${formatDate(message.createdAt)} · ${statusBadge(message.status)}<br>${escapeHtml(message.content)}</article>`).join('') || '<p>אין הודעות נכנסות.</p>'}</div>
-    <h2>הודעות שנשלחו / ניסיונות שליחה</h2>
+    <h2>לוג הודעות יוצאות וסטטוס מסירה</h2>
     <div class="simple-list">${data.outbound.map((message) => `
       <article class="simple-item compact"><strong>${escapeHtml(message.to)}</strong> · ${formatDate(message.createdAt)} · ${escapeHtml(message.kind)} · ${statusBadge(message.status)}<br>${escapeHtml(message.body || message.error)}</article>`).join('') || '<p>אין הודעות יוצאות.</p>'}</div>
     <h2>תבניות WhatsApp — מה באמת צריך</h2>

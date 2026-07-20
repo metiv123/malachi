@@ -44,6 +44,35 @@ export function extractWhatsAppTextEvents(payload) {
   return events;
 }
 
+export function extractWhatsAppStatusEvents(payload) {
+  const events = [];
+  const entries = payload?.entry || [];
+  for (const entry of entries) {
+    for (const change of entry.changes || []) {
+      const value = change.value || {};
+      for (const status of value.statuses || []) {
+        events.push({
+          type: 'status',
+          messageId: status.id || '',
+          status: status.status || '',
+          timestamp: status.timestamp || '',
+          recipientId: status.recipient_id || '',
+          conversationId: status.conversation?.id || '',
+          pricingCategory: status.pricing?.category || '',
+          error: Array.isArray(status.errors) && status.errors.length ? JSON.stringify(status.errors) : ''
+        });
+      }
+    }
+  }
+  return events;
+}
+
+export function mapMetaDeliveryStatus(status = '') {
+  const value = String(status || '').toLowerCase();
+  if (['sent', 'delivered', 'read', 'failed'].includes(value)) return value;
+  return value || null;
+}
+
 export function mapButtonToResponse(button) {
   const id = String(button.buttonId || '').toLowerCase();
   const title = String(button.buttonTitle || '').trim();

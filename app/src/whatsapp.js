@@ -25,6 +25,7 @@ async function recordOutbound(kind, to, body, buttons = [], meta = {}) {
     to: normalizePhone(to),
     body,
     buttons,
+    status: meta.status || 'sent',
     meta,
     createdAt: nowIso()
   };
@@ -138,31 +139,33 @@ async function sendMetaInteractiveButtons(to, text, buttons = []) {
 export async function sendOptIn(elder, family) {
   const body = `שלום ${elder.name} 🌿\nכאן מלאכי. ${family.ownerName} ביקש/ה לצרף אותך לבדיקת בוקר יומית ב-WhatsApp. בכל יום בשעה ${elder.dailyCheckTime} נשלח הודעה קצרה כדי לוודא שהכול בסדר.`;
   const buttons = [{ id: 'approve_optin', title: 'מאשר/ת' }, { id: 'decline_optin', title: 'לא מעוניין/ת' }];
+  let providerResponse = null;
   if (config.whatsappProvider === 'meta') {
-    await sendMetaTemplate(elder.whatsappPhone, config.meta.templates.optin, 'he', [
+    providerResponse = await sendMetaTemplate(elder.whatsappPhone, config.meta.templates.optin, 'he', [
       ...bodyComponent([elder.name, family.ownerName, elder.dailyCheckTime]),
       quickReplyButton(0, 'approve_optin'),
       quickReplyButton(1, 'decline_optin')
     ]);
   }
-  return recordOutbound('optin', elder.whatsappPhone, body, buttons, { elderId: elder.id });
+  return recordOutbound('optin', elder.whatsappPhone, body, buttons, { elderId: elder.id, whatsappMessageId: providerResponse?.messages?.[0]?.id || null });
 }
 
 export async function sendContactOptIn(contact, elder, family) {
   const body = `שלום ${contact.name} 🌿\nכאן מלאכי. ${family.ownerName} צירף/ה אותך כאיש קשר להתראות עבור ${elder.name}. אם ${elder.name} לא יענה/תענה לבדיקת הבוקר — נעדכן אותך ב־WhatsApp.`;
   const buttons = [{ id: `approve_contact_optin:${contact.id}`, title: 'מאשר/ת' }, { id: `decline_contact_optin:${contact.id}`, title: 'לא מעוניין/ת' }];
+  let providerResponse = null;
   if (config.whatsappProvider === 'meta') {
     const usesElderOptInTemplate = config.meta.templates.contactOptin === config.meta.templates.optin;
     const params = usesElderOptInTemplate
       ? [contact.name, family.ownerName, elder.dailyCheckTime]
       : [contact.name, elder.name, family.ownerName];
-    await sendMetaTemplate(contact.whatsappPhone, config.meta.templates.contactOptin, 'he', [
+    providerResponse = await sendMetaTemplate(contact.whatsappPhone, config.meta.templates.contactOptin, 'he', [
       ...bodyComponent(params),
       quickReplyButton(0, `approve_contact_optin:${contact.id}`),
       quickReplyButton(1, `decline_contact_optin:${contact.id}`)
     ]);
   }
-  return recordOutbound('contact_optin', contact.whatsappPhone, body, buttons, { elderId: elder.id, contactId: contact.id });
+  return recordOutbound('contact_optin', contact.whatsappPhone, body, buttons, { elderId: elder.id, contactId: contact.id, whatsappMessageId: providerResponse?.messages?.[0]?.id || null });
 }
 
 export async function sendDailyCheck(elder, check) {
@@ -174,50 +177,55 @@ export async function sendDailyCheck(elder, check) {
   const buttons = singleOkMode
     ? [{ id: 'daily_ok', title: 'אני בסדר' }]
     : [{ id: 'daily_ok', title: 'הכול בסדר' }, { id: 'daily_greeting', title: 'שלח ד״ש למשפחה' }];
+  let providerResponse = null;
   if (config.whatsappProvider === 'meta' && (freeformMode || singleOkMode)) {
-    await sendMetaInteractiveButtons(elder.whatsappPhone, body, buttons);
+    providerResponse = await sendMetaInteractiveButtons(elder.whatsappPhone, body, buttons);
   } else if (config.whatsappProvider === 'meta') {
     const templateButtons = singleOkMode
       ? [quickReplyButton(0, 'daily_ok')]
       : [quickReplyButton(0, 'daily_ok'), quickReplyButton(1, 'daily_greeting')];
-    await sendMetaTemplate(elder.whatsappPhone, config.meta.templates.dailyCheck, 'he', [
+    providerResponse = await sendMetaTemplate(elder.whatsappPhone, config.meta.templates.dailyCheck, 'he', [
       ...bodyComponent([elder.name]),
       ...templateButtons
     ]);
   }
-  return recordOutbound('daily_check', elder.whatsappPhone, body, buttons, { elderId: elder.id, checkId: check.id, mode: config.dailyCheckMode });
+  return recordOutbound('daily_check', elder.whatsappPhone, body, buttons, { elderId: elder.id, checkId: check.id, mode: config.dailyCheckMode, whatsappMessageId: providerResponse?.messages?.[0]?.id || null });
 }
 
 export async function sendDistressAlert(contact, elder, check) {
   const time = new Date().toLocaleTimeString('he-IL', { timeZone: config.timezone || 'Asia/Jerusalem', hour: '2-digit', minute: '2-digit' });
   const body = `התראת מלאכי: ${elder.name} לחץ/ה על “מצוקה” בשעה ${time}. מומלץ ליצור קשר מיד.`;
+  let providerResponse = null;
   if (config.whatsappProvider === 'meta') {
-    await sendMetaTemplate(contact.whatsappPhone, config.meta.templates.distressAlert, 'he', bodyComponent([elder.name, time]));
+    providerResponse = await sendMetaTemplate(contact.whatsappPhone, config.meta.templates.distressAlert, 'he', bodyComponent([elder.name, time]));
   }
-  return recordOutbound('distress_alert', contact.whatsappPhone, body, [], { elderId: elder.id, checkId: check?.id });
+  return recordOutbound('distress_alert', contact.whatsappPhone, body, [], { elderId: elder.id, checkId: check?.id, whatsappMessageId: providerResponse?.messages?.[0]?.id || null });
 }
 
 export async function sendNoResponseAlert(contact, elder, check) {
   const time = new Date().toLocaleTimeString('he-IL', { timeZone: config.timezone || 'Asia/Jerusalem', hour: '2-digit', minute: '2-digit' });
   const body = `מלאכי: ${elder.name} לא ענה/ענתה להודעת הבוקר עד עכשיו. כדאי ליצור קשר ולוודא שהכול בסדר.`;
+  let providerResponse = null;
   if (config.whatsappProvider === 'meta') {
-    await sendMetaTemplate(contact.whatsappPhone, config.meta.templates.noResponseAlert, 'he', bodyComponent([elder.name, time]));
+    providerResponse = await sendMetaTemplate(contact.whatsappPhone, config.meta.templates.noResponseAlert, 'he', bodyComponent([elder.name, time]));
   }
-  return recordOutbound('no_response_alert', contact.whatsappPhone, body, [], { elderId: elder.id, checkId: check.id });
+  return recordOutbound('no_response_alert', contact.whatsappPhone, body, [], { elderId: elder.id, checkId: check.id, whatsappMessageId: providerResponse?.messages?.[0]?.id || null });
 }
 
 export async function sendFamilyGreeting(contact, elder, check) {
   const body = `הודעת מלאכי: ${elder.name} שולח/ת לך דרישת שלום ❤️`;
+  let providerResponse = null;
   if (config.whatsappProvider === 'meta') {
-    await sendMetaTemplate(contact.whatsappPhone, config.meta.templates.familyGreeting, 'he', bodyComponent([elder.name]));
+    providerResponse = await sendMetaTemplate(contact.whatsappPhone, config.meta.templates.familyGreeting, 'he', bodyComponent([elder.name]));
   }
-  return recordOutbound('family_greeting', contact.whatsappPhone, body, [], { elderId: elder.id, checkId: check?.id });
+  return recordOutbound('family_greeting', contact.whatsappPhone, body, [], { elderId: elder.id, checkId: check?.id, whatsappMessageId: providerResponse?.messages?.[0]?.id || null });
 }
 
 export async function sendOkAck(elder) {
   const body = `תודה ${elder.name} ❤️\nשמחנו לשמוע שהכול בסדר. נבדוק שוב מחר בבוקר.`;
+  let providerResponse = null;
   if (config.whatsappProvider === 'meta') {
-    await sendMetaText(elder.whatsappPhone, body);
+    providerResponse = await sendMetaText(elder.whatsappPhone, body);
   }
-  return recordOutbound('ok_ack', elder.whatsappPhone, body, [], { elderId: elder.id });
+  return recordOutbound('ok_ack', elder.whatsappPhone, body, [], { elderId: elder.id, whatsappMessageId: providerResponse?.messages?.[0]?.id || null });
 }

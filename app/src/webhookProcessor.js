@@ -1,10 +1,11 @@
 import { id, loadDb, mutateDb, nowIso } from './store.js';
-import { extractWhatsAppButtonEvents, extractWhatsAppTextEvents, mapButtonToResponse, mapTextToIntent } from './metaWebhook.js';
+import { extractWhatsAppButtonEvents, extractWhatsAppStatusEvents, extractWhatsAppTextEvents, mapButtonToResponse, mapMetaDeliveryStatus, mapTextToIntent } from './metaWebhook.js';
 import { handleElderResponse, optOutByPhone, setContactOptIn, setOptIn } from './malachi.js';
 
 export async function processWhatsAppWebhookPayload(payload) {
   const buttons = extractWhatsAppButtonEvents(payload);
   const texts = extractWhatsAppTextEvents(payload);
+  const statuses = extractWhatsAppStatusEvents(payload);
   const handled = [];
   const db = await loadDb();
   const findElder = (from) => {
@@ -99,7 +100,30 @@ export async function processWhatsAppWebhookPayload(payload) {
     else handled.push({ event: textEvent, mapped, status: 'response_recorded', check: await handleElderResponse({ elderId: elder.id, response: mapped }) });
   }
 
+  const statusUpdates = [];
+  for (const statusEvent of statuses) {
+    const mappedStatus = mapMetaDeliveryStatus(statusEvent.status);
+    if (!mappedStatus || !statusEvent.messageId) {
+      statusUpdates.push({ event: statusEvent, status: 'ignored' });
+      continue;
+    }
+    statusUpdates.push({ event: statusEvent, status: 'delivery_status_updated', mappedStatus });
+  }
+
   await mutateDb((currentDb) => {
+    currentDb.outboundMessages = currentDb.outboundMessages || [];
+    for (const item of statusUpdates) {
+      if (item.status !== 'delivery_status_updated') continue;
+      const event = item.event || {};
+      const message = currentDb.outboundMessages.find((m) => m.meta?.whatsappMessageId === event.messageId);
+      if (!message) continue;
+      message.status = item.mappedStatus;
+      message.providerStatusAt = event.timestamp ? new Date(Number(event.timestamp) * 1000).toISOString() : nowIso();
+      message.providerRecipientId = event.recipientId || message.providerRecipientId || '';
+      if (event.conversationId) message.providerConversationId = event.conversationId;
+      if (event.pricingCategory) message.providerPricingCategory = event.pricingCategory;
+      if (event.error) message.error = event.error;
+    }
     currentDb.inboundMessages = currentDb.inboundMessages || [];
     for (const item of handled) {
       const event = item.event || {};
@@ -124,12 +148,19 @@ export async function processWhatsAppWebhookPayload(payload) {
       payload: {
         buttonEvents: buttons.length,
         textEvents: texts.length,
+        statusEvents: statuses.length,
         handled: handled.map((item) => ({
           status: item.status,
           mapped: item.mapped || null,
           fromLast4: String(item.event?.from || '').replace(/[^0-9]/g, '').slice(-4),
           matched: Boolean(item.elder || item.contact || item.result?.family),
           updated: item.result?.updated ?? null
+        })),
+        statusUpdates: statusUpdates.map((item) => ({
+          status: item.status,
+          mappedStatus: item.mappedStatus || null,
+          messageId: item.event?.messageId || null,
+          recipientLast4: String(item.event?.recipientId || '').replace(/[^0-9]/g, '').slice(-4)
         }))
       },
       createdAt: nowIso()
