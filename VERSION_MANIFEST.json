@@ -648,6 +648,12 @@
       "file": "specs/v111_release_notes.md",
       "title": "# מלאכי V111 - תקשורת ברורה, שיוך Opt-in וניהול פשוט",
       "zip": "malachi-mvp-project-v111.zip"
+    },
+    {
+      "version": 112,
+      "file": "specs/v112_release_notes.md",
+      "title": "# מלאכי V112 - הוספת בני משפחה/מבוגרים והגדרות אי־מענה",
+      "zip": "malachi-mvp-project-v112.zip"
     }
   ]
 }

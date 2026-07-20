@@ -52,6 +52,27 @@ function cleanEmail(email = '') {
   return String(email || '').trim().toLowerCase();
 }
 
+function alertDelayMinutes(input = {}) {
+  const value = Number(input.noResponseGraceMinutes ?? input.alertDelayMinutes ?? 30);
+  return [15, 30, 60].includes(value) ? value : 30;
+}
+
+function alertRepeatCount(input = {}) {
+  const value = Number(input.noResponseAlertRepeatCount ?? input.alertRepeatCount ?? 2);
+  return [1, 2, 3].includes(value) ? value : 2;
+}
+
+function elderAlertDelay(elder, fallback = config.noResponseGraceMinutes) {
+  if (Number(fallback) === 0) return 0;
+  const value = Number(elder?.noResponseGraceMinutes || elder?.alertDelayMinutes || fallback || 30);
+  return [15, 30, 60].includes(value) ? value : Number(fallback || 30);
+}
+
+function elderAlertRepeatCount(elder) {
+  const value = Number(elder?.noResponseAlertRepeatCount || elder?.alertRepeatCount || 2);
+  return [1, 2, 3].includes(value) ? value : 2;
+}
+
 function requireAccountInput(input = {}) {
   const ownerName = requireField(input, 'ownerName');
   const ownerPhone = normalizePhone(requireField(input, 'ownerPhone'));
@@ -148,6 +169,8 @@ export async function createFamily(input) {
       whatsappPhone: elderPhone,
       dailyCheckTime,
       timezone: input.timezone || 'Asia/Jerusalem',
+      noResponseGraceMinutes: alertDelayMinutes(input),
+      noResponseAlertRepeatCount: alertRepeatCount(input),
       optInStatus: input.skipOptIn ? 'approved' : 'pending',
       active: true,
       createdAt: nowIso()
@@ -221,6 +244,8 @@ export async function addElderByToken(token, input = {}) {
       whatsappPhone: elderPhone,
       dailyCheckTime,
       timezone: input.timezone || 'Asia/Jerusalem',
+      noResponseGraceMinutes: alertDelayMinutes(input),
+      noResponseAlertRepeatCount: alertRepeatCount(input),
       optInStatus: input.skipOptIn ? 'approved' : 'pending',
       active: true,
       createdAt: nowIso()
@@ -587,6 +612,8 @@ export async function updateElderByToken(token, elderId, updates) {
       if (!isValidTime(updates.dailyCheckTime)) throw new Error('שעה לא תקינה');
       elder.dailyCheckTime = String(updates.dailyCheckTime).trim();
     }
+    if (updates.noResponseGraceMinutes || updates.alertDelayMinutes) elder.noResponseGraceMinutes = alertDelayMinutes(updates);
+    if (updates.noResponseAlertRepeatCount || updates.alertRepeatCount) elder.noResponseAlertRepeatCount = alertRepeatCount(updates);
     if (updates.contactName && contact) contact.name = String(updates.contactName).trim();
     if (updates.contactPhone && contact) contact.whatsappPhone = normalizePhone(updates.contactPhone);
 
@@ -633,6 +660,8 @@ export async function sendCheckNow(elderId, { source = 'manual', scheduledLocalD
       status: 'sent',
       respondedAt: null,
       alertSentAt: null,
+      noResponseAlertCount: 0,
+      lastNoResponseAlertAt: null,
       source,
       scheduledLocalDate
     };
@@ -769,15 +798,24 @@ export async function processNoResponses({ graceMinutes = 60 } = {}) {
     const now = Date.now();
     const alerts = [];
     for (const check of db.checks) {
-      if (check.status !== 'sent' || !check.sentAt) continue;
-      const elapsedMin = (now - new Date(check.sentAt).getTime()) / 60000;
-      if (elapsedMin < graceMinutes) continue;
       const elder = db.elders.find((e) => e.id === check.elderId);
+      if (!elder || !check.sentAt) continue;
+      const delayMinutes = elderAlertDelay(elder, graceMinutes);
+      const maxAlerts = elderAlertRepeatCount(elder);
+      const currentAlerts = Number(check.noResponseAlertCount || (check.alertSentAt ? 1 : 0));
+      if (!['sent', 'no_response'].includes(check.status)) continue;
+      if (currentAlerts >= maxAlerts) continue;
+      const anchor = currentAlerts > 0 ? (check.lastNoResponseAlertAt || check.alertSentAt) : check.sentAt;
+      const elapsedMin = (now - new Date(anchor).getTime()) / 60000;
+      if (elapsedMin < delayMinutes) continue;
       const contacts = db.contacts.filter((c) => c.elderId === check.elderId && c.optInStatus === 'approved');
-      if (!elder || !contacts.length) continue;
+      if (!contacts.length) continue;
       check.status = 'no_response';
-      check.alertSentAt = nowIso();
-      db.audit.push({ id: id('evt'), type: 'no_response_alert_sent', payload: { elderId: elder.id, checkId: check.id }, createdAt: nowIso() });
+      const alertAt = nowIso();
+      check.alertSentAt = check.alertSentAt || alertAt;
+      check.lastNoResponseAlertAt = alertAt;
+      check.noResponseAlertCount = currentAlerts + 1;
+      db.audit.push({ id: id('evt'), type: 'no_response_alert_sent', payload: { elderId: elder.id, checkId: check.id, count: check.noResponseAlertCount, maxAlerts, delayMinutes }, createdAt: nowIso() });
       for (const contact of contacts) alerts.push({ check: { ...check }, elder: { ...elder }, contact: { ...contact } });
     }
     return alerts;

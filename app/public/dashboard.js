@@ -64,19 +64,31 @@ function actionHint(status){
   return 'עדיין לא נשלחה בדיקה היום.';
 }
 
+function alertDelayOptions(value = 30) {
+  const current = Number(value || 30);
+  return [15, 30, 60].map((minutes) => `<option value="${minutes}" ${current === minutes ? 'selected' : ''}>${minutes === 60 ? 'שעה' : `${minutes} דקות`}</option>`).join('');
+}
+
+function alertRepeatOptions(value = 2) {
+  const current = Number(value || 2);
+  return [1, 2, 3].map((count) => `<option value="${count}" ${current === count ? 'selected' : ''}>${count === 1 ? 'פעם אחת' : count === 2 ? 'פעמיים' : 'שלוש פעמים'}</option>`).join('');
+}
+
 function addElderCard(open = false) {
   return `<section class="dashboard-card setup-card">
     <span class="card-kicker">הוספה</span>
     <h3>הוספת מבוגר נוסף לבדיקה יומית</h3>
     <p>אפשר לנהל כמה הורים/מבוגרים באותו אזור אישי. לכל אחד תהיה שעת בדיקה ואפשר להוסיף לו כמה בני משפחה להתראות.</p>
-    <details class="edit-box" ${open ? 'open' : ''}><summary>+ הוסף/י מבוגר</summary>
+    <details class="edit-box action-details" ${open ? 'open' : ''}><summary class="button primary">+ הוסף/י מבוגר</summary>
       <form class="dashboard-form" onsubmit="addElder(event)">
         <label>שם ההורה / האדם המבוגר<input name="elderName" required placeholder="למשל: רחל"></label>
         <label>טלפון WhatsApp של ההורה<input name="elderPhone" required placeholder="0521234567 או +972521234567"></label>
         <label>שעת בדיקה יומית<input type="time" name="dailyCheckTime" required value="09:00"></label>
         <label>שם בן/בת משפחה ראשון להתראה<input name="contactName" placeholder="אפשר להשאיר ריק — נשתמש בבן המשפחה הראשי"></label>
         <label>טלפון בן/בת משפחה ראשון להתראה<input name="contactPhone" placeholder="אפשר להשאיר ריק — נשתמש בטלפון בן המשפחה"></label>
-        <label class="check dashboard-consent"><input type="checkbox" name="elderConsent" required> אני מצהיר/ה שהאדם יודע או יקבל הסבר, והשירות יופעל רק לאחר אישורו/ה ב־WhatsApp.</label>
+        <label>מתי להתריע אם אין מענה<select name="noResponseGraceMinutes">${alertDelayOptions(30)}</select></label>
+        <label>כמה פעמים לשלוח התראת אי־מענה<select name="noResponseAlertRepeatCount">${alertRepeatOptions(2)}</select></label>
+        <label class="check dashboard-consent"><input type="checkbox" name="elderConsent" required><span>אני מצהיר/ה שהאדם יודע או יקבל הסבר, והשירות יופעל רק לאחר אישורו/ה ב־WhatsApp.</span></label>
         <button class="button primary" type="submit">שמירת המבוגר</button>
       </form>
     </details>
@@ -109,8 +121,10 @@ async function load() {
           <span class="status ${elder.active ? 'ok' : 'warning'}">${elder.active ? 'פעיל' : 'מושהה'}</span>
         </div>
         <div class="dashboard-grid compact-grid">
-          <div><b>טלפון</b><span>${esc(elder.whatsappPhone)}</span></div>
           <div><b>שעה יומית</b><span>${esc(elder.dailyCheckTime)}</span></div>
+          <div><b>טלפון</b><span>${esc(elder.whatsappPhone)}</span></div>
+          <div><b>התראת אי־מענה</b><span>אחרי ${Number(elder.noResponseGraceMinutes || 30) === 60 ? 'שעה' : `${esc(elder.noResponseGraceMinutes || 30)} דקות`}</span></div>
+          <div><b>מספר התראות</b><span>${Number(elder.noResponseAlertRepeatCount || 2) === 1 ? 'פעם אחת' : Number(elder.noResponseAlertRepeatCount || 2) === 2 ? 'פעמיים' : 'שלוש פעמים'}</span></div>
           <div><b>אישור ההורה</b><span>${optInLabel(elder.optInStatus)}</span></div>
           <div><b>מצב אחרון</b><span>${statusLabel(elder.latestCheck?.status)}</span></div>
         </div>
@@ -125,12 +139,14 @@ async function load() {
             <label>שם<input name="elderName" value="${esc(elder.name)}"></label>
             <label>טלפון WhatsApp<input name="elderPhone" value="${esc(elder.whatsappPhone)}"></label>
             <label>שעה יומית<input type="time" name="dailyCheckTime" value="${esc(elder.dailyCheckTime)}"></label>
+            <label>מתי להתריע אם אין מענה<select name="noResponseGraceMinutes">${alertDelayOptions(elder.noResponseGraceMinutes || 30)}</select></label>
+            <label>כמה פעמים לשלוח התראת אי־מענה<select name="noResponseAlertRepeatCount">${alertRepeatOptions(elder.noResponseAlertRepeatCount || 2)}</select></label>
             <label>שם איש קשר להתראה<input name="contactName" value="${esc(elder.contact?.name || '')}"></label>
             <label>טלפון איש קשר להתראה<input name="contactPhone" value="${esc(elder.contact?.whatsappPhone || '')}"></label>
             <button class="button primary" type="submit">שמירה</button>
           </form>
         </details>
-        <details class="edit-box"><summary>+ הוספת בן/בת משפחה נוסף להתראות</summary>
+        <details class="edit-box action-details"><summary class="button secondary">+ הוספת בן/בת משפחה נוסף להתראות</summary>
           <form onsubmit="addContact(event, '${elder.id}')">
             <label>שם בן/בת משפחה<input name="contactName" required></label>
             <label>טלפון WhatsApp<input name="contactPhone" required></label>
