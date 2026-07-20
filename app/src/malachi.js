@@ -217,6 +217,8 @@ export async function addContactByToken(token, elderId, input) {
     if (!family) throw new Error('Family not found');
     const elder = db.elders.find((e) => e.id === elderId && e.familyId === family.id);
     if (!elder) throw new Error('Elder not found');
+    const existing = db.contacts.find((c) => c.elderId === elderId && normalizePhone(c.whatsappPhone) === phone);
+    if (existing) throw new Error('איש קשר עם מספר WhatsApp זה כבר קיים עבור האדם הזה');
     const contact = { id: id('contact'), elderId, name, whatsappPhone: phone, relationship: input.relationship || 'קרוב משפחה', optInStatus: 'pending', createdAt: nowIso() };
     db.contacts.push(contact);
     db.audit.push({ id: id('evt'), type: 'contact_added', payload: { elderId, contactId: contact.id }, createdAt: nowIso() });

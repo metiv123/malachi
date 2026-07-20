@@ -11,6 +11,18 @@ async function api(path, options = {}) {
   return data;
 }
 
+function lockSubmit(event, text = 'שומר…') {
+  const button = event?.currentTarget?.querySelector?.('button[type="submit"]');
+  if (!button) return () => {};
+  const original = button.textContent;
+  button.disabled = true;
+  button.textContent = text;
+  return () => {
+    button.disabled = false;
+    button.textContent = original;
+  };
+}
+
 function esc(value = '') {
   return String(value).replace(/[&<>"]/g, (ch) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' }[ch]));
 }
@@ -275,17 +287,29 @@ window.resendContactOptIn = async (contactId) => {
 window.setActive = async (elderId, active) => { await api(`/api/elders/${elderId}/active`, { method:'POST', body:JSON.stringify({ token, active }) }); await load(); };
 window.addContact = async (event, elderId) => {
   event.preventDefault();
-  const payload = Object.fromEntries(new FormData(event.currentTarget).entries());
-  payload.token = token;
-  await api(`/api/elders/${elderId}/contacts`, { method:'POST', body:JSON.stringify(payload) });
-  await load();
+  const unlock = lockSubmit(event, 'מוסיף…');
+  try {
+    const payload = Object.fromEntries(new FormData(event.currentTarget).entries());
+    payload.token = token;
+    await api(`/api/elders/${elderId}/contacts`, { method:'POST', body:JSON.stringify(payload) });
+    await load();
+  } catch (err) {
+    unlock();
+    alert(err.message || 'לא ניתן להוסיף איש קשר');
+  }
 };
 window.addElder = async (event) => {
   event.preventDefault();
-  const payload = Object.fromEntries(new FormData(event.currentTarget).entries());
-  payload.token = token;
-  await api('/api/elders', { method:'POST', body:JSON.stringify(payload) });
-  await load();
+  const unlock = lockSubmit(event, 'שומר…');
+  try {
+    const payload = Object.fromEntries(new FormData(event.currentTarget).entries());
+    payload.token = token;
+    await api('/api/elders', { method:'POST', body:JSON.stringify(payload) });
+    await load();
+  } catch (err) {
+    unlock();
+    alert(err.message || 'לא ניתן לשמור מבוגר');
+  }
 };
 window.deleteContact = async (contactId) => {
   if (!confirm('למחוק איש קשר זה?')) return;
@@ -294,10 +318,16 @@ window.deleteContact = async (contactId) => {
 };
 window.updateElder = async (event, elderId) => {
   event.preventDefault();
-  const payload = Object.fromEntries(new FormData(event.currentTarget).entries());
-  payload.token = token;
-  await api(`/api/elders/${elderId}/update`, { method:'POST', body:JSON.stringify(payload) });
-  await load();
+  const unlock = lockSubmit(event, 'שומר…');
+  try {
+    const payload = Object.fromEntries(new FormData(event.currentTarget).entries());
+    payload.token = token;
+    await api(`/api/elders/${elderId}/update`, { method:'POST', body:JSON.stringify(payload) });
+    await load();
+  } catch (err) {
+    unlock();
+    alert(err.message || 'לא ניתן לשמור שינוי');
+  }
 };
 load().catch((err) => {
   if (!root) return;

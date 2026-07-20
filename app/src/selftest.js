@@ -1,6 +1,6 @@
 import { rm } from 'node:fs/promises';
 import path from 'node:path';
-import { addElderByToken, createFamily, createUserAccount, deleteFamilyByToken, exportFamiliesCsv, getCheckHistoryByToken, getFamilyByToken, getOutboundMessagesByToken, handleElderResponse, listDashboard, loginFamily, optOutByPhone, processDueChecks, processNoResponses, sendCheckNow, setContactOptIn, setElderActiveByToken, setFamilyPasswordByToken, setOptIn, systemReadiness, updateElderByToken, weeklyReportByToken } from './malachi.js';
+import { addContactByToken, addElderByToken, createFamily, createUserAccount, deleteFamilyByToken, exportFamiliesCsv, getCheckHistoryByToken, getFamilyByToken, getOutboundMessagesByToken, handleElderResponse, listDashboard, loginFamily, optOutByPhone, processDueChecks, processNoResponses, sendCheckNow, setContactOptIn, setElderActiveByToken, setFamilyPasswordByToken, setOptIn, systemReadiness, updateElderByToken, weeklyReportByToken } from './malachi.js';
 import { extractWhatsAppButtonEvents, extractWhatsAppTextEvents, mapButtonToResponse, mapTextToIntent } from './metaWebhook.js';
 import { processWhatsAppWebhookPayload } from './webhookProcessor.js';
 import { loadDb, saveDb } from './store.js';
@@ -83,6 +83,13 @@ async function run() {
   assert(contactOptInHandled[0]?.status === 'contact_opt_in_approved', 'processor should approve contact opt-in');
   updatedFamily = await getFamilyByToken(created.family.managementToken);
   assert(updatedFamily.elders[0].contacts[0].optInStatus === 'approved', 'webhook contact opt-in should approve contact');
+  let duplicateRejected = false;
+  try {
+    await addContactByToken(created.family.managementToken, created.elder.id, { contactName: 'כפול', contactPhone: '+972501111111' });
+  } catch (err) {
+    duplicateRejected = String(err.message).includes('כבר קיים');
+  }
+  assert(duplicateRejected, 'duplicate contact phone for same elder should be rejected');
 
   await setOptIn(created.elder.id, true);
   await setContactOptIn(created.contact.id, true);
