@@ -96,3 +96,6 @@ body.auth-screen .logo{width:36px;height:36px;border-radius:12px}
 
 /* V112: clearer dashboard add actions and alert settings */
 .action-details>summary.button{display:inline-flex;list-style:none;cursor:pointer;margin:8px 0 14px}.action-details>summary.button::-webkit-details-marker{display:none}.dashboard-form select,.setup-card select{width:100%;margin-top:5px;border:1px solid #cfe0ee;border-radius:13px;padding:11px;font-size:16px;background:#fff;color:var(--ink)}.dashboard-consent{grid-column:1/-1}.dashboard-consent span{display:inline;line-height:1.45}.setup-card .action-details[open]>summary,.elder-card .action-details[open]>summary{margin-bottom:16px}.elder-card .action-details{margin-top:14px}.compact-grid{align-items:start}@media(max-width:760px){.action-details>summary.button{width:100%;justify-content:center}.dashboard-consent{align-items:flex-start!important}}
+
+/* V113: make add forms understandable */
+.inline-add-contact{margin-top:14px;background:#f8fcff;border:1px dashed #b8d6ea;border-radius:16px;padding:12px}.inline-add-contact>summary{cursor:pointer;font-weight:900;color:var(--blue);list-style:none}.inline-add-contact>summary::-webkit-details-marker{display:none}.compact-form{margin-top:12px}.setup-card>.dashboard-form{margin-top:16px}

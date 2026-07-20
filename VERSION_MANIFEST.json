@@ -1,5 +1,5 @@
 {
-  "latest": 112,
+  "latest": 113,
   "versions": [
     {
       "version": 4,
@@ -654,6 +654,12 @@
       "file": "specs/v112_release_notes.md",
       "title": "# מלאכי V112 - הוספת בני משפחה/מבוגרים והגדרות אי־מענה",
       "zip": "malachi-mvp-project-v112.zip"
+    },
+    {
+      "version": 113,
+      "file": "specs/v113_release_notes.md",
+      "title": "# מלאכי V113 - תיקון טפסי הוספת מבוגר ובן משפחה",
+      "zip": "malachi-mvp-project-v113.zip"
     }
   ]
 }

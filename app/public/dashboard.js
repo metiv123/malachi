@@ -75,23 +75,22 @@ function alertRepeatOptions(value = 2) {
 }
 
 function addElderCard(open = false) {
+  const form = `<form class="dashboard-form" onsubmit="addElder(event)">
+    <label>שם ההורה / האדם המבוגר<input name="elderName" required placeholder="למשל: רחל"></label>
+    <label>טלפון WhatsApp של ההורה<input name="elderPhone" required placeholder="0521234567 או +972521234567"></label>
+    <label>שעת בדיקה יומית<input type="time" name="dailyCheckTime" required value="09:00"></label>
+    <label>שם בן/בת משפחה ראשון להתראה<input name="contactName" placeholder="אפשר להשאיר ריק — נשתמש בבן המשפחה הראשי"></label>
+    <label>טלפון בן/בת משפחה ראשון להתראה<input name="contactPhone" placeholder="אפשר להשאיר ריק — נשתמש בטלפון בן המשפחה"></label>
+    <label>מתי להתריע אם אין מענה<select name="noResponseGraceMinutes">${alertDelayOptions(30)}</select></label>
+    <label>כמה פעמים לשלוח התראת אי־מענה<select name="noResponseAlertRepeatCount">${alertRepeatOptions(2)}</select></label>
+    <label class="check dashboard-consent"><input type="checkbox" name="elderConsent" required><span>אני מצהיר/ה שהאדם יודע או יקבל הסבר, והשירות יופעל רק לאחר אישורו/ה ב־WhatsApp.</span></label>
+    <button class="button primary" type="submit">שמירת המבוגר</button>
+  </form>`;
   return `<section class="dashboard-card setup-card">
     <span class="card-kicker">הוספה</span>
     <h3>הוספת מבוגר נוסף לבדיקה יומית</h3>
     <p>אפשר לנהל כמה הורים/מבוגרים באותו אזור אישי. לכל אחד תהיה שעת בדיקה ואפשר להוסיף לו כמה בני משפחה להתראות.</p>
-    <details class="edit-box action-details" ${open ? 'open' : ''}><summary class="button primary">+ הוסף/י מבוגר</summary>
-      <form class="dashboard-form" onsubmit="addElder(event)">
-        <label>שם ההורה / האדם המבוגר<input name="elderName" required placeholder="למשל: רחל"></label>
-        <label>טלפון WhatsApp של ההורה<input name="elderPhone" required placeholder="0521234567 או +972521234567"></label>
-        <label>שעת בדיקה יומית<input type="time" name="dailyCheckTime" required value="09:00"></label>
-        <label>שם בן/בת משפחה ראשון להתראה<input name="contactName" placeholder="אפשר להשאיר ריק — נשתמש בבן המשפחה הראשי"></label>
-        <label>טלפון בן/בת משפחה ראשון להתראה<input name="contactPhone" placeholder="אפשר להשאיר ריק — נשתמש בטלפון בן המשפחה"></label>
-        <label>מתי להתריע אם אין מענה<select name="noResponseGraceMinutes">${alertDelayOptions(30)}</select></label>
-        <label>כמה פעמים לשלוח התראת אי־מענה<select name="noResponseAlertRepeatCount">${alertRepeatOptions(2)}</select></label>
-        <label class="check dashboard-consent"><input type="checkbox" name="elderConsent" required><span>אני מצהיר/ה שהאדם יודע או יקבל הסבר, והשירות יופעל רק לאחר אישורו/ה ב־WhatsApp.</span></label>
-        <button class="button primary" type="submit">שמירת המבוגר</button>
-      </form>
-    </details>
+    ${open ? form : `<details class="edit-box action-details"><summary class="button primary">פתח/י טופס הוספת מבוגר</summary>${form}</details>`}
   </section>`;
 }
 
@@ -133,6 +132,13 @@ async function load() {
           <div class="mini-title"><h4>בני משפחה שמקבלים התראות</h4><button class="tiny" onclick="resendElderOptIn('${elder.id}')">שלח אישור להורה</button></div>
           <p class="small">אפשר להוסיף כמה בני משפחה. אם אין תגובה מהמבוגר — כל מי שאישר יקבל התראה.</p>
           <div class="contact-list">${contacts.map((c) => `<article><b>${esc(c.name)}</b><span>${esc(c.whatsappPhone)}</span><small>${contactOptInLabel(c.optInStatus)}</small><div><button class="tiny" onclick="resendContactOptIn('${c.id}')">שלח אישור</button> ${contacts.length > 1 ? `<button class="tiny danger-text" onclick="deleteContact('${c.id}')">מחיקה</button>` : ''}</div></article>`).join('')}</div>
+          <details class="inline-add-contact"><summary>+ הוסף/י בן משפחה נוסף להתראות</summary>
+            <form class="dashboard-form compact-form" onsubmit="addContact(event, '${elder.id}')">
+              <label>שם בן/בת משפחה<input name="contactName" required></label>
+              <label>טלפון WhatsApp<input name="contactPhone" required></label>
+              <button class="button primary" type="submit">הוספת בן משפחה</button>
+            </form>
+          </details>
         </section>
         <details class="edit-box"><summary>עריכת פרטי ההורה</summary>
           <form onsubmit="updateElder(event, '${elder.id}')">
@@ -144,13 +150,6 @@ async function load() {
             <label>שם איש קשר להתראה<input name="contactName" value="${esc(elder.contact?.name || '')}"></label>
             <label>טלפון איש קשר להתראה<input name="contactPhone" value="${esc(elder.contact?.whatsappPhone || '')}"></label>
             <button class="button primary" type="submit">שמירה</button>
-          </form>
-        </details>
-        <details class="edit-box action-details"><summary class="button secondary">+ הוספת בן/בת משפחה נוסף להתראות</summary>
-          <form onsubmit="addContact(event, '${elder.id}')">
-            <label>שם בן/בת משפחה<input name="contactName" required></label>
-            <label>טלפון WhatsApp<input name="contactPhone" required></label>
-            <button class="button primary" type="submit">הוספה</button>
           </form>
         </details>
         <details class="edit-box"><summary>היסטוריה ולוג הודעות</summary>
