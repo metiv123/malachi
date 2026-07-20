@@ -99,3 +99,6 @@ body.auth-screen .logo{width:36px;height:36px;border-radius:12px}
 
 /* V113: make add forms understandable */
 .inline-add-contact{margin-top:14px;background:#f8fcff;border:1px dashed #b8d6ea;border-radius:16px;padding:12px}.inline-add-contact>summary{cursor:pointer;font-weight:900;color:var(--blue);list-style:none}.inline-add-contact>summary::-webkit-details-marker{display:none}.compact-form{margin-top:12px}.setup-card>.dashboard-form{margin-top:16px}
+
+/* V114: no hidden add forms */
+.inline-add-contact h4{margin:0 0 4px;color:var(--blue)}.inline-add-contact .small{margin:0 0 10px}.setup-card h3{margin-bottom:8px}.setup-card .dashboard-form{background:#f8fcff;border:1px solid #e2edf5;border-radius:18px;padding:14px}

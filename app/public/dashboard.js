@@ -74,7 +74,7 @@ function alertRepeatOptions(value = 2) {
   return [1, 2, 3].map((count) => `<option value="${count}" ${current === count ? 'selected' : ''}>${count === 1 ? 'פעם אחת' : count === 2 ? 'פעמיים' : 'שלוש פעמים'}</option>`).join('');
 }
 
-function addElderCard(open = false) {
+function addElderCard() {
   const form = `<form class="dashboard-form" onsubmit="addElder(event)">
     <label>שם ההורה / האדם המבוגר<input name="elderName" required placeholder="למשל: רחל"></label>
     <label>טלפון WhatsApp של ההורה<input name="elderPhone" required placeholder="0521234567 או +972521234567"></label>
@@ -88,9 +88,9 @@ function addElderCard(open = false) {
   </form>`;
   return `<section class="dashboard-card setup-card">
     <span class="card-kicker">הוספה</span>
-    <h3>הוספת מבוגר נוסף לבדיקה יומית</h3>
+    <h3>הוספת מבוגר לבדיקה יומית</h3>
     <p>אפשר לנהל כמה הורים/מבוגרים באותו אזור אישי. לכל אחד תהיה שעת בדיקה ואפשר להוסיף לו כמה בני משפחה להתראות.</p>
-    ${open ? form : `<details class="edit-box action-details"><summary class="button primary">פתח/י טופס הוספת מבוגר</summary>${form}</details>`}
+    ${form}
   </section>`;
 }
 
@@ -132,13 +132,15 @@ async function load() {
           <div class="mini-title"><h4>בני משפחה שמקבלים התראות</h4><button class="tiny" onclick="resendElderOptIn('${elder.id}')">שלח אישור להורה</button></div>
           <p class="small">אפשר להוסיף כמה בני משפחה. אם אין תגובה מהמבוגר — כל מי שאישר יקבל התראה.</p>
           <div class="contact-list">${contacts.map((c) => `<article><b>${esc(c.name)}</b><span>${esc(c.whatsappPhone)}</span><small>${contactOptInLabel(c.optInStatus)}</small><div><button class="tiny" onclick="resendContactOptIn('${c.id}')">שלח אישור</button> ${contacts.length > 1 ? `<button class="tiny danger-text" onclick="deleteContact('${c.id}')">מחיקה</button>` : ''}</div></article>`).join('')}</div>
-          <details class="inline-add-contact"><summary>+ הוסף/י בן משפחה נוסף להתראות</summary>
+          <div class="inline-add-contact">
+            <h4>הוספת בן/בת משפחה נוסף להתראות</h4>
+            <p class="small">בן/בת משפחה נוסף יקבל התראות רק אחרי אישור WhatsApp.</p>
             <form class="dashboard-form compact-form" onsubmit="addContact(event, '${elder.id}')">
               <label>שם בן/בת משפחה<input name="contactName" required></label>
               <label>טלפון WhatsApp<input name="contactPhone" required></label>
               <button class="button primary" type="submit">הוספת בן משפחה</button>
             </form>
-          </details>
+          </div>
         </section>
         <details class="edit-box"><summary>עריכת פרטי ההורה</summary>
           <form onsubmit="updateElder(event, '${elder.id}')">
@@ -191,7 +193,7 @@ async function load() {
           <p class="small">קישור ניהול פרטי לגיבוי: ${esc(location.href)}</p>
         </details>
       </section>
-      ${family.elders.length === 0 ? addElderCard(true) : `${eldersMarkup}${addElderCard(false)}`}
+      ${family.elders.length === 0 ? addElderCard() : `${eldersMarkup}${addElderCard()}`}
     </section>`
   } catch (err) { root.innerHTML = `<article class="family"><h2>לא מצאנו את המשפחה</h2><p>ייתכן שהקישור שגוי, הוחלף או נמחק.</p><p class="small">${esc(err.message)}</p><p><a class="button primary" href="${pageUrl('index.html')}">חזרה לדף הבית</a></p></article>`; return; }
   await loadHistories();

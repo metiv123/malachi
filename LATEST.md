@@ -1,5 +1,5 @@
 # מלאכי - Latest Build
 
-הגרסה האחרונה שנארזה: V113
+הגרסה האחרונה שנארזה: V114
 
-קובץ ZIP אחרון: malachi-mvp-project-v113.zip
+קובץ ZIP אחרון: malachi-mvp-project-v114.zip
