@@ -160,9 +160,14 @@ async function run() {
 
   const check3 = await sendCheckNow(created.elder.id);
   await processNoResponses({ graceMinutes: 0 });
+  await processNoResponses({ graceMinutes: 0 });
   db = await loadDb();
-  assert(db.checks.find((c) => c.id === check3.id).status === 'no_response', 'check should become no_response');
-  assert(db.outboundMessages.some((m) => m.kind === 'no_response_alert'), 'no response alert missing');
+  assert(db.checks.find((c) => c.id === check3.id).status === 'sent', 'check should stay open while reminders are sent');
+  assert(db.outboundMessages.filter((m) => m.kind === 'daily_reminder' && m.meta?.checkId === check3.id).length === 2, 'daily reminders missing');
+  await processNoResponses({ graceMinutes: 0 });
+  db = await loadDb();
+  assert(db.checks.find((c) => c.id === check3.id).status === 'no_response', 'check should become no_response after reminder attempts');
+  assert(db.outboundMessages.some((m) => m.kind === 'no_response_alert' && m.meta?.checkId === check3.id), 'no response alert missing');
 
   const webhookPayload = { entry: [{ changes: [{ value: { messages: [{ from: '972502222222', id: 'wamid.test', timestamp: '1', interactive: { button_reply: { id: 'daily_ok', title: 'הכול בסדר' } } }] } }] }] };
   const buttons = extractWhatsAppButtonEvents(webhookPayload);

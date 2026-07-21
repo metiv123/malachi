@@ -6,7 +6,9 @@ export const config = {
   schedulerIntervalMs: Number(process.env.MALACHI_SCHEDULER_INTERVAL_MS || 60000),
   selfKeepaliveEnabled: process.env.MALACHI_SELF_KEEPALIVE === 'true',
   selfKeepaliveIntervalMs: Number(process.env.MALACHI_SELF_KEEPALIVE_INTERVAL_MS || 240000),
-  noResponseGraceMinutes: Number(process.env.MALACHI_NO_RESPONSE_GRACE_MINUTES || 60),
+  noResponseGraceMinutes: Number(process.env.MALACHI_NO_RESPONSE_GRACE_MINUTES || 30),
+  reminderIntervalMinutes: Number(process.env.MALACHI_REMINDER_INTERVAL_MINUTES || process.env.MALACHI_NO_RESPONSE_GRACE_MINUTES || 30),
+  reminderAttemptCount: Number(process.env.MALACHI_REMINDER_ATTEMPT_COUNT || 3),
   betaOpen: process.env.MALACHI_BETA_OPEN !== 'false',
   betaMaxFamilies: Number(process.env.MALACHI_BETA_MAX_FAMILIES || 50),
   firebaseAuthEnabled: process.env.FIREBASE_AUTH_ENABLED === 'true',
@@ -23,6 +25,7 @@ export const config = {
     verifyToken: process.env.META_VERIFY_TOKEN || (process.env.NODE_ENV === 'production' ? '' : 'change-me'),
     templates: {
       dailyCheck: process.env.META_TEMPLATE_DAILY_CHECK || 'daily_check_he',
+      dailyReminder: process.env.META_TEMPLATE_DAILY_REMINDER || process.env.META_TEMPLATE_DAILY_CHECK || 'daily_check_he',
       distressAlert: process.env.META_TEMPLATE_DISTRESS_ALERT || 'distress_alert_he',
       noResponseAlert: process.env.META_TEMPLATE_NO_RESPONSE_ALERT || 'no_response_alert_he',
       familyGreeting: process.env.META_TEMPLATE_FAMILY_GREETING || 'family_greeting_message_he',

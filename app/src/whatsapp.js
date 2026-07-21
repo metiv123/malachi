@@ -192,6 +192,21 @@ export async function sendDailyCheck(elder, check) {
   return recordOutbound('daily_check', elder.whatsappPhone, body, buttons, { elderId: elder.id, checkId: check.id, mode: config.dailyCheckMode, whatsappMessageId: providerResponse?.messages?.[0]?.id || null });
 }
 
+export async function sendDailyReminder(elder, check) {
+  const body = `היי ${elder.name} 🌿\nרק תזכורת קטנה ממלאכי — נשמח לדעת שהכול בסדר. אפשר ללחוץ על הכפתור למטה.`;
+  const buttons = [{ id: 'daily_ok', title: 'אני בסדר' }];
+  let providerResponse = null;
+  if (config.whatsappProvider === 'meta') {
+    // Until the dedicated reminder template is approved, use the existing daily-check template.
+    // This keeps reminders compliant outside the 24h WhatsApp service window.
+    providerResponse = await sendMetaTemplate(elder.whatsappPhone, config.meta.templates.dailyReminder, 'he', [
+      ...bodyComponent([elder.name]),
+      quickReplyButton(0, 'daily_ok')
+    ]);
+  }
+  return recordOutbound('daily_reminder', elder.whatsappPhone, body, buttons, { elderId: elder.id, checkId: check.id, reminderCount: Number(check.noResponseReminderCount || 0), templateName: config.meta.templates.dailyReminder, whatsappMessageId: providerResponse?.messages?.[0]?.id || null });
+}
+
 export async function sendDistressAlert(contact, elder, check) {
   const time = new Date().toLocaleTimeString('he-IL', { timeZone: config.timezone || 'Asia/Jerusalem', hour: '2-digit', minute: '2-digit' });
   const body = `התראת מלאכי: ${elder.name} לחץ/ה על “מצוקה” בשעה ${time}. מומלץ ליצור קשר מיד.`;
@@ -228,4 +243,14 @@ export async function sendOkAck(elder) {
     providerResponse = await sendMetaText(elder.whatsappPhone, body);
   }
   return recordOutbound('ok_ack', elder.whatsappPhone, body, [], { elderId: elder.id, whatsappMessageId: providerResponse?.messages?.[0]?.id || null });
+}
+
+export async function sendBetaUpdate(to, text, meta = {}) {
+  const body = String(text || '').trim();
+  if (!body) throw new Error('Missing beta update text');
+  let providerResponse = null;
+  if (config.whatsappProvider === 'meta') {
+    providerResponse = await sendMetaText(to, body);
+  }
+  return recordOutbound('beta_update', to, body, [], { ...meta, whatsappMessageId: providerResponse?.messages?.[0]?.id || null });
 }

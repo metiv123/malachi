@@ -1,6 +1,6 @@
 import { id, loadDb, mutateDb, nowIso, saveDb } from './store.js';
 import { randomUUID } from 'node:crypto';
-import { sendContactOptIn, sendDailyCheck, sendDistressAlert, sendFamilyGreeting, sendNoResponseAlert, sendOkAck, sendOptIn } from './whatsapp.js';
+import { sendBetaUpdate, sendContactOptIn, sendDailyCheck, sendDailyReminder, sendDistressAlert, sendFamilyGreeting, sendNoResponseAlert, sendOkAck, sendOptIn } from './whatsapp.js';
 import { localParts } from './time.js';
 import { validateJoinInput, isValidTime, normalizePhone } from './validators.js';
 import { config } from './config.js';
@@ -52,25 +52,45 @@ function cleanEmail(email = '') {
   return String(email || '').trim().toLowerCase();
 }
 
+function normalizeDigits(value = '') {
+  return String(value || '').replace(/[^0-9]/g, '');
+}
+
+function samePhone(a = '', b = '') {
+  const left = normalizeDigits(a);
+  const right = normalizeDigits(b);
+  return Boolean(left && right && (left.endsWith(right) || right.endsWith(left)));
+}
+
+function maskPhone(phone = '') {
+  const digits = normalizeDigits(phone);
+  return digits ? `•••${digits.slice(-4)}` : '';
+}
+
+function isTestFamilyRecord(family = {}, elders = [], contacts = []) {
+  const haystack = [family.ownerName, family.ownerEmail, family.source, ...elders.map((e) => e.name), ...contacts.map((c) => c.name), ...contacts.map((c) => c.relationship)].join(' ');
+  return /בדיק|test|example\.invalid|openclaw_autonomy_test/i.test(haystack);
+}
+
 function alertDelayMinutes(input = {}) {
-  const value = Number(input.noResponseGraceMinutes ?? input.alertDelayMinutes ?? 30);
-  return [15, 30, 60].includes(value) ? value : 30;
+  const value = Number(input.noResponseGraceMinutes ?? input.reminderIntervalMinutes ?? input.alertDelayMinutes ?? config.reminderIntervalMinutes ?? 30);
+  return [15, 30, 45, 60].includes(value) ? value : 30;
 }
 
 function alertRepeatCount(input = {}) {
-  const value = Number(input.noResponseAlertRepeatCount ?? input.alertRepeatCount ?? 2);
-  return [1, 2, 3].includes(value) ? value : 2;
+  const value = Number(input.noResponseAlertRepeatCount ?? input.reminderAttemptCount ?? input.alertRepeatCount ?? config.reminderAttemptCount ?? 3);
+  return [2, 3, 4].includes(value) ? value : 3;
 }
 
 function elderAlertDelay(elder, fallback = config.noResponseGraceMinutes) {
   if (Number(fallback) === 0) return 0;
-  const value = Number(elder?.noResponseGraceMinutes || elder?.alertDelayMinutes || fallback || 30);
-  return [15, 30, 60].includes(value) ? value : Number(fallback || 30);
+  const value = Number(elder?.noResponseGraceMinutes || elder?.reminderIntervalMinutes || elder?.alertDelayMinutes || fallback || config.reminderIntervalMinutes || 30);
+  return [15, 30, 45, 60].includes(value) ? value : Number(fallback || 30);
 }
 
 function elderAlertRepeatCount(elder) {
-  const value = Number(elder?.noResponseAlertRepeatCount || elder?.alertRepeatCount || 2);
-  return [1, 2, 3].includes(value) ? value : 2;
+  const value = Number(elder?.noResponseAlertRepeatCount || elder?.reminderAttemptCount || elder?.alertRepeatCount || config.reminderAttemptCount || 3);
+  return [2, 3, 4].includes(value) ? value : 3;
 }
 
 function requireAccountInput(input = {}) {
@@ -322,11 +342,6 @@ export async function waitlistReport() {
   return (db.waitlist || []).slice().reverse();
 }
 
-function maskPhone(phone = '') {
-  const digits = String(phone || '').replace(/[^0-9]/g, '');
-  return digits ? `•••${digits.slice(-4)}` : '';
-}
-
 function messageStatusLabel(status = '') {
   const labels = {
     failed: 'נכשל',
@@ -415,6 +430,91 @@ export async function adminSimpleOverview() {
     inbound,
     outbound,
     templatePlan
+  };
+}
+
+export async function betaUpdateCandidates({ hours = 24, includeTests = false } = {}) {
+  const db = await loadDb();
+  const sinceMs = Date.now() - Number(hours || 24) * 60 * 60 * 1000;
+  const inbound = (db.inboundMessages || []).filter((message) => new Date(message.createdAt || Number(message.timestamp || 0) * 1000 || 0).getTime() >= sinceMs);
+  const inboundPhones = inbound.map((message) => normalizeDigits(message.from)).filter(Boolean);
+  const candidates = [];
+  const seen = new Set();
+
+  for (const family of db.families || []) {
+    const elders = (db.elders || []).filter((elder) => elder.familyId === family.id);
+    const contacts = (db.contacts || []).filter((contact) => elders.some((elder) => elder.id === contact.elderId));
+    const isTest = isTestFamilyRecord(family, elders, contacts);
+    if (isTest && !includeTests) continue;
+    for (const contact of contacts) {
+      if (contact.optInStatus !== 'approved') continue;
+      const elder = elders.find((item) => item.id === contact.elderId);
+      if (!elder || elder.optInStatus !== 'approved') continue;
+      const phone = normalizeDigits(contact.whatsappPhone);
+      if (!phone || seen.has(phone)) continue;
+      seen.add(phone);
+      const inWindow = inboundPhones.some((from) => samePhone(from, phone));
+      candidates.push({
+        maskedPhone: maskPhone(contact.whatsappPhone),
+        contactId: contact.id,
+        elderId: elder.id,
+        familyId: family.id,
+        familyName: family.ownerName || '',
+        contactName: contact.name || '',
+        elderName: elder.name || '',
+        dailyCheckTime: elder.dailyCheckTime,
+        in24hWindow: inWindow,
+        eligible: inWindow,
+        isTest
+      });
+    }
+  }
+
+  candidates.sort((a, b) => String(a.familyName).localeCompare(String(b.familyName), 'he'));
+  return { hours: Number(hours || 24), checkedAt: nowIso(), totalContacts: candidates.length, eligibleCount: candidates.filter((candidate) => candidate.eligible).length, candidates };
+}
+
+export async function sendBetaUpdateToRecentContacts({ message, hours = 24, includeTests = false, dryRun = true } = {}) {
+  const db = await loadDb();
+  const sinceMs = Date.now() - Number(hours || 24) * 60 * 60 * 1000;
+  const inbound = (db.inboundMessages || []).filter((item) => new Date(item.createdAt || Number(item.timestamp || 0) * 1000 || 0).getTime() >= sinceMs);
+  const inboundPhones = inbound.map((item) => normalizeDigits(item.from)).filter(Boolean);
+  const body = String(message || '').trim();
+  if (!body) throw new Error('Missing beta update message');
+  const targets = [];
+  const seen = new Set();
+
+  for (const family of db.families || []) {
+    const elders = (db.elders || []).filter((elder) => elder.familyId === family.id);
+    const contacts = (db.contacts || []).filter((contact) => elders.some((elder) => elder.id === contact.elderId));
+    if (isTestFamilyRecord(family, elders, contacts) && !includeTests) continue;
+    for (const contact of contacts) {
+      if (contact.optInStatus !== 'approved') continue;
+      const elder = elders.find((item) => item.id === contact.elderId);
+      if (!elder || elder.optInStatus !== 'approved') continue;
+      const phone = normalizeDigits(contact.whatsappPhone);
+      if (!phone || seen.has(phone)) continue;
+      if (!inboundPhones.some((from) => samePhone(from, phone))) continue;
+      seen.add(phone);
+      targets.push({ family, elder, contact });
+    }
+  }
+
+  const sent = [];
+  if (!dryRun) {
+    for (const target of targets) {
+      const outbound = await sendBetaUpdate(target.contact.whatsappPhone, body, { familyId: target.family.id, elderId: target.elder.id, contactId: target.contact.id, hours: Number(hours || 24) });
+      sent.push({ maskedPhone: maskPhone(target.contact.whatsappPhone), familyId: target.family.id, elderId: target.elder.id, contactId: target.contact.id, messageId: outbound.id });
+    }
+    await audit('beta_update_sent', { count: sent.length, hours: Number(hours || 24) });
+  }
+
+  return {
+    dryRun: Boolean(dryRun),
+    eligibleCount: targets.length,
+    sentCount: sent.length,
+    targets: targets.map((target) => ({ maskedPhone: maskPhone(target.contact.whatsappPhone), familyId: target.family.id, elderId: target.elder.id, contactId: target.contact.id })),
+    sent
   };
 }
 
@@ -664,6 +764,8 @@ export async function sendCheckNow(elderId, { source = 'manual', scheduledLocalD
       alertSentAt: null,
       noResponseAlertCount: 0,
       lastNoResponseAlertAt: null,
+      noResponseReminderCount: 0,
+      lastNoResponseReminderAt: null,
       source,
       scheduledLocalDate
     };
@@ -796,20 +898,32 @@ export async function weeklyReportByToken(token, { days = 7 } = {}) {
 
 
 export async function processNoResponses({ graceMinutes = 60 } = {}) {
-  const dueAlerts = await mutateDb((db) => {
+  const dueActions = await mutateDb((db) => {
     const now = Date.now();
-    const alerts = [];
+    const actions = [];
     for (const check of db.checks) {
       const elder = db.elders.find((e) => e.id === check.elderId);
       if (!elder || !check.sentAt) continue;
       const delayMinutes = elderAlertDelay(elder, graceMinutes);
-      const maxAlerts = elderAlertRepeatCount(elder);
+      const maxAttempts = elderAlertRepeatCount(elder);
+      const reminderCount = Number(check.noResponseReminderCount || 0);
+      const attemptsSoFar = 1 + reminderCount;
       const currentAlerts = Number(check.noResponseAlertCount || (check.alertSentAt ? 1 : 0));
-      if (!['sent', 'no_response'].includes(check.status)) continue;
-      if (currentAlerts >= maxAlerts) continue;
-      const anchor = currentAlerts > 0 ? (check.lastNoResponseAlertAt || check.alertSentAt) : check.sentAt;
+      if (check.status !== 'sent') continue;
+      const anchor = reminderCount > 0 ? (check.lastNoResponseReminderAt || check.sentAt) : check.sentAt;
       const elapsedMin = (now - new Date(anchor).getTime()) / 60000;
       if (elapsedMin < delayMinutes) continue;
+
+      if (attemptsSoFar < maxAttempts) {
+        const reminderAt = nowIso();
+        check.noResponseReminderCount = reminderCount + 1;
+        check.lastNoResponseReminderAt = reminderAt;
+        db.audit.push({ id: id('evt'), type: 'no_response_reminder_sent', payload: { elderId: elder.id, checkId: check.id, reminderCount: check.noResponseReminderCount, maxAttempts, delayMinutes }, createdAt: nowIso() });
+        actions.push({ type: 'reminder', check: { ...check }, elder: { ...elder } });
+        continue;
+      }
+
+      if (currentAlerts >= 1) continue;
       const contacts = db.contacts.filter((c) => c.elderId === check.elderId && c.optInStatus === 'approved');
       if (!contacts.length) continue;
       check.status = 'no_response';
@@ -817,16 +931,17 @@ export async function processNoResponses({ graceMinutes = 60 } = {}) {
       check.alertSentAt = check.alertSentAt || alertAt;
       check.lastNoResponseAlertAt = alertAt;
       check.noResponseAlertCount = currentAlerts + 1;
-      db.audit.push({ id: id('evt'), type: 'no_response_alert_sent', payload: { elderId: elder.id, checkId: check.id, count: check.noResponseAlertCount, maxAlerts, delayMinutes }, createdAt: nowIso() });
-      for (const contact of contacts) alerts.push({ check: { ...check }, elder: { ...elder }, contact: { ...contact } });
+      db.audit.push({ id: id('evt'), type: 'no_response_alert_sent', payload: { elderId: elder.id, checkId: check.id, count: check.noResponseAlertCount, maxAttempts, delayMinutes }, createdAt: nowIso() });
+      for (const contact of contacts) actions.push({ type: 'alert', check: { ...check }, elder: { ...elder }, contact: { ...contact } });
     }
-    return alerts;
+    return actions;
   });
 
-  for (const item of dueAlerts) {
-    await sendNoResponseAlert(item.contact, item.elder, item.check);
+  for (const item of dueActions) {
+    if (item.type === 'reminder') await sendDailyReminder(item.elder, item.check);
+    if (item.type === 'alert') await sendNoResponseAlert(item.contact, item.elder, item.check);
   }
-  return dueAlerts.map((item) => item.check);
+  return dueActions.map((item) => item.check);
 }
 
 

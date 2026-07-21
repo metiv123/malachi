@@ -20,7 +20,11 @@ services:
       - key: MALACHI_SELF_KEEPALIVE_INTERVAL_MS
         value: "240000"
       - key: MALACHI_NO_RESPONSE_GRACE_MINUTES
-        value: "7"
+        value: "30"
+      - key: MALACHI_REMINDER_INTERVAL_MINUTES
+        value: "30"
+      - key: MALACHI_REMINDER_ATTEMPT_COUNT
+        value: "3"
       - key: MALACHI_DAILY_CHECK_MODE
         value: single_ok
       - key: MALACHI_BETA_OPEN
@@ -46,6 +50,8 @@ services:
       - key: META_VERIFY_TOKEN
         sync: false
       - key: META_TEMPLATE_DAILY_CHECK
+        value: daily_check_he
+      - key: META_TEMPLATE_DAILY_REMINDER
         value: daily_check_he
       - key: META_TEMPLATE_DISTRESS_ALERT
         value: distress_alert_he

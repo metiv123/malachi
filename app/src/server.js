@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { config } from './config.js';
-import { addContactByToken, addElderByToken, adminSimpleOverview, betaStatus, createFamily, createUserAccount, deleteContactByToken, deleteFamilyByToken, exportFamiliesCsv, getCheckHistoryByToken, getFamilyByToken, getOutboundMessagesByToken, handleElderResponse, listDashboard, loginFamily, processDueChecks, processNoResponses, regenerateFamilyToken, resendContactOptInByToken, resendElderOptInByToken, revokeFamilyToken, sendCheckNow, setElderActiveByToken, setFamilyPasswordByToken, setMarketingConsentByEmail, setOptIn, sourceReport, systemReadiness, updateElderByToken, waitlistReport, weeklyReportByToken } from './malachi.js';
+import { addContactByToken, addElderByToken, adminSimpleOverview, betaStatus, betaUpdateCandidates, createFamily, createUserAccount, deleteContactByToken, deleteFamilyByToken, exportFamiliesCsv, getCheckHistoryByToken, getFamilyByToken, getOutboundMessagesByToken, handleElderResponse, listDashboard, loginFamily, processDueChecks, processNoResponses, regenerateFamilyToken, resendContactOptInByToken, resendElderOptInByToken, revokeFamilyToken, sendBetaUpdateToRecentContacts, sendCheckNow, setElderActiveByToken, setFamilyPasswordByToken, setMarketingConsentByEmail, setOptIn, sourceReport, systemReadiness, updateElderByToken, waitlistReport, weeklyReportByToken } from './malachi.js';
 import { loadDb } from './store.js';
 import { processWhatsAppWebhookPayload } from './webhookProcessor.js';
 import { startScheduler } from './scheduler.js';
@@ -73,11 +73,11 @@ const adminGetApiPaths = new Set([
   '/api/dashboard', '/api/waitlist', '/api/feedback', '/api/debug/db', '/api/readiness', '/api/beta/readiness',
   '/api/beta/checklist', '/api/meta/readiness', '/api/meta/sample-payloads', '/api/meta/phone-check',
   '/api/meta/templates/connection', '/api/reports/sources', '/api/export/families.csv', '/api/export/db.json',
-  '/api/backups', '/api/errors', '/api/audit', '/api/inbound-messages', '/api/admin/simple-overview'
+  '/api/backups', '/api/errors', '/api/audit', '/api/inbound-messages', '/api/admin/simple-overview', '/api/admin/beta-update-candidates'
 ]);
 const adminPostApiPaths = new Set([
   '/api/backups', '/api/dev/demo-family', '/api/jobs/due-checks', '/api/jobs/no-responses',
-  '/api/mock/respond', '/api/mock/webhook', '/api/meta/templates/connection'
+  '/api/mock/respond', '/api/mock/webhook', '/api/meta/templates/connection', '/api/admin/beta-update'
 ]);
 
 function isAdminProtectedRoute(req, url) {
@@ -164,6 +164,7 @@ async function route(req, res) {
       return json(res, 200, { report: await weeklyReportByToken(url.searchParams.get('token'), { days: Number(url.searchParams.get('days') || 7) }) });
     }
     if (req.method === 'GET' && url.pathname === '/api/admin/simple-overview') return json(res, 200, await adminSimpleOverview());
+    if (req.method === 'GET' && url.pathname === '/api/admin/beta-update-candidates') return json(res, 200, await betaUpdateCandidates({ hours: Number(url.searchParams.get('hours') || 24), includeTests: url.searchParams.get('includeTests') === 'true' }));
     if (req.method === 'GET' && url.pathname === '/api/debug/db') return json(res, 200, await loadDb());
     if (req.method === 'GET' && url.pathname === '/api/readiness') return json(res, 200, await systemReadiness());
     if (req.method === 'GET' && url.pathname === '/api/beta/readiness') return json(res, 200, await betaReadiness());
@@ -198,6 +199,7 @@ async function route(req, res) {
     if (req.method === 'GET' && url.pathname === '/api/audit') { const db = await loadDb(); return json(res, 200, { audit: db.audit.slice().reverse().slice(0, Number(url.searchParams.get('limit') || 100)) }); }
     if (req.method === 'GET' && url.pathname === '/api/inbound-messages') { const db = await loadDb(); return json(res, 200, { messages: (db.inboundMessages || []).slice().reverse().slice(0, Number(url.searchParams.get('limit') || 100)) }); }
     if (req.method === 'POST' && url.pathname === '/api/backups') return json(res, 201, { backup: await createBackup() });
+    if (req.method === 'POST' && url.pathname === '/api/admin/beta-update') return json(res, 200, await sendBetaUpdateToRecentContacts(await body(req)));
 
     if (req.method === 'POST' && url.pathname === '/api/families') return json(res, 201, await createFamily(await body(req)));
     if (req.method === 'POST' && url.pathname === '/api/users') return json(res, 201, await createUserAccount(await body(req)));

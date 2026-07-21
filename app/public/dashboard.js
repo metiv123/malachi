@@ -40,6 +40,7 @@ function contactOptInLabel(status){ return { pending:'ממתין לאישור ב
 function messageKindLabel(kind) {
   return {
     daily_check: 'בדיקת בוקר',
+    daily_reminder: 'תזכורת בדיקת בוקר',
     ok_ack: 'אישור שהתקבלה תשובת אני בסדר',
     no_response_alert: 'התראת אין תגובה למשפחה',
     distress_alert: 'התראת מצוקה ישנה',
@@ -70,7 +71,7 @@ function outboundStatusHint(status) {
 function actionHint(status){
   if(status==='distress') return 'סטטוס ישן ממודל קודם. בגרסת הבטא החדשה ההתראה למשפחה נשלחת בעיקר כשאין תגובה.';
   if(status==='no_response') return 'המלצה: להתקשר ולוודא שהכול בסדר. ייתכן שהטלפון לא זמין או שהאדם לא ראה את ההודעה.';
-  if(status==='sent') return 'ממתינים לתגובה. אם לא תהיה תגובה בזמן — תישלח התראה.';
+  if(status==='sent') return 'ממתינים לתגובה. אם לא תהיה תגובה בזמן — נשלח קודם תזכורות למבוגר, ורק אחר כך התראה למשפחה.';
   if(status==='ok') return 'הכול תקין להיום. לא נשלחה הודעה למשפחה.';
   if(status==='greeting_sent') return 'נשלחה דרישת שלום לאנשי הקשר שאישרו קבלת התראות.';
   return 'עדיין לא נשלחה בדיקה היום.';
@@ -78,12 +79,21 @@ function actionHint(status){
 
 function alertDelayOptions(value = 30) {
   const current = Number(value || 30);
-  return [15, 30, 60].map((minutes) => `<option value="${minutes}" ${current === minutes ? 'selected' : ''}>${minutes === 60 ? 'שעה' : `${minutes} דקות`}</option>`).join('');
+  return [15, 30, 45, 60].map((minutes) => `<option value="${minutes}" ${current === minutes ? 'selected' : ''}>${minutes === 60 ? 'שעה' : `${minutes} דקות`}</option>`).join('');
 }
 
 function alertRepeatOptions(value = 2) {
-  const current = Number(value || 2);
-  return [1, 2, 3].map((count) => `<option value="${count}" ${current === count ? 'selected' : ''}>${count === 1 ? 'פעם אחת' : count === 2 ? 'פעמיים' : 'שלוש פעמים'}</option>`).join('');
+  const current = Number(value || 3);
+  return [2, 3, 4].map((count) => `<option value="${count}" ${current === count ? 'selected' : ''}>${count} ניסיונות</option>`).join('');
+}
+
+function reminderPlanLabel(elder = {}) {
+  const interval = Number(elder.noResponseGraceMinutes || 30);
+  const attempts = Number(elder.noResponseAlertRepeatCount || 3);
+  const total = interval * attempts;
+  const intervalLabel = interval === 60 ? 'שעה' : `${interval} דקות`;
+  const totalLabel = total >= 60 ? `${Math.round((total / 60) * 10) / 10} שעות` : `${total} דקות`;
+  return `תזכורת כל ${intervalLabel} · ${attempts} ניסיונות למבוגר · התראה למשפחה אחרי כ־${totalLabel}`;
 }
 
 function addElderCard(open = false) {
@@ -97,8 +107,9 @@ function addElderCard(open = false) {
     <label>שם בן/בת משפחה ראשון להתראה<input name="contactName" placeholder="אפשר להשאיר ריק — נשתמש בבן המשפחה הראשי"></label>
     <label>טלפון בן/בת משפחה ראשון להתראה<input name="contactPhone" placeholder="אפשר להשאיר ריק — נשתמש בטלפון בן המשפחה"></label>
     <div class="form-subtitle">הגדרות אי־מענה</div>
-    <label>מתי להתריע אם אין מענה<select name="noResponseGraceMinutes">${alertDelayOptions(30)}</select></label>
-    <label>כמה פעמים לשלוח התראת אי־מענה<select name="noResponseAlertRepeatCount">${alertRepeatOptions(2)}</select></label>
+    <label>כל כמה זמן לשלוח תזכורת אם אין מענה<select name="noResponseGraceMinutes">${alertDelayOptions(30)}</select></label>
+    <label>כמה ניסיונות לפני התראה למשפחה<select name="noResponseAlertRepeatCount">${alertRepeatOptions(3)}</select></label>
+    <p class="form-help">ברירת המחדל: הודעה ראשונה, 2 תזכורות, ורק אחר כך התראה לבני המשפחה.</p>
     <label class="check dashboard-consent"><input type="checkbox" name="elderConsent" required><span>אני מצהיר/ה שהאדם יודע או יקבל הסבר, והשירות יופעל רק לאחר אישורו/ה ב־WhatsApp.</span></label>
     <button class="button primary save-main" type="submit">שמירת המבוגר ובן המשפחה הראשון</button>
   </form>`;
@@ -149,14 +160,14 @@ async function load() {
           <div class="today-card ${statusClass(elder.latestCheck?.status)}"><span class="today-label">המצב היום</span><b>${statusLabel(elder.latestCheck?.status)}</b><p>${actionHint(elder.latestCheck?.status)}</p></div>
           <dl class="elder-facts">
             <div><dt>בדיקה יומית</dt><dd>${esc(elder.dailyCheckTime)}</dd></div>
-            <div><dt>התראה</dt><dd>אחרי ${Number(elder.noResponseGraceMinutes || 30) === 60 ? 'שעה' : `${esc(elder.noResponseGraceMinutes || 30)} דקות`} · ${Number(elder.noResponseAlertRepeatCount || 2) === 1 ? 'פעם אחת' : Number(elder.noResponseAlertRepeatCount || 2) === 2 ? 'פעמיים' : 'שלוש פעמים'}</dd></div>
+            <div><dt>אי־מענה</dt><dd>${esc(reminderPlanLabel(elder))}</dd></div>
             <div><dt>WhatsApp</dt><dd>${esc(elder.whatsappPhone)}</dd></div>
             <div><dt>אישור ההורה</dt><dd>${optInLabel(elder.optInStatus)} <button class="text-action" onclick="resendElderOptIn('${elder.id}')">שליחה מחדש</button></dd></div>
           </dl>
         </div>
         <section class="mini-section contact-section">
           <div class="mini-title"><h4>בני משפחה להתראות</h4><span class="contact-count">${contacts.length}</span></div>
-          <p class="small">אם אין תגובה מהמבוגר — בני המשפחה שאישרו יקבלו התראה.</p>
+          <p class="small">אם אין תגובה מהמבוגר — נשלח קודם תזכורות למבוגר, ורק לאחר מכן בני המשפחה שאישרו יקבלו התראה.</p>
           <div class="contact-list clean-contact-list">${visibleContacts.map((c) => `<article class="contact-row"><span class="contact-avatar" aria-hidden="true">${esc(String(c.name || '').trim().charAt(0) || 'א')}</span><span class="contact-identity"><b>${esc(c.name)}</b><span>${esc(c.whatsappPhone)}</span></span><small class="contact-state">${contactOptInLabel(c.optInStatus)}</small></article>`).join('')}${hiddenContactsCount ? `<article class="contact-row more-card"><span class="contact-avatar" aria-hidden="true">+${hiddenContactsCount}</span><span class="contact-identity"><b>אנשי קשר נוספים</b><span>מופיעים באזור הניהול</span></span></article>` : ''}</div>
           <details class="clean-details manage-contacts"><summary>ניהול והוספת בני משפחה</summary>
             <div class="contact-list manage-contact-list">${contacts.map((c) => `<article><b>${esc(c.name)}</b><span>${esc(c.whatsappPhone)}</span><small>${contactOptInLabel(c.optInStatus)}</small><div><button class="tiny" onclick="resendContactOptIn('${c.id}')">שלח אישור</button> ${contacts.length > 1 ? `<button class="tiny danger-text" onclick="deleteContact('${c.id}')">מחיקה</button>` : ''}</div></article>`).join('')}</div>
@@ -169,8 +180,8 @@ async function load() {
               <label>שם<input name="elderName" value="${esc(elder.name)}"></label>
               <label>טלפון WhatsApp<input name="elderPhone" value="${esc(elder.whatsappPhone)}"></label>
               <label>שעה יומית<input type="time" name="dailyCheckTime" value="${esc(elder.dailyCheckTime)}"></label>
-              <label>מתי להתריע אם אין מענה<select name="noResponseGraceMinutes">${alertDelayOptions(elder.noResponseGraceMinutes || 30)}</select></label>
-              <label>כמה פעמים לשלוח התראת אי־מענה<select name="noResponseAlertRepeatCount">${alertRepeatOptions(elder.noResponseAlertRepeatCount || 2)}</select></label>
+              <label>כל כמה זמן לשלוח תזכורת אם אין מענה<select name="noResponseGraceMinutes">${alertDelayOptions(elder.noResponseGraceMinutes || 30)}</select></label>
+              <label>כמה ניסיונות לפני התראה למשפחה<select name="noResponseAlertRepeatCount">${alertRepeatOptions(elder.noResponseAlertRepeatCount || 3)}</select></label>
               <label>שם איש קשר להתראה<input name="contactName" value="${esc(elder.contact?.name || '')}"></label>
               <label>טלפון איש קשר להתראה<input name="contactPhone" value="${esc(elder.contact?.whatsappPhone || '')}"></label>
               <button class="button primary" type="submit">שמירה</button>
