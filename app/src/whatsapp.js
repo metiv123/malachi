@@ -240,7 +240,10 @@ export async function sendOkAck(elder) {
   const body = `תודה ${elder.name} ❤️\nשמחנו לשמוע שהכול בסדר. נבדוק שוב מחר בבוקר.`;
   let providerResponse = null;
   if (config.whatsappProvider === 'meta') {
-    providerResponse = await sendMetaText(elder.whatsappPhone, body);
+    if (!config.meta.templates.okAck) {
+      return recordOutbound('ok_ack', elder.whatsappPhone, body, [], { elderId: elder.id, status: 'skipped', reason: 'META_TEMPLATE_OK_ACK not approved/configured' });
+    }
+    providerResponse = await sendMetaTemplate(elder.whatsappPhone, config.meta.templates.okAck, 'he', bodyComponent([elder.name]));
   }
   return recordOutbound('ok_ack', elder.whatsappPhone, body, [], { elderId: elder.id, whatsappMessageId: providerResponse?.messages?.[0]?.id || null });
 }
