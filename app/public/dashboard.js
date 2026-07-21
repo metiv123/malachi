@@ -96,6 +96,18 @@ function reminderPlanLabel(elder = {}) {
   return `תזכורת כל ${intervalLabel} · ${attempts} ניסיונות למבוגר · התראה למשפחה אחרי כ־${totalLabel}`;
 }
 
+
+function parentPreparationNotice() {
+  return `<section class="parent-prep-box">
+    <b>לפני ששולחים להורה הודעה</b>
+    <p>חשוב לדבר עם ההורה מראש, כדי שהודעת WhatsApp ממלאכי לא תיראה לו כמו ספאם או משהו מבלבל.</p>
+    <div class="parent-script">
+      <span>נוסח קצר שאפשר להגיד:</span>
+      <p>“אמא/אבא, חיברתי אותך למלאכי. זה שירות קטן ששולח לך כל בוקר הודעת WhatsApp כדי לוודא שהכול בסדר. עוד רגע תקבל/י הודעה ממלאכי — רק ללחוץ אישור.”</p>
+    </div>
+  </section>`;
+}
+
 function addElderCard(open = false) {
   const form = `<form class="dashboard-form" onsubmit="addElder(event)">
     <div class="form-subtitle">פרטי האדם לבדיקה</div>
@@ -110,8 +122,9 @@ function addElderCard(open = false) {
     <label>כל כמה זמן לשלוח תזכורת אם אין מענה<select name="noResponseGraceMinutes">${alertDelayOptions(30)}</select></label>
     <label>כמה ניסיונות לפני התראה למשפחה<select name="noResponseAlertRepeatCount">${alertRepeatOptions(3)}</select></label>
     <p class="form-help">ברירת המחדל: הודעה ראשונה, 2 תזכורות, ורק אחר כך התראה לבני המשפחה.</p>
-    <label class="check dashboard-consent"><input type="checkbox" name="elderConsent" required><span>אני מצהיר/ה שהאדם יודע או יקבל הסבר, והשירות יופעל רק לאחר אישורו/ה ב־WhatsApp.</span></label>
-    <button class="button primary save-main" type="submit">שמירת המבוגר ובן המשפחה הראשון</button>
+    ${parentPreparationNotice()}
+    <label class="check dashboard-consent parent-prep-check"><input type="checkbox" name="elderConsent" required><span>דיברתי עם ההורה / האדם המבוגר, והוא יודע שעכשיו תגיע אליו הודעת WhatsApp ממלאכי לאישור.</span></label>
+    <button class="button primary save-main" type="submit">שמירת המבוגר ושליחת הודעת אישור</button>
   </form>`;
   return `<section class="dashboard-card setup-card quiet-setup">
     <span class="card-kicker">הוספה</span>
@@ -295,7 +308,8 @@ window.sendCheck = async (elderId) => {
   }
 };
 window.resendElderOptIn = async (elderId) => {
-  if (!confirm('לשלוח שוב בקשת אישור WhatsApp לאדם שמקבל את הבדיקה?')) return;
+  const ok = confirm('לפני השליחה חשוב לוודא שההורה יודע שהוא עומד לקבל הודעה ממלאכי.\n\nכדאי להגיד לו: “תקבל/י עכשיו הודעת WhatsApp ממלאכי — רק ללחוץ אישור.”\n\nלשלוח עכשיו בקשת אישור WhatsApp?');
+  if (!ok) return;
   try {
     await api(`/api/elders/${elderId}/resend-optin`, { method:'POST', body:JSON.stringify({ token }) });
     alert('בקשת האישור נשלחה ל־WhatsApp.');
