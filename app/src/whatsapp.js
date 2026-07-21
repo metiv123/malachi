@@ -178,7 +178,7 @@ export async function sendDailyCheck(elder, check) {
     ? [{ id: 'daily_ok', title: 'אני בסדר' }]
     : [{ id: 'daily_ok', title: 'הכול בסדר' }, { id: 'daily_greeting', title: 'שלח ד״ש למשפחה' }];
   let providerResponse = null;
-  if (config.whatsappProvider === 'meta' && (freeformMode || singleOkMode)) {
+  if (config.whatsappProvider === 'meta' && freeformMode) {
     providerResponse = await sendMetaInteractiveButtons(elder.whatsappPhone, body, buttons);
   } else if (config.whatsappProvider === 'meta') {
     const templateButtons = singleOkMode
