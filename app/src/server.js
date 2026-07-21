@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { config } from './config.js';
-import { addContactByToken, addElderByToken, adminSimpleOverview, betaStatus, betaUpdateCandidates, createFamily, createUserAccount, deleteContactByToken, deleteFamilyByToken, exportFamiliesCsv, getCheckHistoryByToken, getFamilyByToken, getOutboundMessagesByToken, handleElderResponse, listDashboard, loginFamily, processDueChecks, processNoResponses, regenerateFamilyToken, resendContactOptInByToken, resendElderOptInByToken, revokeFamilyToken, sendBetaUpdateToRecentContacts, sendCheckNow, setElderActiveByToken, setFamilyPasswordByToken, setMarketingConsentByEmail, setOptIn, sourceReport, systemReadiness, updateElderByToken, waitlistReport, weeklyReportByToken } from './malachi.js';
+import { addContactByToken, addElderByToken, adminSimpleOverview, betaStatus, betaUpdateCandidates, createFamily, createUserAccount, deleteContactByToken, deleteFamilyByToken, exportFamiliesCsv, getCheckHistoryByToken, getFamilyByToken, getOutboundMessagesByToken, handleElderResponse, listDashboard, loginFamily, processDueChecks, processNoResponses, regenerateFamilyToken, resendContactOptInByToken, resendElderOptInByToken, revokeFamilyToken, sendBetaUpdateToRecentContact, sendBetaUpdateToRecentContacts, sendCheckNow, setElderActiveByToken, setFamilyPasswordByToken, setMarketingConsentByEmail, setOptIn, sourceReport, systemReadiness, updateElderByToken, waitlistReport, weeklyReportByToken } from './malachi.js';
 import { loadDb } from './store.js';
 import { processWhatsAppWebhookPayload } from './webhookProcessor.js';
 import { startScheduler } from './scheduler.js';
@@ -77,7 +77,7 @@ const adminGetApiPaths = new Set([
 ]);
 const adminPostApiPaths = new Set([
   '/api/backups', '/api/dev/demo-family', '/api/jobs/due-checks', '/api/jobs/no-responses',
-  '/api/mock/respond', '/api/mock/webhook', '/api/meta/templates/connection', '/api/admin/beta-update'
+  '/api/mock/respond', '/api/mock/webhook', '/api/meta/templates/connection', '/api/admin/beta-update', '/api/admin/beta-update-target'
 ]);
 
 function isAdminProtectedRoute(req, url) {
@@ -200,6 +200,7 @@ async function route(req, res) {
     if (req.method === 'GET' && url.pathname === '/api/inbound-messages') { const db = await loadDb(); return json(res, 200, { messages: (db.inboundMessages || []).slice().reverse().slice(0, Number(url.searchParams.get('limit') || 100)) }); }
     if (req.method === 'POST' && url.pathname === '/api/backups') return json(res, 201, { backup: await createBackup() });
     if (req.method === 'POST' && url.pathname === '/api/admin/beta-update') return json(res, 200, await sendBetaUpdateToRecentContacts(await body(req)));
+    if (req.method === 'POST' && url.pathname === '/api/admin/beta-update-target') return json(res, 200, await sendBetaUpdateToRecentContact(await body(req)));
 
     if (req.method === 'POST' && url.pathname === '/api/families') return json(res, 201, await createFamily(await body(req)));
     if (req.method === 'POST' && url.pathname === '/api/users') return json(res, 201, await createUserAccount(await body(req)));

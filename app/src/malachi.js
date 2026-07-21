@@ -518,6 +518,47 @@ export async function sendBetaUpdateToRecentContacts({ message, hours = 24, incl
   };
 }
 
+export async function sendBetaUpdateToRecentContact({ contactId = '', phoneLast4 = '', message, hours = 24, includeTests = false, dryRun = true } = {}) {
+  const db = await loadDb();
+  const sinceMs = Date.now() - Number(hours || 24) * 60 * 60 * 1000;
+  const inbound = (db.inboundMessages || []).filter((item) => new Date(item.createdAt || Number(item.timestamp || 0) * 1000 || 0).getTime() >= sinceMs);
+  const inboundPhones = inbound.map((item) => normalizeDigits(item.from)).filter(Boolean);
+  const body = String(message || '').trim();
+  if (!body) throw new Error('Missing beta update message');
+  const last4 = normalizeDigits(phoneLast4).slice(-4);
+
+  let selected = null;
+  for (const family of db.families || []) {
+    const elders = (db.elders || []).filter((elder) => elder.familyId === family.id);
+    const contacts = (db.contacts || []).filter((contact) => elders.some((elder) => elder.id === contact.elderId));
+    if (isTestFamilyRecord(family, elders, contacts) && !includeTests) continue;
+    for (const contact of contacts) {
+      if (contactId && contact.id !== contactId) continue;
+      if (last4 && !normalizeDigits(contact.whatsappPhone).endsWith(last4)) continue;
+      const elder = elders.find((item) => item.id === contact.elderId);
+      if (!elder) continue;
+      selected = { family, elder, contact };
+      break;
+    }
+    if (selected) break;
+  }
+
+  if (!selected) throw new Error('Contact not found');
+  if (selected.contact.optInStatus !== 'approved') throw new Error('Contact is not approved');
+  if (selected.elder.optInStatus !== 'approved' && !includeTests) throw new Error('Elder is not approved');
+  const phone = normalizeDigits(selected.contact.whatsappPhone);
+  const inWindow = inboundPhones.some((from) => samePhone(from, phone));
+  if (!inWindow) throw new Error('Contact is outside 24h WhatsApp window');
+
+  if (dryRun) {
+    return { dryRun: true, eligible: true, maskedPhone: maskPhone(selected.contact.whatsappPhone), familyId: selected.family.id, elderId: selected.elder.id, contactId: selected.contact.id };
+  }
+
+  const outbound = await sendBetaUpdate(selected.contact.whatsappPhone, body, { familyId: selected.family.id, elderId: selected.elder.id, contactId: selected.contact.id, hours: Number(hours || 24), targeted: true });
+  await audit('beta_update_targeted_sent', { contactId: selected.contact.id, elderId: selected.elder.id, familyId: selected.family.id, hours: Number(hours || 24) });
+  return { dryRun: false, sent: true, maskedPhone: maskPhone(selected.contact.whatsappPhone), familyId: selected.family.id, elderId: selected.elder.id, contactId: selected.contact.id, messageId: outbound.id };
+}
+
 export async function sourceReport() {
   const db = await loadDb();
   const report = {};
