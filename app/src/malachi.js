@@ -1,4 +1,4 @@
-import { id, loadDb, mutateDb, nowIso, saveDb } from './store.js';
+import { audit, id, loadDb, mutateDb, nowIso, saveDb } from './store.js';
 import { randomUUID } from 'node:crypto';
 import { sendBetaUpdate, sendContactOptIn, sendDailyCheck, sendDailyReminder, sendDistressAlert, sendFamilyGreeting, sendNoResponseAlert, sendOkAck, sendOptIn } from './whatsapp.js';
 import { localParts } from './time.js';
