@@ -201,11 +201,26 @@
       box-shadow: none;
     }
 
-    .quick-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+    .quick-actions {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 7px;
+      margin-top: -4px;
+      margin-bottom: 4px;
+    }
+    .button-label {
+      color: var(--muted);
+      font-size: .78rem;
+      padding-inline-start: 8px;
+    }
     .quick-actions button {
-      font-size: .86rem;
-      padding: 8px 11px;
+      font-size: .92rem;
+      padding: 10px 16px;
       background: white;
+      border: 2px solid rgba(29,143,115,.35);
+      color: var(--brand-dark);
+      box-shadow: 0 8px 18px rgba(29,143,115,.12);
     }
 
     .phone-input {
@@ -310,16 +325,15 @@
 
     <section class="hero">
       <div class="hero-copy">
-        <h1>כך נראה מלאכי כשהמשפחה רואה שהכול בסדר.</h1>
+        <h1>כך נראה מלאכי כשההורה לוחץ “הכול בסדר”.</h1>
         <p>
           דמו עדין ופשוט: ההורה מקבל הודעת WhatsApp יומית עם כפתור אחד —
           <strong>“הכול בסדר”</strong>. המשפחה רואה שקט בדשבורד, ורק אם אין תגובה בזמן — נשלחת התראה.
         </p>
         <div class="hero-buttons">
-          <button class="primary" onclick="setScenario('ok')">הראה מצב “הכול בסדר”</button>
+          <button class="primary" onclick="setScenario('ok')">הראה לחיצה על כפתור “הכול בסדר”</button>
           <button onclick="setScenario('late')">הראה מצב ללא מענה</button>
-          <button onclick="setScenario('family')">הראה שאלה של בן משפחה</button>
-        </div>
+                  </div>
         <div class="trust-row">
           <div class="trust-card">בלי אפליקציה חדשה<span>הכול ב־WhatsApp</span></div>
           <div class="trust-card">בלי לחץ מיותר<span>התראה רק כשצריך</span></div>
@@ -354,14 +368,14 @@
 
       <div class="panel">
         <h2>דשבורד משפחתי לדוגמה</h2>
-        <p>מסך פשוט שמראה מצב, בלי להציף ובלי להפחיד.</p>
+        <p>מסך פשוט שמראה את מצב הבדיקות — רק מה שקיים בדמו: תגובות, שעה יומית והתראה כשאין מענה.</p>
         <div class="dashboard">
           <div class="metric ok"><strong>הכול בסדר</strong><span>תגובה אחרונה: היום 09:04</span></div>
           <div class="metric"><strong>7</strong><span>ימי בדיקה רצופים</span></div>
           <div class="metric"><strong>09:00</strong><span>שעת בדיקה יומית</span></div>
-          <div class="metric warn"><strong>רק אם צריך</strong><span>התראה על חוסר מענה</span></div>
+          <div class="metric warn"><strong>אין מענה</strong><span>רק אז נשלחת התראה למשפחה</span></div>
         </div>
-        <div class="demo-note">זה mockup בלבד: אין כאן AI אמיתי, אין שליחת WhatsApp ואין שמירת מידע. המטרה היא להדגים איך זה יכול להיראות באתר.</div>
+        <div class="demo-note">זה mockup בלבד: אין כאן AI אמיתי ואין שליחת WhatsApp מהעמוד. הדמו מציג רק את היכולות הבסיסיות: בדיקה יומית, לחיצה על “הכול בסדר”, והתראה כשאין מענה.</div>
       </div>
     </section>
   </main>
@@ -372,24 +386,17 @@
         { type: 'system', text: 'הדגמה: בדיקת בוקר רגועה' },
         { type: 'bot', text: 'בוקר טוב רות 🌿 רק לוודא שהכול בסדר היום.' },
         { type: 'bot', text: 'אם הכול בסדר, לחצי על הכפתור:' },
-        { type: 'actions', actions: ['הכול בסדר'] },
-        { type: 'user', text: 'הכול בסדר' },
+        { type: 'actions', label: 'כפתור WhatsApp שההורה מקבל:', actions: ['הכול בסדר'] },
+        { type: 'system', text: 'רות לחצה על הכפתור “הכול בסדר”' },
         { type: 'bot', text: 'שמחנו לשמוע 💚 עדכנתי את המשפחה שהכול בסדר.' }
       ],
       late: [
         { type: 'system', text: 'הדגמה: אין תגובה בזמן שנקבע' },
         { type: 'bot', text: 'בוקר טוב רות 🌿 רק לוודא שהכול בסדר היום.' },
-        { type: 'actions', actions: ['הכול בסדר'] },
+        { type: 'actions', label: 'כפתור WhatsApp שממתין ללחיצה:', actions: ['הכול בסדר'] },
         { type: 'system', text: 'עבר זמן ההמתנה שהמשפחה הגדירה' },
         { type: 'bot', text: 'נשלחה התראה עדינה לבן המשפחה: לא התקבלה תגובה לבדיקה של היום.' }
       ],
-      family: [
-        { type: 'system', text: 'הדגמה: שאלה של בן משפחה בדשבורד עתידי' },
-        { type: 'user', text: 'מה מצב אמא השבוע?' },
-        { type: 'bot', text: 'השבוע היו 6 תגובות “הכול בסדר” מתוך 7 בדיקות. ביום שלישי לא התקבלה תגובה ונשלחה התראה. אין סימני מצוקה במערכת — רק יום אחד ללא מענה.' },
-        { type: 'bot', text: 'רוצה שאכין לך סיכום משפחתי קצר לשיתוף עם האחים?' },
-        { type: 'actions', actions: ['כן, תכין סיכום', 'לא עכשיו'] }
-      ]
     };
 
     function setScenario(name) {
@@ -401,9 +408,16 @@
           if (item.type === 'actions') {
             const wrap = document.createElement('div');
             wrap.className = 'quick-actions';
-            item.actions.forEach((label) => {
+            if (item.label) {
+              const label = document.createElement('div');
+              label.className = 'button-label';
+              label.textContent = item.label;
+              wrap.appendChild(label);
+            }
+            item.actions.forEach((text) => {
               const btn = document.createElement('button');
-              btn.textContent = label;
+              btn.textContent = text;
+              btn.setAttribute('aria-label', 'כפתור וואטסאפ: ' + text);
               wrap.appendChild(btn);
             });
             chat.appendChild(wrap);
