@@ -71,7 +71,7 @@
       justify-content: flex-end;
     }
 
-    .pill, button {
+    .pill, button, .header-link {
       border: 1px solid rgba(23, 51, 44, .1);
       background: rgba(255,255,255,.72);
       color: var(--ink);
@@ -79,6 +79,10 @@
       border-radius: 999px;
       font-weight: 700;
       backdrop-filter: blur(10px);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
     }
 
     button { cursor: pointer; font-family: inherit; }
@@ -115,6 +119,18 @@
 
     .hero-buttons { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 26px; }
     .hero-buttons button { font-size: 1rem; padding: 13px 20px; }
+    .hero-buttons button.scenario-active {
+      background: var(--brand);
+      color: white;
+      border: none;
+      box-shadow: 0 12px 28px rgba(29,143,115,.28);
+    }
+    .hero-buttons button.scenario-inactive {
+      background: rgba(255,255,255,.72);
+      color: var(--ink);
+      border: 1px solid rgba(23, 51, 44, .1);
+      box-shadow: none;
+    }
 
     .trust-row {
       display: grid;
@@ -315,11 +331,11 @@
 <body>
   <main class="page">
     <header>
-      <div class="logo"><div class="logo-mark">מ</div> מלאכי <span class="pill">דמו אתר — Mockup</span></div>
+      <div class="logo"><div class="logo-mark">מ</div> מלאכי</div>
       <div class="header-actions">
-        <button>איך זה עובד</button>
-        <button>שאלות נפוצות</button>
-        <button class="primary">הדגמה חיה</button>
+        <a class="header-link" href="/#how">איך זה עובד</a>
+        <a class="header-link" href="/faq.html">שאלות נפוצות</a>
+        <a class="header-link primary" href="#demo-chat">הדגמה חיה</a>
       </div>
     </header>
 
@@ -331,8 +347,8 @@
           <strong>“הכול בסדר”</strong>. המשפחה רואה שקט בדשבורד, ורק אם אין תגובה בזמן — נשלחת התראה.
         </p>
         <div class="hero-buttons">
-          <button class="primary" onclick="setScenario('ok')">הראה לחיצה על כפתור “הכול בסדר”</button>
-          <button onclick="setScenario('late')">הראה מצב ללא מענה</button>
+          <button id="scenario-ok" class="scenario-active" onclick="setScenario('ok')">הראה לחיצה על כפתור “הכול בסדר”</button>
+          <button id="scenario-late" class="scenario-inactive" onclick="setScenario('late')">הראה מצב ללא מענה</button>
                   </div>
         <div class="trust-row">
           <div class="trust-card">בלי אפליקציה חדשה<span>הכול ב־WhatsApp</span></div>
@@ -341,7 +357,7 @@
         </div>
       </div>
 
-      <aside class="phone" aria-label="דמו שיחת וואטסאפ">
+      <aside id="demo-chat" class="phone" aria-label="דמו שיחת וואטסאפ">
         <div class="phone-screen">
           <div class="phone-top">
             <div class="chat-title">
@@ -374,7 +390,6 @@
           <div class="metric"><strong>09:00</strong><span>שעת בדיקה יומית</span></div>
           <div class="metric warn"><strong>אין מענה</strong><span>רק אז נשלחת התראה למשפחה</span></div>
         </div>
-        <div class="demo-note">זה mockup בלבד: אין כאן AI אמיתי ואין שליחת WhatsApp מהעמוד. הדמו מציג רק את היכולות הבסיסיות: בדיקה יומית, לחיצה על “הכול בסדר”, והתראה כשאין מענה.</div>
       </div>
     </section>
   </main>
@@ -399,7 +414,14 @@
     };
 
     function setScenario(name) {
-      document.querySelectorAll('.hero-buttons button').forEach((btn) => btn.classList.remove('active'));
+      const okButton = document.getElementById('scenario-ok');
+      const lateButton = document.getElementById('scenario-late');
+      if (okButton && lateButton) {
+        okButton.classList.toggle('scenario-active', name === 'ok');
+        okButton.classList.toggle('scenario-inactive', name !== 'ok');
+        lateButton.classList.toggle('scenario-active', name === 'late');
+        lateButton.classList.toggle('scenario-inactive', name !== 'late');
+      }
       const chat = document.getElementById('chat');
       chat.innerHTML = '';
       scenarios[name].forEach((item, index) => {
@@ -431,7 +453,11 @@
       });
     }
 
-    setScenario('ok');
+    if (location.hash === '#late') {
+      setScenario('late');
+    } else {
+      setScenario('ok');
+    }
   </script>
 </body>
 </html>
