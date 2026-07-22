@@ -123,7 +123,20 @@ async function staticFile(res, pathname, { head = false } = {}) {
   if (!target.startsWith(publicDir)) throw new Error('Bad path');
   const ext = path.extname(target);
   const type = ext === '.css' ? 'text/css; charset=utf-8' : ext === '.js' ? 'text/javascript; charset=utf-8' : ext === '.png' ? 'image/png' : ext === '.jpg' || ext === '.jpeg' ? 'image/jpeg' : ext === '.svg' ? 'image/svg+xml' : 'text/html; charset=utf-8';
-  const data = await readFile(target);
+  let data;
+  try {
+    data = await readFile(target);
+  } catch (err) {
+    if (err?.code === 'ENOENT') {
+      res.writeHead(404, {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Cache-Control': 'no-store, max-age=0',
+        'X-Malachi-Version': version.version
+      });
+      return res.end(head ? undefined : 'Not found');
+    }
+    throw err;
+  }
   res.writeHead(200, {
     'Content-Type': type,
     'Cache-Control': 'no-store, max-age=0',

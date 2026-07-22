@@ -878,7 +878,10 @@ export async function handleElderResponse({ elderId, checkId, response }) {
     const check = checkId
       ? db.checks.find((c) => c.id === checkId)
       : db.checks.filter((c) => c.elderId === elderId && c.status === 'sent').sort((a, b) => b.sentAt.localeCompare(a.sentAt))[0];
-    if (!check) throw new Error('Open check not found');
+    if (!check) {
+      db.audit.push({ id: id('evt'), type: 'late_or_duplicate_response_ignored', payload: { elderId, response }, createdAt: nowIso() });
+      return { check: null, elder: { ...elder }, contact: null, action: 'ignored_no_open_check' };
+    }
     if (check.status !== 'sent') return { check: { ...check }, elder: { ...elder }, contact: null, action: 'none' };
 
     check.respondedAt = nowIso();

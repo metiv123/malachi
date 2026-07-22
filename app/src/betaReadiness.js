@@ -15,6 +15,8 @@ export async function betaReadiness() {
   const openChecks = db.checks.filter((c) => c.status === 'sent').length;
   const failedChecks = db.checks.filter((c) => c.status === 'failed').length;
   const errors = (db.errors || []).length;
+  const recentErrorWindowMs = 60 * 60 * 1000;
+  const recentErrors = (db.errors || []).filter((error) => Date.now() - new Date(error.createdAt || 0).getTime() <= recentErrorWindowMs).length;
 
   if (!config.betaOpen) blockers.push('הבטא סגורה בהגדרות MALACHI_BETA_OPEN=false');
   if (config.whatsappProvider === 'meta') {
@@ -25,7 +27,7 @@ export async function betaReadiness() {
   }
   if (failedChecks > 0) blockers.push(`יש ${failedChecks} בדיקות בסטטוס failed`);
   if (openChecks > 10) warnings.push(`יש ${openChecks} בדיקות פתוחות שממתינות לתגובה`);
-  if (errors > 0) warnings.push(`יש ${errors} שגיאות בלוג — לבדוק /api/errors`);
+  if (recentErrors > 0) warnings.push(`יש ${recentErrors} שגיאות חדשות בשעה האחרונה — לבדוק /api/errors`);
   if (families >= config.betaMaxFamilies) blockers.push('מכסת הבטא מלאה');
 
   if (families === 0) recommendations.push('להכניס קודם משפחת בדיקה פנימית אחת');
@@ -34,13 +36,13 @@ export async function betaReadiness() {
   if (activeElders === 0 && families > 0) warnings.push('אין כרגע אנשים פעילים לבדיקה יומית');
 
   const readyForInternalPilot = blockers.length === 0;
-  const readyForRealFamilies = readyForInternalPilot && config.whatsappProvider === 'meta' && errors === 0;
+  const readyForRealFamilies = readyForInternalPilot && config.whatsappProvider === 'meta' && recentErrors === 0;
 
   return {
     readyForInternalPilot,
     readyForRealFamilies,
     mode: config.whatsappProvider,
-    counts: { families, elders, activeElders, approvedElders, contacts, openChecks, failedChecks, errors, betaMaxFamilies: config.betaMaxFamilies },
+    counts: { families, elders, activeElders, approvedElders, contacts, openChecks, failedChecks, errors, recentErrors, betaMaxFamilies: config.betaMaxFamilies },
     blockers,
     warnings,
     recommendations,
