@@ -559,6 +559,33 @@ export async function sendBetaUpdateToRecentContact({ contactId = '', phoneLast4
   return { dryRun: false, sent: true, maskedPhone: maskPhone(selected.contact.whatsappPhone), familyId: selected.family.id, elderId: selected.elder.id, contactId: selected.contact.id, messageId: outbound.id };
 }
 
+export async function sendReplyToRecentInbound({ phoneLast4 = '', message, hours = 24, dryRun = true } = {}) {
+  const db = await loadDb();
+  const body = String(message || '').trim();
+  if (!body) throw new Error('Missing reply message');
+  const last4 = normalizeDigits(phoneLast4).slice(-4);
+  if (!last4 || last4.length < 4) throw new Error('Missing phoneLast4');
+
+  const sinceMs = Date.now() - Number(hours || 24) * 60 * 60 * 1000;
+  const matches = (db.inboundMessages || [])
+    .filter((item) => new Date(item.createdAt || Number(item.timestamp || 0) * 1000 || 0).getTime() >= sinceMs)
+    .filter((item) => normalizeDigits(item.from).endsWith(last4))
+    .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+
+  if (!matches.length) throw new Error('Recent inbound sender not found');
+  const selected = matches[0];
+  const to = normalizeDigits(selected.from);
+  if (!to) throw new Error('Inbound sender has no phone');
+
+  if (dryRun) {
+    return { dryRun: true, eligible: true, to: maskPhone(to), inboundId: selected.id, inboundCreatedAt: selected.createdAt };
+  }
+
+  const outbound = await sendBetaUpdate(to, body, { inboundId: selected.id, hours: Number(hours || 24), targetedInboundReply: true });
+  await audit('inbound_reply_sent', { inboundId: selected.id, to: maskPhone(to), hours: Number(hours || 24), messageId: outbound.id });
+  return { dryRun: false, sent: true, to: maskPhone(to), inboundId: selected.id, messageId: outbound.id };
+}
+
 export async function sourceReport() {
   const db = await loadDb();
   const report = {};
