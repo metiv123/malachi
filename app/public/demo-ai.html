@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>מלאכי — דמו ממשק AI באתר</title>
+  <style>
+    :root {
+      --bg: #f6f2ea;
+      --card: #fffaf2;
+      --ink: #17332c;
+      --muted: #65756e;
+      --brand: #1d8f73;
+      --brand-dark: #11745b;
+      --soft: #e7f4ee;
+      --line: #e4ddd0;
+      --warn: #b96c1a;
+      --shadow: 0 20px 60px rgba(21, 53, 43, .14);
+      --radius: 28px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, rgba(29,143,115,.20), transparent 28rem),
+        radial-gradient(circle at bottom right, rgba(255,191,105,.22), transparent 24rem),
+        var(--bg);
+      min-height: 100vh;
+    }
+
+    .page {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0 48px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 34px;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 900;
+      font-size: 1.3rem;
+    }
+
+    .logo-mark {
+      width: 44px;
+      height: 44px;
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(135deg, var(--brand), #76c99f);
+      color: white;
+      box-shadow: 0 12px 30px rgba(29,143,115,.25);
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .pill, button {
+      border: 1px solid rgba(23, 51, 44, .1);
+      background: rgba(255,255,255,.72);
+      color: var(--ink);
+      padding: 10px 16px;
+      border-radius: 999px;
+      font-weight: 700;
+      backdrop-filter: blur(10px);
+    }
+
+    button { cursor: pointer; font-family: inherit; }
+    button.primary {
+      background: var(--brand);
+      color: white;
+      border: none;
+      box-shadow: 0 12px 28px rgba(29,143,115,.28);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1fr 430px;
+      gap: 34px;
+      align-items: center;
+    }
+
+    .hero-copy h1 {
+      font-size: clamp(2.3rem, 5vw, 4.6rem);
+      line-height: 1.02;
+      margin: 0 0 20px;
+      letter-spacing: -0.055em;
+    }
+
+    .hero-copy p {
+      font-size: 1.22rem;
+      line-height: 1.75;
+      color: var(--muted);
+      max-width: 720px;
+      margin: 0 0 22px;
+    }
+
+    .hero-copy strong { color: var(--ink); }
+
+    .hero-buttons { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 26px; }
+    .hero-buttons button { font-size: 1rem; padding: 13px 20px; }
+
+    .trust-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 28px;
+      max-width: 780px;
+    }
+
+    .trust-card {
+      background: rgba(255,255,255,.55);
+      border: 1px solid rgba(23,51,44,.08);
+      border-radius: 18px;
+      padding: 14px;
+      font-weight: 800;
+      color: var(--ink);
+    }
+    .trust-card span { display: block; color: var(--muted); font-size: .9rem; font-weight: 600; margin-top: 5px; }
+
+    .phone {
+      background: #151f1b;
+      border-radius: 42px;
+      padding: 14px;
+      box-shadow: var(--shadow);
+      border: 1px solid rgba(255,255,255,.2);
+      transform: rotate(-1.5deg);
+    }
+
+    .phone-screen {
+      background: #f7f1e8;
+      border-radius: 32px;
+      overflow: hidden;
+      min-height: 650px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .phone-top {
+      padding: 18px;
+      background: linear-gradient(135deg, #ffffff, #eaf6f1);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .chat-title { display: flex; align-items: center; gap: 10px; }
+    .avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: var(--brand);
+      color: white;
+      font-weight: 900;
+    }
+    .chat-title b { display: block; }
+    .chat-title small { color: var(--muted); }
+
+    .chat {
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      flex: 1;
+    }
+
+    .bubble {
+      width: fit-content;
+      max-width: 88%;
+      padding: 12px 14px;
+      border-radius: 18px;
+      line-height: 1.45;
+      font-size: .97rem;
+      box-shadow: 0 5px 16px rgba(23,51,44,.06);
+    }
+    .bot { background: white; border-top-right-radius: 6px; }
+    .user { background: #dcf8c6; align-self: flex-start; border-top-left-radius: 6px; }
+    .system {
+      align-self: center;
+      background: rgba(255,255,255,.62);
+      color: var(--muted);
+      font-size: .82rem;
+      padding: 8px 12px;
+      border-radius: 999px;
+      box-shadow: none;
+    }
+
+    .quick-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+    .quick-actions button {
+      font-size: .86rem;
+      padding: 8px 11px;
+      background: white;
+    }
+
+    .phone-input {
+      margin: 0 18px 18px;
+      background: white;
+      border-radius: 999px;
+      padding: 10px 12px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      color: var(--muted);
+      border: 1px solid var(--line);
+    }
+    .phone-input span { flex: 1; }
+
+    .section {
+      margin-top: 42px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+    }
+
+    .panel {
+      background: rgba(255,250,242,.82);
+      border: 1px solid rgba(23,51,44,.09);
+      border-radius: var(--radius);
+      padding: 24px;
+      box-shadow: 0 14px 42px rgba(23,51,44,.08);
+    }
+
+    .panel h2 { margin: 0 0 12px; font-size: 1.45rem; }
+    .panel p { color: var(--muted); line-height: 1.65; margin: 0 0 18px; }
+
+    .timeline { display: grid; gap: 12px; }
+    .step {
+      display: grid;
+      grid-template-columns: 34px 1fr;
+      gap: 12px;
+      align-items: start;
+    }
+    .num {
+      width: 34px;
+      height: 34px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      background: var(--soft);
+      color: var(--brand-dark);
+      font-weight: 900;
+    }
+    .step b { display: block; }
+    .step span { color: var(--muted); line-height: 1.5; }
+
+    .dashboard {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    .metric {
+      background: white;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 14px;
+    }
+    .metric strong { font-size: 1.6rem; display: block; }
+    .metric span { color: var(--muted); font-size: .92rem; }
+    .metric.ok strong { color: var(--brand-dark); }
+    .metric.warn strong { color: var(--warn); }
+
+    .demo-note {
+      margin-top: 24px;
+      color: var(--muted);
+      font-size: .94rem;
+      line-height: 1.6;
+      background: rgba(255,255,255,.6);
+      border: 1px dashed rgba(23,51,44,.18);
+      border-radius: 18px;
+      padding: 14px;
+    }
+
+    .scenario-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 18px 0; }
+    .scenario-tabs button.active { background: var(--ink); color: white; }
+
+    @media (max-width: 920px) {
+      .hero, .section { grid-template-columns: 1fr; }
+      .phone { max-width: 430px; margin: 0 auto; }
+      .trust-row { grid-template-columns: 1fr; }
+      header { align-items: flex-start; flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header>
+      <div class="logo"><div class="logo-mark">מ</div> מלאכי <span class="pill">דמו אתר — Mockup</span></div>
+      <div class="header-actions">
+        <button>איך זה עובד</button>
+        <button>שאלות נפוצות</button>
+        <button class="primary">הדגמה חיה</button>
+      </div>
+    </header>
+
+    <section class="hero">
+      <div class="hero-copy">
+        <h1>כך נראה מלאכי כשהמשפחה רואה שהכול בסדר.</h1>
+        <p>
+          דמו עדין ופשוט: ההורה מקבל הודעת WhatsApp יומית עם כפתור אחד —
+          <strong>“הכול בסדר”</strong>. המשפחה רואה שקט בדשבורד, ורק אם אין תגובה בזמן — נשלחת התראה.
+        </p>
+        <div class="hero-buttons">
+          <button class="primary" onclick="setScenario('ok')">הראה מצב “הכול בסדר”</button>
+          <button onclick="setScenario('late')">הראה מצב ללא מענה</button>
+          <button onclick="setScenario('family')">הראה שאלה של בן משפחה</button>
+        </div>
+        <div class="trust-row">
+          <div class="trust-card">בלי אפליקציה חדשה<span>הכול ב־WhatsApp</span></div>
+          <div class="trust-card">בלי לחץ מיותר<span>התראה רק כשצריך</span></div>
+          <div class="trust-card">פרטי למשפחה<span>דשבורד עם קישור מאובטח</span></div>
+        </div>
+      </div>
+
+      <aside class="phone" aria-label="דמו שיחת וואטסאפ">
+        <div class="phone-screen">
+          <div class="phone-top">
+            <div class="chat-title">
+              <div class="avatar">מ</div>
+              <div><b>מלאכי</b><small>המלאך השומר של המשפחה</small></div>
+            </div>
+          </div>
+          <div class="chat" id="chat"></div>
+          <div class="phone-input"><span>כתוב הודעה…</span><button class="primary">שליחה</button></div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="section">
+      <div class="panel">
+        <h2>מה המשפחה מבינה תוך 10 שניות?</h2>
+        <p>הדמו באתר לא צריך להסביר טכנולוגיה. הוא צריך לגרום לבן משפחה להגיד: “הבנתי. זה פשוט נותן לי שקט בבוקר.”</p>
+        <div class="timeline">
+          <div class="step"><div class="num">1</div><div><b>קובעים שעה</b><span>למשל כל בוקר ב־09:00.</span></div></div>
+          <div class="step"><div class="num">2</div><div><b>ההורה מאשר</b><span>רק אחרי opt-in אמיתי ב־WhatsApp.</span></div></div>
+          <div class="step"><div class="num">3</div><div><b>המשפחה מקבלת שקט</b><span>תגובה נרשמת בדשבורד. אין תגובה? רק אז התראה.</span></div></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>דשבורד משפחתי לדוגמה</h2>
+        <p>מסך פשוט שמראה מצב, בלי להציף ובלי להפחיד.</p>
+        <div class="dashboard">
+          <div class="metric ok"><strong>הכול בסדר</strong><span>תגובה אחרונה: היום 09:04</span></div>
+          <div class="metric"><strong>7</strong><span>ימי בדיקה רצופים</span></div>
+          <div class="metric"><strong>09:00</strong><span>שעת בדיקה יומית</span></div>
+          <div class="metric warn"><strong>רק אם צריך</strong><span>התראה על חוסר מענה</span></div>
+        </div>
+        <div class="demo-note">זה mockup בלבד: אין כאן AI אמיתי, אין שליחת WhatsApp ואין שמירת מידע. המטרה היא להדגים איך זה יכול להיראות באתר.</div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const scenarios = {
+      ok: [
+        { type: 'system', text: 'הדגמה: בדיקת בוקר רגועה' },
+        { type: 'bot', text: 'בוקר טוב רות 🌿 רק לוודא שהכול בסדר היום.' },
+        { type: 'bot', text: 'אם הכול בסדר, לחצי על הכפתור:' },
+        { type: 'actions', actions: ['הכול בסדר'] },
+        { type: 'user', text: 'הכול בסדר' },
+        { type: 'bot', text: 'שמחנו לשמוע 💚 עדכנתי את המשפחה שהכול בסדר.' }
+      ],
+      late: [
+        { type: 'system', text: 'הדגמה: אין תגובה בזמן שנקבע' },
+        { type: 'bot', text: 'בוקר טוב רות 🌿 רק לוודא שהכול בסדר היום.' },
+        { type: 'actions', actions: ['הכול בסדר'] },
+        { type: 'system', text: 'עבר זמן ההמתנה שהמשפחה הגדירה' },
+        { type: 'bot', text: 'נשלחה התראה עדינה לבן המשפחה: לא התקבלה תגובה לבדיקה של היום.' }
+      ],
+      family: [
+        { type: 'system', text: 'הדגמה: שאלה של בן משפחה בדשבורד עתידי' },
+        { type: 'user', text: 'מה מצב אמא השבוע?' },
+        { type: 'bot', text: 'השבוע היו 6 תגובות “הכול בסדר” מתוך 7 בדיקות. ביום שלישי לא התקבלה תגובה ונשלחה התראה. אין סימני מצוקה במערכת — רק יום אחד ללא מענה.' },
+        { type: 'bot', text: 'רוצה שאכין לך סיכום משפחתי קצר לשיתוף עם האחים?' },
+        { type: 'actions', actions: ['כן, תכין סיכום', 'לא עכשיו'] }
+      ]
+    };
+
+    function setScenario(name) {
+      document.querySelectorAll('.hero-buttons button').forEach((btn) => btn.classList.remove('active'));
+      const chat = document.getElementById('chat');
+      chat.innerHTML = '';
+      scenarios[name].forEach((item, index) => {
+        setTimeout(() => {
+          if (item.type === 'actions') {
+            const wrap = document.createElement('div');
+            wrap.className = 'quick-actions';
+            item.actions.forEach((label) => {
+              const btn = document.createElement('button');
+              btn.textContent = label;
+              wrap.appendChild(btn);
+            });
+            chat.appendChild(wrap);
+          } else {
+            const div = document.createElement('div');
+            div.className = `bubble ${item.type}`;
+            div.textContent = item.text;
+            chat.appendChild(div);
+          }
+          chat.scrollTop = chat.scrollHeight;
+        }, index * 260);
+      });
+    }
+
+    setScenario('ok');
+  </script>
+</body>
+</html>
