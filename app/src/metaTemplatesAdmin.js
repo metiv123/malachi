@@ -91,6 +91,18 @@ export async function submitConnectionTemplates({ wabaId = defaultWabaId() } = {
       ]
     },
     {
+      name: 'incomplete_signup_reminder_he',
+      language: 'he',
+      category: 'UTILITY',
+      components: [
+        {
+          type: 'BODY',
+          text: 'היי {{1}} 🌿\nראינו שהתחלת הרשמה למלאכי, אבל עדיין חסרים פרטים כדי להפעיל את השירות.\nכדי שנוכל לשלוח בדיקת בוקר ולאפשר למשפחה לקבל עדכון אם אין מענה, צריך להשלים את הפרטים כאן: {{2}}\nאם זה לא רלוונטי, אפשר להתעלם מההודעה.',
+          example: { body_text: [['תמיר', 'https://malachi-v78v.onrender.com/']] }
+        }
+      ]
+    },
+    {
       name: 'no_response_alert_he',
       language: 'he',
       category: 'UTILITY',
@@ -122,7 +134,7 @@ export async function submitConnectionTemplates({ wabaId = defaultWabaId() } = {
 export async function listConnectionTemplates({ wabaId = defaultWabaId() } = {}) {
   const fields = 'name,status,category,language,rejected_reason,components';
   const data = await metaFetch(`${wabaId}/message_templates?fields=${encodeURIComponent(fields)}&limit=100`);
-  const names = new Set(['daily_connection_check_he', 'daily_warm_connection_he', 'daily_family_connection_he', 'contact_optin_he', 'family_connection_update_he', 'family_greeting_message_he', 'daily_check_he', 'daily_check_reminder_he', 'daily_ok_ack_he', 'no_response_alert_he']);
+  const names = new Set(['daily_connection_check_he', 'daily_warm_connection_he', 'daily_family_connection_he', 'contact_optin_he', 'family_connection_update_he', 'family_greeting_message_he', 'daily_check_he', 'daily_check_reminder_he', 'daily_ok_ack_he', 'incomplete_signup_reminder_he', 'no_response_alert_he']);
   return {
     wabaId,
     templates: (data.data || []).filter((template) => names.has(template.name))
