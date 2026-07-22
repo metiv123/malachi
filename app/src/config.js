@@ -25,8 +25,8 @@ export const config = {
     verifyToken: process.env.META_VERIFY_TOKEN || (process.env.NODE_ENV === 'production' ? '' : 'change-me'),
     templates: {
       dailyCheck: process.env.META_TEMPLATE_DAILY_CHECK || 'daily_check_he',
-      dailyReminder: process.env.META_TEMPLATE_DAILY_REMINDER || process.env.META_TEMPLATE_DAILY_CHECK || 'daily_check_he',
-      okAck: process.env.META_TEMPLATE_OK_ACK || '',
+      dailyReminder: process.env.META_TEMPLATE_DAILY_REMINDER || 'daily_check_reminder_he',
+      okAck: process.env.META_TEMPLATE_OK_ACK || 'daily_ok_ack_he',
       distressAlert: process.env.META_TEMPLATE_DISTRESS_ALERT || 'distress_alert_he',
       noResponseAlert: process.env.META_TEMPLATE_NO_RESPONSE_ALERT || 'no_response_alert_he',
       familyGreeting: process.env.META_TEMPLATE_FAMILY_GREETING || 'family_greeting_message_he',

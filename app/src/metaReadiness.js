@@ -8,7 +8,7 @@ export function metaReadiness() {
     { key: 'META_VERIFY_TOKEN', ok: Boolean(config.meta.verifyToken && config.meta.verifyToken !== 'change-me'), value: config.meta.verifyToken === 'change-me' ? 'default-change-me' : 'set' },
     { key: 'MALACHI_PUBLIC_BASE_URL', ok: Boolean(config.publicBaseUrl && !config.publicBaseUrl.includes('localhost')), value: config.publicBaseUrl }
   ];
-  return { ok: checks.every((c) => c.ok), provider: config.whatsappProvider, checks };
+  return { ok: checks.every((c) => c.ok), provider: config.whatsappProvider, checks, templates: config.meta.templates };
 }
 
 export function sampleMetaPayloads() {
