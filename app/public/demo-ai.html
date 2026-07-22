@@ -39,7 +39,7 @@
 
     header {
       display: flex;
-      justify-content: space-between;
+      justify-content: flex-start;
       align-items: center;
       gap: 16px;
       margin-bottom: 34px;
@@ -67,8 +67,10 @@
     .header-actions {
       display: flex;
       gap: 10px;
-      flex-wrap: wrap;
-      justify-content: flex-end;
+      flex-wrap: nowrap;
+      justify-content: flex-start;
+      align-items: center;
+      margin-inline-start: 8px;
     }
 
     .pill, button, .header-link {
@@ -325,6 +327,7 @@
       .phone { max-width: 430px; margin: 0 auto; }
       .trust-row { grid-template-columns: 1fr; }
       header { align-items: flex-start; flex-direction: column; }
+      .header-actions { flex-wrap: wrap; justify-content: flex-start; margin-inline-start: 0; }
     }
   </style>
 </head>
@@ -374,7 +377,6 @@
     <section class="section">
       <div class="panel">
         <h2>מה המשפחה מבינה תוך 10 שניות?</h2>
-        <p>הדמו באתר לא צריך להסביר טכנולוגיה. הוא צריך לגרום לבן משפחה להגיד: “הבנתי. זה פשוט נותן לי שקט בבוקר.”</p>
         <div class="timeline">
           <div class="step"><div class="num">1</div><div><b>קובעים שעה</b><span>למשל כל בוקר ב־09:00.</span></div></div>
           <div class="step"><div class="num">2</div><div><b>המשפחה מקבלת שקט</b><span>תגובה נרשמת בדשבורד. אין תגובה? רק אז התראה.</span></div></div>
