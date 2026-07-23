@@ -1,6 +1,6 @@
 import { config } from './config.js';
 import { id, loadDb, mutateDb, nowIso } from './store.js';
-import { sendHodayaWindowOpenTemplate, sendMetaText } from './whatsapp.js';
+import { sendHodayaWindowOpenTemplate, sendMetaText, sendMetaTypingIndicator } from './whatsapp.js';
 
 let eventDrivenTimer = null;
 
@@ -56,6 +56,19 @@ function newestActionableText(handled = []) {
   return handled
     .filter((item) => item?.isolatedAgent === 'hodaya' && item.status === 'hodaya_agent_message_received' && isActionableTextEvent(item.event))
     .slice(-1)[0] || null;
+}
+
+function sendTypingIndicatorsBestEffort(handled = []) {
+  if (!config.hodayaAgent?.typingIndicatorEnabled) return;
+  if (config.whatsappProvider !== 'meta') return;
+  const actionable = handled.filter((item) => item?.isolatedAgent === 'hodaya' && item.status === 'hodaya_agent_message_received' && isActionableTextEvent(item.event));
+  for (const item of actionable) {
+    const messageId = item.event?.messageId;
+    if (!messageId) continue;
+    sendMetaTypingIndicator(messageId).catch((err) => {
+      console.error('[hodaya-agent] typing indicator failed', err.message);
+    });
+  }
 }
 
 function buildEventDrivenPrompt() {
@@ -201,6 +214,7 @@ export async function processHodayaAgentEvents(events = []) {
     });
   });
 
+  sendTypingIndicatorsBestEffort(handled);
   scheduleHodayaEventDrivenTurn(handled);
 
   return handled;
@@ -228,8 +242,9 @@ export async function getHodayaAgentStatus() {
     eventDriven: {
       enabled: Boolean(config.hodayaAgent?.eventDrivenEnabled),
       hookConfigured: Boolean(config.hodayaAgent?.eventHookUrl && config.hodayaAgent?.eventHookToken),
-      debounceMs: Number(config.hodayaAgent?.eventDebounceMs || 10000),
+      debounceMs: Number(config.hodayaAgent?.eventDebounceMs || 1500),
       rateLimitMs: Number(config.hodayaAgent?.eventRateLimitMs || 15000),
+      typingIndicatorEnabled: Boolean(config.hodayaAgent?.typingIndicatorEnabled),
       lastTriggeredAt: state.lastEventDrivenTriggeredAt || null,
       lastInboundId: state.lastEventDrivenInboundId || null
     }

@@ -1,5 +1,5 @@
 {
-  "latest": 122,
+  "latest": 123,
   "versions": [
     {
       "version": 4,
@@ -714,6 +714,12 @@
       "file": "specs/v122_release_notes.md",
       "title": "# מלאכי V122 - Hodaya Event-Driven Trigger Guards",
       "zip": "malachi-mvp-project-v122.zip"
+    },
+    {
+      "version": 123,
+      "file": "specs/v123_release_notes.md",
+      "title": "# מלאכי V123 - Faster Hodaya Replies + Typing Indicator",
+      "zip": "malachi-mvp-project-v123.zip"
     }
   ]
 }

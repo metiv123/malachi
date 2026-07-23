@@ -97,6 +97,36 @@ export async function sendMetaText(to, text) {
   return data;
 }
 
+export async function sendMetaTypingIndicator(messageId) {
+  if (!messageId) return { skipped: true, reason: 'missing_message_id' };
+  if (!config.meta.phoneNumberId || !config.meta.accessToken) {
+    throw new Error('Meta credentials missing: META_PHONE_NUMBER_ID / META_ACCESS_TOKEN');
+  }
+
+  const url = `https://graph.facebook.com/${config.meta.graphVersion}/${config.meta.phoneNumberId}/messages`;
+  const payload = {
+    messaging_product: 'whatsapp',
+    status: 'read',
+    message_id: messageId,
+    typing_indicator: { type: 'text' }
+  };
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${config.meta.accessToken}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(`Meta typing indicator failed ${res.status}: ${JSON.stringify(data)}`);
+  }
+  return data;
+}
+
 async function sendMetaInteractiveButtons(to, text, buttons = []) {
   if (!config.meta.phoneNumberId || !config.meta.accessToken) {
     throw new Error('Meta credentials missing: META_PHONE_NUMBER_ID / META_ACCESS_TOKEN');

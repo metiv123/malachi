@@ -1,7 +1,7 @@
 # מלאכי - Latest Build
 
-הגרסה האחרונה שנארזה: V122
+הגרסה האחרונה שנארזה: V123
 
-קובץ ZIP אחרון: malachi-mvp-project-v122.zip
+קובץ ZIP אחרון: malachi-mvp-project-v123.zip
 
-סטטוס: Hodaya Agent מבודד פעיל לפי allowlist; V122 מוסיף הכנה בטוחה ל-event-driven עם fail-closed ו-fallback למוניטור הדקתי.
+סטטוס: Hodaya Agent מבודד פעיל לפי allowlist; V123 מוסיף typing indicator מיידי ומקצר debounce ל־1.5 שניות.
