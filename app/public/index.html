@@ -52,13 +52,17 @@
         <p class="eyebrow">דמו כמו במערכת</p>
         <h2 id="homepage-demo-title">כך מלאכי נראה כשאמא לוחצת “אני בסדר”.</h2>
         <p>דוגמה קצרה מתוך הדמו: הודעת WhatsApp פשוטה, לחיצה אחת, ודשבורד משפחתי שמראה למטיב שהכול תקין.</p>
+        <div class="homepage-scenario-tabs" aria-label="שני מצבים בדמו">
+          <a href="#homepage-demo-ok" class="homepage-tab active">מצב 1: הכול בסדר</a>
+          <a href="#homepage-demo-late" class="homepage-tab">מצב 2: אין מענה</a>
+        </div>
         <div class="actions">
           <a href="/demo-ai.html" class="button primary">פתח דמו מלא</a>
           <a href="/create-user.html" class="button secondary">צור משתמש</a>
         </div>
       </div>
 
-      <aside class="homepage-demo-phone" aria-label="דמו שיחת WhatsApp של מלאכי">
+      <aside id="homepage-demo-ok" class="homepage-demo-phone" aria-label="דמו שיחת WhatsApp של מלאכי — הכול בסדר">
         <div class="homepage-phone-screen">
           <div class="homepage-phone-top">
             <div class="homepage-chat-title">
@@ -89,6 +93,16 @@
           <div class="homepage-metric"><strong>מטיב</strong><span>איש קשר משפחתי</span></div>
           <div class="homepage-metric warn"><strong>אין מענה?</strong><span>רק אז נשלחת התראה</span></div>
         </div>
+      </div>
+
+      <div id="homepage-demo-late" class="homepage-demo-panel homepage-late-panel" aria-label="דוגמה למצב שאין מענה">
+        <h3>ומה קורה אם אין מענה?</h3>
+        <div class="homepage-late-flow">
+          <div><b>09:00</b><span>מלאכי שולח הודעת בדיקה לאמא.</span></div>
+          <div><b>09:30</b><span>אם אין תגובה — נשלחת תזכורת עדינה.</span></div>
+          <div><b>אחרי הזמן שהוגדר</b><span>מטיב מקבל עדכון: לא התקבל מענה, כדאי ליצור קשר.</span></div>
+        </div>
+        <div class="homepage-alert-card">עדכון למטיב: לא התקבלה תגובה לבדיקה של היום. מומלץ ליצור קשר ולוודא שהכול בסדר.</div>
       </div>
     </section>
 
