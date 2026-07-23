@@ -1,6 +1,6 @@
 import { audit, id, loadDb, mutateDb, nowIso, saveDb } from './store.js';
 import { randomUUID } from 'node:crypto';
-import { sendBetaUpdate, sendContactOptIn, sendDailyCheck, sendDailyReminder, sendDistressAlert, sendFamilyGreeting, sendNoResponseAlert, sendOkAck, sendOptIn } from './whatsapp.js';
+import { sendBetaUpdate, sendContactOptIn, sendDailyCheck, sendDailyReminder, sendDistressAlert, sendFamilyGreeting, sendIncompleteSignupReminder, sendNoResponseAlert, sendOkAck, sendOptIn } from './whatsapp.js';
 import { localParts } from './time.js';
 import { validateJoinInput, isValidTime, normalizePhone } from './validators.js';
 import { config } from './config.js';
@@ -411,6 +411,7 @@ export async function adminSimpleOverview() {
   const templatePlan = [
     { name: 'contact_optin_he', purpose: 'אישור הצטרפות לשירות / איש קשר', required: true },
     { name: 'daily_check_he', purpose: 'בדיקת בוקר יומית', required: true },
+    { name: 'incomplete_signup_reminder_he', purpose: 'תזכורת למי שהתחיל הרשמה ולא השלים פרטים', required: true },
     { name: 'no_response_alert_he', purpose: 'עדכון משפחה כשאין מענה', required: true },
     { name: 'family_greeting_message_he', purpose: 'ד״ש למשפחה — אופציונלי, אפשר לדחות', required: false },
     { name: 'family_connection_update_he', purpose: 'עדכון כללי למשפחה — אופציונלי', required: false },
@@ -514,6 +515,66 @@ export async function sendBetaUpdateToRecentContacts({ message, hours = 24, incl
     eligibleCount: targets.length,
     sentCount: sent.length,
     targets: targets.map((target) => ({ maskedPhone: maskPhone(target.contact.whatsappPhone), familyId: target.family.id, elderId: target.elder.id, contactId: target.contact.id })),
+    sent
+  };
+}
+
+function incompleteSignupTargets(db, { familyId = '', phoneLast4 = '', ownerEmail = '', includeTests = false } = {}) {
+  const last4 = normalizeDigits(phoneLast4).slice(-4);
+  const email = cleanEmail(ownerEmail);
+  const targets = [];
+  for (const family of db.families || []) {
+    if (familyId && family.id !== familyId) continue;
+    if (email && cleanEmail(family.ownerEmail) !== email) continue;
+    if (last4 && !normalizeDigits(family.ownerPhone).endsWith(last4)) continue;
+    const elders = (db.elders || []).filter((elder) => elder.familyId === family.id);
+    const contacts = (db.contacts || []).filter((contact) => elders.some((elder) => elder.id === contact.elderId));
+    const isTest = isTestFamilyRecord(family, elders, contacts);
+    if (isTest && !includeTests) continue;
+    const missingElders = elders.length === 0;
+    const missingContacts = contacts.length === 0;
+    if (!missingElders && !missingContacts) continue;
+    targets.push({ family, missing: { elders: missingElders, contacts: missingContacts }, isTest });
+  }
+  return targets;
+}
+
+export async function incompleteSignupReminderCandidates({ familyId = '', phoneLast4 = '', ownerEmail = '', includeTests = false } = {}) {
+  const db = await loadDb();
+  const targets = incompleteSignupTargets(db, { familyId, phoneLast4, ownerEmail, includeTests });
+  return {
+    checkedAt: nowIso(),
+    eligibleCount: targets.length,
+    targets: targets.map(({ family, missing, isTest }) => ({
+      familyId: family.id,
+      name: family.ownerName || '',
+      email: family.ownerEmail || '',
+      maskedPhone: maskPhone(family.ownerPhone),
+      missing,
+      isTest
+    }))
+  };
+}
+
+export async function sendIncompleteSignupReminders({ familyId = '', phoneLast4 = '', ownerEmail = '', includeTests = false, dryRun = true, signupUrl = '' } = {}) {
+  const db = await loadDb();
+  const targets = incompleteSignupTargets(db, { familyId, phoneLast4, ownerEmail, includeTests });
+  if ((familyId || phoneLast4 || ownerEmail) && targets.length !== 1) throw new Error(`Expected exactly one incomplete signup target, found ${targets.length}`);
+
+  const sent = [];
+  if (!dryRun) {
+    for (const target of targets) {
+      const outbound = await sendIncompleteSignupReminder(target.family, { signupUrl });
+      sent.push({ familyId: target.family.id, maskedPhone: maskPhone(target.family.ownerPhone), messageId: outbound.id });
+    }
+    await audit('incomplete_signup_reminder_sent', { count: sent.length, targeted: Boolean(familyId || phoneLast4 || ownerEmail) });
+  }
+
+  return {
+    dryRun: Boolean(dryRun),
+    eligibleCount: targets.length,
+    sentCount: sent.length,
+    targets: targets.map(({ family, missing, isTest }) => ({ familyId: family.id, name: family.ownerName || '', email: family.ownerEmail || '', maskedPhone: maskPhone(family.ownerPhone), missing, isTest })),
     sent
   };
 }

@@ -248,6 +248,19 @@ export async function sendOkAck(elder) {
   return recordOutbound('ok_ack', elder.whatsappPhone, body, [], { elderId: elder.id, whatsappMessageId: providerResponse?.messages?.[0]?.id || null });
 }
 
+export async function sendIncompleteSignupReminder(family, { signupUrl = '' } = {}) {
+  const link = signupUrl || config.publicBaseUrl || 'https://malachi-v78v.onrender.com/';
+  const body = `היי ${family.ownerName} 🌿\nראינו שהתחלת הרשמה למלאכי, אבל עדיין חסרים פרטים כדי להפעיל את השירות.\nכדי שנוכל לשלוח בדיקת בוקר ולאפשר למשפחה לקבל עדכון אם אין מענה, צריך להשלים את הפרטים כאן: ${link}\nאם זה לא רלוונטי, אפשר להתעלם מההודעה.`;
+  let providerResponse = null;
+  if (config.whatsappProvider === 'meta') {
+    if (!config.meta.templates.incompleteSignupReminder) {
+      return recordOutbound('incomplete_signup_reminder', family.ownerPhone, body, [], { familyId: family.id, status: 'skipped', reason: 'META_TEMPLATE_INCOMPLETE_SIGNUP_REMINDER not approved/configured' });
+    }
+    providerResponse = await sendMetaTemplate(family.ownerPhone, config.meta.templates.incompleteSignupReminder, 'he', bodyComponent([family.ownerName, link]));
+  }
+  return recordOutbound('incomplete_signup_reminder', family.ownerPhone, body, [], { familyId: family.id, templateName: config.meta.templates.incompleteSignupReminder, whatsappMessageId: providerResponse?.messages?.[0]?.id || null });
+}
+
 export async function sendHodayaWindowOpenTemplate(to, { name = 'הודיה', templateName = '' } = {}) {
   const selectedTemplate = templateName || config.hodayaAgent?.windowTemplate || config.meta.templates.dailyCheck;
   const buttonPayload = selectedTemplate === config.meta.templates.dailyCheck ? 'daily_ok' : 'hodaya_open';
