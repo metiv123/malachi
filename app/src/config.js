@@ -28,7 +28,9 @@ export const config = {
     eventDebounceMs: Number(process.env.HODAYA_AGENT_EVENT_DEBOUNCE_MS || 1500),
     eventRateLimitMs: Number(process.env.HODAYA_AGENT_EVENT_RATE_LIMIT_MS || 15000),
     eventHookTimeoutMs: Number(process.env.HODAYA_AGENT_EVENT_HOOK_TIMEOUT_MS || 10000),
-    typingIndicatorEnabled: process.env.HODAYA_AGENT_TYPING_INDICATOR !== 'false'
+    typingIndicatorEnabled: process.env.HODAYA_AGENT_TYPING_INDICATOR !== 'false',
+    fastAckEnabled: process.env.HODAYA_AGENT_FAST_ACK !== 'false',
+    fastAckMinGapMs: Number(process.env.HODAYA_AGENT_FAST_ACK_MIN_GAP_MS || 15000)
   },
   meta: {
     graphVersion: process.env.META_GRAPH_VERSION || 'v23.0',

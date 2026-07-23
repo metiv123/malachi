@@ -110,3 +110,4 @@
 - V121: specs/v121_release_notes.md -> malachi-mvp-project-v121.zip
 - V122: specs/v122_release_notes.md -> malachi-mvp-project-v122.zip
 - V123: specs/v123_release_notes.md -> malachi-mvp-project-v123.zip
+- V124: specs/v124_release_notes.md -> malachi-mvp-project-v124.zip

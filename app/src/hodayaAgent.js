@@ -84,12 +84,52 @@ Hard safety rules:
   POST /api/admin/hodaya-agent/reply
 - Never use /api/admin/inbound-reply, /api/inbound-messages, family, elder, check, beta, or general Malachi reply endpoints for Hodaya.
 - If status.enabled is false or in24hWindow is false, do not send free-form text; answer HEARTBEAT_OK.
-- Reply only to the newest actionable Hodaya text message that has not already received a Hodaya outbound reply after it.
+- Reply only to the newest actionable Hodaya text message that has not already received a real Hodaya outbound reply after it.
+- Ignore hodaya_agent_fast_ack; it is only an instant acknowledgement and does not count as the real reply.
 - Ignore window-opening button messages like “אני בסדר”.
 - Answer in warm concise Hebrew as Shiri. You are not Metiv and do not speak on his behalf.
 - Send at most one reply via POST /api/admin/hodaya-agent/reply with {dryRun:false,message:<reply>}.
 
 This turn was triggered by Hodaya's Meta WhatsApp webhook, so check immediately and reply if there is a new text message.`;
+}
+
+async function sendFastAckBestEffort(handled = []) {
+  if (!config.hodayaAgent?.fastAckEnabled) return;
+  if (config.whatsappProvider !== 'meta') return;
+  const actionable = newestActionableText(handled);
+  if (!actionable) return;
+  try {
+    const db = await loadDb();
+    const state = db.hodayaAgent?.state || {};
+    if (!serviceWindowIsOpen(state)) return;
+    const lastAt = state.lastFastAckAt ? new Date(state.lastFastAckAt).getTime() : 0;
+    const minGap = Math.max(0, Number(config.hodayaAgent?.fastAckMinGapMs || 15000));
+    if (lastAt && Date.now() - lastAt < minGap) return;
+    const to = configuredPhone();
+    const body = 'קיבלתי, אני איתך 🌸';
+    const providerResponse = await sendMetaText(to, body);
+    const outbound = {
+      id: id('hodaya_ack'),
+      provider: config.whatsappProvider,
+      kind: 'hodaya_agent_fast_ack',
+      to,
+      body,
+      status: 'sent',
+      meta: { isolatedAgent: 'hodaya', inboundMessageId: actionable.event?.messageId || null, whatsappMessageId: providerResponse?.messages?.[0]?.id || null },
+      createdAt: nowIso()
+    };
+    await mutateDb((currentDb) => {
+      currentDb.hodayaAgent = currentDb.hodayaAgent || { inboundMessages: [], outboundMessages: [], tasks: [], state: {} };
+      currentDb.hodayaAgent.outboundMessages = currentDb.hodayaAgent.outboundMessages || [];
+      currentDb.hodayaAgent.state = currentDb.hodayaAgent.state || {};
+      currentDb.hodayaAgent.outboundMessages.push(outbound);
+      currentDb.hodayaAgent.state.lastFastAckAt = outbound.createdAt;
+      currentDb.audit = currentDb.audit || [];
+      currentDb.audit.push({ id: id('evt'), type: 'hodaya_agent_fast_ack_sent', payload: { to: maskPhone(to), messageId: outbound.id }, createdAt: nowIso() });
+    });
+  } catch (err) {
+    console.error('[hodaya-agent] fast ack failed', err.message);
+  }
 }
 
 async function postEventDrivenHook() {
@@ -215,6 +255,7 @@ export async function processHodayaAgentEvents(events = []) {
   });
 
   sendTypingIndicatorsBestEffort(handled);
+  sendFastAckBestEffort(handled);
   scheduleHodayaEventDrivenTurn(handled);
 
   return handled;
@@ -245,6 +286,8 @@ export async function getHodayaAgentStatus() {
       debounceMs: Number(config.hodayaAgent?.eventDebounceMs || 1500),
       rateLimitMs: Number(config.hodayaAgent?.eventRateLimitMs || 15000),
       typingIndicatorEnabled: Boolean(config.hodayaAgent?.typingIndicatorEnabled),
+      fastAckEnabled: Boolean(config.hodayaAgent?.fastAckEnabled),
+      fastAckMinGapMs: Number(config.hodayaAgent?.fastAckMinGapMs || 15000),
       lastTriggeredAt: state.lastEventDrivenTriggeredAt || null,
       lastInboundId: state.lastEventDrivenInboundId || null
     }

@@ -1,7 +1,7 @@
 # מלאכי - Latest Build
 
-הגרסה האחרונה שנארזה: V123
+הגרסה האחרונה שנארזה: V124
 
-קובץ ZIP אחרון: malachi-mvp-project-v123.zip
+קובץ ZIP אחרון: malachi-mvp-project-v124.zip
 
-סטטוס: Hodaya Agent מבודד פעיל לפי allowlist; V123 מוסיף typing indicator מיידי ומקצר debounce ל־1.5 שניות.
+סטטוס: Hodaya Agent מבודד פעיל; V124 מוסיף typing indicator, debounce מהיר, ותגובה מיידית קצרה לפני התשובה האמיתית.
