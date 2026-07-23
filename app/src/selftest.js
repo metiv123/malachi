@@ -1,6 +1,6 @@
 import { rm } from 'node:fs/promises';
 import path from 'node:path';
-import { addContactByToken, addElderByToken, createFamily, createUserAccount, deleteFamilyByToken, exportFamiliesCsv, getCheckHistoryByToken, getFamilyByToken, getOutboundMessagesByToken, handleElderResponse, listDashboard, loginFamily, optOutByPhone, processDueChecks, processNoResponses, sendCheckNow, setContactOptIn, setElderActiveByToken, setFamilyPasswordByToken, setOptIn, systemReadiness, updateElderByToken, weeklyReportByToken } from './malachi.js';
+import { addContactByToken, addElderByToken, cancelOpenChecks, createFamily, createUserAccount, deleteFamilyByToken, exportFamiliesCsv, getCheckHistoryByToken, getFamilyByToken, getOutboundMessagesByToken, handleElderResponse, listDashboard, loginFamily, optOutByPhone, processDueChecks, processNoResponses, sendCheckNow, setContactOptIn, setElderActiveByToken, setFamilyPasswordByToken, setOptIn, systemReadiness, updateElderByToken, weeklyReportByToken } from './malachi.js';
 import { extractWhatsAppButtonEvents, extractWhatsAppTextEvents, mapButtonToResponse, mapTextToIntent } from './metaWebhook.js';
 import { processWhatsAppWebhookPayload } from './webhookProcessor.js';
 import { getHodayaAgentStatus, prepareHodayaWindowOpenTemplate, sendHodayaAgentReply, triggerHodayaEventDrivenTurn } from './hodayaAgent.js';
@@ -70,6 +70,13 @@ async function run() {
   assert(updatedFamily.elders[0].contact.name === 'דוד', 'contact should update');
   assert(created.elder.optInStatus === 'pending', 'opt-in should start pending');
   assert(created.contact.optInStatus === 'pending', 'contact opt-in should start pending');
+  let pendingCheckRejected = false;
+  try {
+    await sendCheckNow(created.elder.id);
+  } catch (err) {
+    pendingCheckRejected = String(err.message).includes('opt-in is not approved');
+  }
+  assert(pendingCheckRejected, 'manual check should be blocked until elder opt-in is approved');
   assert(created.family.ownerPhone === '+972501111111', 'owner phone should normalize');
   assert(created.contact.whatsappPhone === '+972501111111', 'contact phone should normalize');
 

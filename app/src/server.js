@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { config } from './config.js';
-import { addContactByToken, addElderByToken, adminSimpleOverview, betaStatus, betaUpdateCandidates, createFamily, createUserAccount, deleteContactByToken, deleteFamilyByToken, exportFamiliesCsv, getCheckHistoryByToken, getFamilyByToken, getOutboundMessagesByToken, handleElderResponse, incompleteSignupReminderCandidates, listDashboard, loginFamily, processDueChecks, processNoResponses, regenerateFamilyToken, resendContactOptInByToken, resendElderOptInByToken, revokeFamilyToken, sendBetaUpdateToRecentContact, sendBetaUpdateToRecentContacts, sendCheckNow, sendIncompleteSignupReminders, sendReplyToRecentInbound, setElderActiveByToken, setFamilyPasswordByToken, setMarketingConsentByEmail, setOptIn, sourceReport, systemReadiness, updateElderByToken, waitlistReport, weeklyReportByToken } from './malachi.js';
+import { addContactByToken, addElderByToken, adminSimpleOverview, betaStatus, betaUpdateCandidates, cancelOpenChecks, createFamily, createUserAccount, deleteContactByToken, deleteFamilyByToken, exportFamiliesCsv, getCheckHistoryByToken, getFamilyByToken, getOutboundMessagesByToken, handleElderResponse, incompleteSignupReminderCandidates, listDashboard, loginFamily, processDueChecks, processNoResponses, regenerateFamilyToken, resendContactOptInByToken, resendElderOptInByToken, revokeFamilyToken, sendBetaUpdateToRecentContact, sendBetaUpdateToRecentContacts, sendCheckNow, sendIncompleteSignupReminders, sendReplyToRecentInbound, setElderActiveByToken, setFamilyPasswordByToken, setMarketingConsentByEmail, setOptIn, sourceReport, systemReadiness, updateElderByToken, waitlistReport, weeklyReportByToken } from './malachi.js';
 import { loadDb } from './store.js';
 import { processWhatsAppWebhookPayload } from './webhookProcessor.js';
 import { getHodayaAgentStatus, listHodayaAgentMessages, prepareHodayaWindowOpenTemplate, sendHodayaAgentReply, triggerHodayaEventDrivenTurn } from './hodayaAgent.js';
@@ -78,7 +78,7 @@ const adminGetApiPaths = new Set([
 ]);
 const adminPostApiPaths = new Set([
   '/api/backups', '/api/dev/demo-family', '/api/jobs/due-checks', '/api/jobs/no-responses',
-  '/api/mock/respond', '/api/mock/webhook', '/api/meta/templates/connection', '/api/meta/templates/hodaya-agent', '/api/admin/beta-update', '/api/admin/beta-update-target', '/api/admin/incomplete-signup-reminder', '/api/admin/inbound-reply', '/api/admin/hodaya-agent/window-open', '/api/admin/hodaya-agent/reply', '/api/admin/hodaya-agent/event-trigger'
+  '/api/mock/respond', '/api/mock/webhook', '/api/meta/templates/connection', '/api/meta/templates/hodaya-agent', '/api/admin/beta-update', '/api/admin/beta-update-target', '/api/admin/incomplete-signup-reminder', '/api/admin/cancel-open-checks', '/api/admin/inbound-reply', '/api/admin/hodaya-agent/window-open', '/api/admin/hodaya-agent/reply', '/api/admin/hodaya-agent/event-trigger'
 ]);
 
 function isAdminProtectedRoute(req, url) {
@@ -224,6 +224,7 @@ async function route(req, res) {
     if (req.method === 'POST' && url.pathname === '/api/admin/beta-update') return json(res, 200, await sendBetaUpdateToRecentContacts(await body(req)));
     if (req.method === 'POST' && url.pathname === '/api/admin/beta-update-target') return json(res, 200, await sendBetaUpdateToRecentContact(await body(req)));
     if (req.method === 'POST' && url.pathname === '/api/admin/incomplete-signup-reminder') return json(res, 200, await sendIncompleteSignupReminders(await body(req)));
+    if (req.method === 'POST' && url.pathname === '/api/admin/cancel-open-checks') return json(res, 200, await cancelOpenChecks(await body(req)));
     if (req.method === 'POST' && url.pathname === '/api/admin/inbound-reply') return json(res, 200, await sendReplyToRecentInbound(await body(req)));
     if (req.method === 'POST' && url.pathname === '/api/admin/hodaya-agent/window-open') return json(res, 200, await prepareHodayaWindowOpenTemplate(await body(req)));
     if (req.method === 'POST' && url.pathname === '/api/admin/hodaya-agent/reply') return json(res, 200, await sendHodayaAgentReply(await body(req)));

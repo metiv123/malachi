@@ -883,6 +883,7 @@ export async function sendCheckNow(elderId, { source = 'manual', scheduledLocalD
     const elder = db.elders.find((e) => e.id === elderId);
     if (!elder) throw new Error('Elder not found');
     if (!elder.active) throw new Error('Elder is inactive');
+    if (elder.optInStatus !== 'approved') throw new Error('Elder opt-in is not approved');
     const check = {
       id: id('check'),
       elderId: elder.id,
@@ -928,6 +929,22 @@ export async function markCheckFailed(checkId, err) {
     check.failedAt = nowIso();
     db.audit.push({ id: id('evt'), type: 'daily_check_failed', payload: { checkId, error: err.message }, createdAt: nowIso() });
     return { ...check };
+  });
+}
+
+export async function cancelOpenChecks({ elderId = '', checkId = '', reason = 'admin_cancelled' } = {}) {
+  return mutateDb((db) => {
+    const checks = db.checks.filter((check) => check.status === 'sent')
+      .filter((check) => !elderId || check.elderId === elderId)
+      .filter((check) => !checkId || check.id === checkId);
+    const cancelledAt = nowIso();
+    for (const check of checks) {
+      check.status = 'cancelled';
+      check.cancelledAt = cancelledAt;
+      check.cancelReason = reason;
+      db.audit.push({ id: id('evt'), type: 'daily_check_cancelled', payload: { checkId: check.id, elderId: check.elderId, reason }, createdAt: nowIso() });
+    }
+    return { cancelledCount: checks.length, checks: checks.map((check) => ({ ...check })) };
   });
 }
 
@@ -1036,6 +1053,13 @@ export async function processNoResponses({ graceMinutes = 60 } = {}) {
     for (const check of db.checks) {
       const elder = db.elders.find((e) => e.id === check.elderId);
       if (!elder || !check.sentAt) continue;
+      if (!elder.active || elder.optInStatus !== 'approved') {
+        check.status = 'cancelled';
+        check.cancelledAt = nowIso();
+        check.cancelReason = !elder.active ? 'elder_inactive' : 'elder_opt_in_not_approved';
+        db.audit.push({ id: id('evt'), type: 'daily_check_cancelled', payload: { elderId: elder.id, checkId: check.id, reason: check.cancelReason }, createdAt: nowIso() });
+        continue;
+      }
       const delayMinutes = elderAlertDelay(elder, graceMinutes);
       const maxAttempts = elderAlertRepeatCount(elder);
       const reminderCount = Number(check.noResponseReminderCount || 0);
