@@ -1,7 +1,7 @@
 # מלאכי - Latest Build
 
-הגרסה האחרונה שנארזה: V120
+הגרסה האחרונה שנארזה: V121
 
-קובץ ZIP אחרון: malachi-mvp-project-v120.zip
+קובץ ZIP אחרון: malachi-mvp-project-v121.zip
 
-סטטוס: תשתית Hodaya Agent מבודדת וכבויה כברירת־מחדל; הפעלה דורשת הגדרת `HODAYA_AGENT_ENABLED=true` ו־`HODAYA_AGENT_PHONE`.
+סטטוס: Hodaya Agent מבודד פעיל לפי allowlist, כולל reply bridge בתוך חלון 24 שעות; מלאכי נשאר מופרד.

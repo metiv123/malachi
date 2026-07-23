@@ -6,7 +6,7 @@ import { config } from './config.js';
 import { addContactByToken, addElderByToken, adminSimpleOverview, betaStatus, betaUpdateCandidates, createFamily, createUserAccount, deleteContactByToken, deleteFamilyByToken, exportFamiliesCsv, getCheckHistoryByToken, getFamilyByToken, getOutboundMessagesByToken, handleElderResponse, listDashboard, loginFamily, processDueChecks, processNoResponses, regenerateFamilyToken, resendContactOptInByToken, resendElderOptInByToken, revokeFamilyToken, sendBetaUpdateToRecentContact, sendBetaUpdateToRecentContacts, sendCheckNow, sendReplyToRecentInbound, setElderActiveByToken, setFamilyPasswordByToken, setMarketingConsentByEmail, setOptIn, sourceReport, systemReadiness, updateElderByToken, waitlistReport, weeklyReportByToken } from './malachi.js';
 import { loadDb } from './store.js';
 import { processWhatsAppWebhookPayload } from './webhookProcessor.js';
-import { getHodayaAgentStatus, prepareHodayaWindowOpenTemplate } from './hodayaAgent.js';
+import { getHodayaAgentStatus, listHodayaAgentMessages, prepareHodayaWindowOpenTemplate, sendHodayaAgentReply } from './hodayaAgent.js';
 import { startScheduler } from './scheduler.js';
 import { csvResponse } from './csv.js';
 import { rateLimit } from './security.js';
@@ -74,11 +74,11 @@ const adminGetApiPaths = new Set([
   '/api/dashboard', '/api/waitlist', '/api/feedback', '/api/debug/db', '/api/readiness', '/api/beta/readiness',
   '/api/beta/checklist', '/api/meta/readiness', '/api/meta/sample-payloads', '/api/meta/phone-check',
   '/api/meta/templates/connection', '/api/reports/sources', '/api/export/families.csv', '/api/export/db.json',
-  '/api/backups', '/api/errors', '/api/audit', '/api/inbound-messages', '/api/admin/simple-overview', '/api/admin/beta-update-candidates', '/api/admin/hodaya-agent/status', '/api/meta/templates/hodaya-agent'
+  '/api/backups', '/api/errors', '/api/audit', '/api/inbound-messages', '/api/admin/simple-overview', '/api/admin/beta-update-candidates', '/api/admin/hodaya-agent/status', '/api/admin/hodaya-agent/messages', '/api/meta/templates/hodaya-agent'
 ]);
 const adminPostApiPaths = new Set([
   '/api/backups', '/api/dev/demo-family', '/api/jobs/due-checks', '/api/jobs/no-responses',
-  '/api/mock/respond', '/api/mock/webhook', '/api/meta/templates/connection', '/api/meta/templates/hodaya-agent', '/api/admin/beta-update', '/api/admin/beta-update-target', '/api/admin/inbound-reply', '/api/admin/hodaya-agent/window-open'
+  '/api/mock/respond', '/api/mock/webhook', '/api/meta/templates/connection', '/api/meta/templates/hodaya-agent', '/api/admin/beta-update', '/api/admin/beta-update-target', '/api/admin/inbound-reply', '/api/admin/hodaya-agent/window-open', '/api/admin/hodaya-agent/reply'
 ]);
 
 function isAdminProtectedRoute(req, url) {
@@ -180,6 +180,7 @@ async function route(req, res) {
     if (req.method === 'GET' && url.pathname === '/api/admin/simple-overview') return json(res, 200, await adminSimpleOverview());
     if (req.method === 'GET' && url.pathname === '/api/admin/beta-update-candidates') return json(res, 200, await betaUpdateCandidates({ hours: Number(url.searchParams.get('hours') || 24), includeTests: url.searchParams.get('includeTests') === 'true' }));
     if (req.method === 'GET' && url.pathname === '/api/admin/hodaya-agent/status') return json(res, 200, await getHodayaAgentStatus());
+    if (req.method === 'GET' && url.pathname === '/api/admin/hodaya-agent/messages') return json(res, 200, await listHodayaAgentMessages({ limit: Number(url.searchParams.get('limit') || 20) }));
     if (req.method === 'GET' && url.pathname === '/api/debug/db') return json(res, 200, await loadDb());
     if (req.method === 'GET' && url.pathname === '/api/readiness') return json(res, 200, await systemReadiness());
     if (req.method === 'GET' && url.pathname === '/api/beta/readiness') return json(res, 200, await betaReadiness());
@@ -223,6 +224,7 @@ async function route(req, res) {
     if (req.method === 'POST' && url.pathname === '/api/admin/beta-update-target') return json(res, 200, await sendBetaUpdateToRecentContact(await body(req)));
     if (req.method === 'POST' && url.pathname === '/api/admin/inbound-reply') return json(res, 200, await sendReplyToRecentInbound(await body(req)));
     if (req.method === 'POST' && url.pathname === '/api/admin/hodaya-agent/window-open') return json(res, 200, await prepareHodayaWindowOpenTemplate(await body(req)));
+    if (req.method === 'POST' && url.pathname === '/api/admin/hodaya-agent/reply') return json(res, 200, await sendHodayaAgentReply(await body(req)));
 
     if (req.method === 'POST' && url.pathname === '/api/families') return json(res, 201, await createFamily(await body(req)));
     if (req.method === 'POST' && url.pathname === '/api/users') return json(res, 201, await createUserAccount(await body(req)));

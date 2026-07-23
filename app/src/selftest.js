@@ -3,7 +3,7 @@ import path from 'node:path';
 import { addContactByToken, addElderByToken, createFamily, createUserAccount, deleteFamilyByToken, exportFamiliesCsv, getCheckHistoryByToken, getFamilyByToken, getOutboundMessagesByToken, handleElderResponse, listDashboard, loginFamily, optOutByPhone, processDueChecks, processNoResponses, sendCheckNow, setContactOptIn, setElderActiveByToken, setFamilyPasswordByToken, setOptIn, systemReadiness, updateElderByToken, weeklyReportByToken } from './malachi.js';
 import { extractWhatsAppButtonEvents, extractWhatsAppTextEvents, mapButtonToResponse, mapTextToIntent } from './metaWebhook.js';
 import { processWhatsAppWebhookPayload } from './webhookProcessor.js';
-import { getHodayaAgentStatus, prepareHodayaWindowOpenTemplate } from './hodayaAgent.js';
+import { getHodayaAgentStatus, prepareHodayaWindowOpenTemplate, sendHodayaAgentReply } from './hodayaAgent.js';
 import { loadDb, saveDb } from './store.js';
 import { config } from './config.js';
 
@@ -121,6 +121,13 @@ async function run() {
   assert(db.checks.find((c) => c.id === check.id).status === 'sent', 'hodaya daily_ok must not close a Malachi elder check');
   const hodayaStatus = await getHodayaAgentStatus();
   assert(hodayaStatus.enabled === true && hodayaStatus.in24hWindow === true, 'hodaya status should show open 24h window');
+  const hodayaReplyDryRun = await sendHodayaAgentReply({ message: 'היי הודיה, השיחה פתוחה.', dryRun: true });
+  assert(hodayaReplyDryRun.eligible === true, 'hodaya reply dry-run should be eligible inside the 24h window');
+  const hodayaReply = await sendHodayaAgentReply({ message: 'היי הודיה, השיחה פתוחה.', dryRun: false });
+  assert(hodayaReply.sent === true, 'hodaya reply should send in mock mode during selftest');
+  db = await loadDb();
+  assert(db.hodayaAgent?.outboundMessages?.some((m) => m.kind === 'hodaya_agent_reply'), 'hodaya reply should be stored only under hodayaAgent outbound');
+  assert(!db.outboundMessages?.some((m) => m.kind === 'hodaya_agent_reply'), 'hodaya reply must not enter general Malachi outboundMessages');
   config.hodayaAgent.enabled = previousHodayaEnabled;
   config.hodayaAgent.phone = previousHodayaPhone;
   config.hodayaAgent.windowTemplate = previousHodayaTemplate;

@@ -67,7 +67,7 @@ async function sendMetaTemplate(to, templateName, languageCode = 'he', component
   return data;
 }
 
-async function sendMetaText(to, text) {
+export async function sendMetaText(to, text) {
   if (!config.meta.phoneNumberId || !config.meta.accessToken) {
     throw new Error('Meta credentials missing: META_PHONE_NUMBER_ID / META_ACCESS_TOKEN');
   }

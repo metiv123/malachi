@@ -1,6 +1,6 @@
 import { config } from './config.js';
 import { id, loadDb, mutateDb, nowIso } from './store.js';
-import { sendHodayaWindowOpenTemplate } from './whatsapp.js';
+import { sendHodayaWindowOpenTemplate, sendMetaText } from './whatsapp.js';
 
 function normalizeDigits(phone = '') {
   return String(phone || '').replace(/[^0-9]/g, '');
@@ -96,11 +96,15 @@ export async function processHodayaAgentEvents(events = []) {
   return handled;
 }
 
+function serviceWindowIsOpen(state = {}) {
+  return state.serviceWindowUntil ? new Date(state.serviceWindowUntil).getTime() > Date.now() : false;
+}
+
 export async function getHodayaAgentStatus() {
   const db = await loadDb();
   const state = db.hodayaAgent?.state || {};
   const serviceWindowUntil = state.serviceWindowUntil || null;
-  const in24hWindow = serviceWindowUntil ? new Date(serviceWindowUntil).getTime() > Date.now() : false;
+  const in24hWindow = serviceWindowIsOpen(state);
   return {
     enabled: isHodayaAgentEnabled(),
     phoneConfigured: Boolean(configuredPhone()),
@@ -112,6 +116,49 @@ export async function getHodayaAgentStatus() {
     taskCount: db.hodayaAgent?.tasks?.length || 0,
     lastInboundAt: state.lastInboundAt || null
   };
+}
+
+export async function listHodayaAgentMessages({ limit = 20 } = {}) {
+  const db = await loadDb();
+  const inbound = (db.hodayaAgent?.inboundMessages || []).slice().reverse().slice(0, Number(limit || 20));
+  const outbound = (db.hodayaAgent?.outboundMessages || []).slice().reverse().slice(0, Number(limit || 20));
+  return {
+    status: await getHodayaAgentStatus(),
+    inbound: inbound.map((message) => ({ ...message, from: maskPhone(message.from) })),
+    outbound: outbound.map((message) => ({ ...message, to: maskPhone(message.to) }))
+  };
+}
+
+export async function sendHodayaAgentReply({ message, dryRun = true } = {}) {
+  if (!isHodayaAgentEnabled()) throw new Error('Hodaya agent is disabled or phone is not configured');
+  const body = String(message || '').trim();
+  if (!body) throw new Error('Missing reply message');
+  const db = await loadDb();
+  const state = db.hodayaAgent?.state || {};
+  if (!serviceWindowIsOpen(state)) throw new Error('Hodaya is outside 24h WhatsApp service window');
+  const to = configuredPhone();
+  if (dryRun) return { dryRun: true, eligible: true, to: maskPhone(to), body };
+
+  let providerResponse = null;
+  if (config.whatsappProvider === 'meta') providerResponse = await sendMetaText(to, body);
+  const outbound = {
+    id: id('hodaya_out'),
+    provider: config.whatsappProvider,
+    kind: 'hodaya_agent_reply',
+    to,
+    body,
+    status: 'sent',
+    meta: { isolatedAgent: 'hodaya', whatsappMessageId: providerResponse?.messages?.[0]?.id || null },
+    createdAt: nowIso()
+  };
+  await mutateDb((currentDb) => {
+    currentDb.hodayaAgent = currentDb.hodayaAgent || { inboundMessages: [], outboundMessages: [], tasks: [], state: {} };
+    currentDb.hodayaAgent.outboundMessages = currentDb.hodayaAgent.outboundMessages || [];
+    currentDb.hodayaAgent.outboundMessages.push(outbound);
+    currentDb.audit = currentDb.audit || [];
+    currentDb.audit.push({ id: id('evt'), type: 'hodaya_agent_reply_sent', payload: { to: maskPhone(to), messageId: outbound.id }, createdAt: nowIso() });
+  });
+  return { dryRun: false, sent: true, to: maskPhone(to), messageId: outbound.id, whatsappMessageId: outbound.meta.whatsappMessageId };
 }
 
 export async function prepareHodayaWindowOpenTemplate({ dryRun = true } = {}) {
