@@ -2,6 +2,8 @@ import { config } from './config.js';
 import { id, loadDb, mutateDb, nowIso } from './store.js';
 import { sendHodayaWindowOpenTemplate, sendMetaText } from './whatsapp.js';
 
+let eventDrivenTimer = null;
+
 function normalizeDigits(phone = '') {
   return String(phone || '').replace(/[^0-9]/g, '');
 }
@@ -39,7 +41,113 @@ function inboundBody(event = {}) {
 function isWindowOpeningEvent(event = {}) {
   const body = inboundBody(event);
   const buttonId = String(event.buttonId || '').trim();
-  return event.type === 'text' || buttonId === 'daily_ok' || buttonId === 'hodaya_open' || body === 'אני בסדר' || body === 'פתחי שיחה' || body === 'פתיחת שיחה';
+  return buttonId === 'daily_ok' || buttonId === 'hodaya_open' || body === 'אני בסדר' || body === 'פתחי שיחה' || body === 'פתיחת שיחה';
+}
+
+function isActionableTextEvent(event = {}) {
+  return event.type === 'text' && String(event.text || '').trim().length > 0;
+}
+
+function eventDrivenIsConfigured() {
+  return Boolean(config.hodayaAgent?.eventDrivenEnabled && config.hodayaAgent?.eventHookUrl && config.hodayaAgent?.eventHookToken);
+}
+
+function newestActionableText(handled = []) {
+  return handled
+    .filter((item) => item?.isolatedAgent === 'hodaya' && item.status === 'hodaya_agent_message_received' && isActionableTextEvent(item.event))
+    .slice(-1)[0] || null;
+}
+
+function buildEventDrivenPrompt() {
+  return `You are Shiri replying to Hodaya through the isolated Malachi Hodaya Agent bridge. Run once and stop.
+
+Hard safety rules:
+- Workspace: /data/.openclaw/workspace/malachi
+- Live base URL: https://malachi-v78v.onrender.com
+- Admin token is stored at /data/.openclaw/workspace/.secrets/malachi-admin-token. Never print it.
+- Only use Hodaya endpoints:
+  GET /api/admin/hodaya-agent/status
+  GET /api/admin/hodaya-agent/messages?limit=20
+  POST /api/admin/hodaya-agent/reply
+- Never use /api/admin/inbound-reply, /api/inbound-messages, family, elder, check, beta, or general Malachi reply endpoints for Hodaya.
+- If status.enabled is false or in24hWindow is false, do not send free-form text; answer HEARTBEAT_OK.
+- Reply only to the newest actionable Hodaya text message that has not already received a Hodaya outbound reply after it.
+- Ignore window-opening button messages like “אני בסדר”.
+- Answer in warm concise Hebrew as Shiri. You are not Metiv and do not speak on his behalf.
+- Send at most one reply via POST /api/admin/hodaya-agent/reply with {dryRun:false,message:<reply>}.
+
+This turn was triggered by Hodaya's Meta WhatsApp webhook, so check immediately and reply if there is a new text message.`;
+}
+
+async function postEventDrivenHook() {
+  const url = config.hodayaAgent?.eventHookUrl;
+  const token = config.hodayaAgent?.eventHookToken;
+  if (!url || !token) throw new Error('Hodaya event hook is not configured');
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), Math.max(1000, Number(config.hodayaAgent?.eventHookTimeoutMs || 10000)));
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({
+        name: 'Hodaya immediate WhatsApp reply',
+        message: buildEventDrivenPrompt(),
+        agentId: 'main',
+        timeoutSeconds: 120,
+        thinking: 'medium'
+      }),
+      signal: controller.signal
+    });
+    const text = await res.text();
+    if (!res.ok) throw new Error(`Hook returned ${res.status}: ${text.slice(0, 200)}`);
+    return { ok: true, status: res.status };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+export async function triggerHodayaEventDrivenTurn({ reason = 'manual', dryRun = false } = {}) {
+  const db = await loadDb();
+  db.hodayaAgent = db.hodayaAgent || { inboundMessages: [], outboundMessages: [], tasks: [], state: {} };
+  const state = db.hodayaAgent.state || {};
+  const newestInbound = (db.hodayaAgent.inboundMessages || []).slice().reverse().find((message) => message.type === 'text' && String(message.text || '').trim());
+  if (!newestInbound) return { triggered: false, reason: 'no_actionable_text' };
+  if (!serviceWindowIsOpen(state)) return { triggered: false, reason: 'outside_24h_window' };
+  if (!config.hodayaAgent?.eventDrivenEnabled) return { triggered: false, reason: 'disabled' };
+  if (!config.hodayaAgent?.eventHookUrl || !config.hodayaAgent?.eventHookToken) return { triggered: false, reason: 'missing_hook_config' };
+  if (state.lastEventDrivenInboundId === newestInbound.id) return { triggered: false, reason: 'already_triggered_for_latest', inboundId: newestInbound.id };
+  const lastAt = state.lastEventDrivenTriggeredAt ? new Date(state.lastEventDrivenTriggeredAt).getTime() : 0;
+  const minGap = Math.max(0, Number(config.hodayaAgent?.eventRateLimitMs || 15000));
+  if (lastAt && Date.now() - lastAt < minGap) return { triggered: false, reason: 'rate_limited', inboundId: newestInbound.id };
+  if (dryRun) return { triggered: true, dryRun: true, inboundId: newestInbound.id, reason };
+
+  const hookResult = await postEventDrivenHook();
+  await mutateDb((currentDb) => {
+    currentDb.hodayaAgent = currentDb.hodayaAgent || { inboundMessages: [], outboundMessages: [], tasks: [], state: {} };
+    currentDb.hodayaAgent.state = currentDb.hodayaAgent.state || {};
+    currentDb.hodayaAgent.tasks = currentDb.hodayaAgent.tasks || [];
+    currentDb.hodayaAgent.state.lastEventDrivenInboundId = newestInbound.id;
+    currentDb.hodayaAgent.state.lastEventDrivenTriggeredAt = nowIso();
+    currentDb.hodayaAgent.tasks.push({ id: id('hodaya_task'), kind: 'event_driven_reply', inboundId: newestInbound.id, status: 'triggered', reason, createdAt: nowIso() });
+    currentDb.audit = currentDb.audit || [];
+    currentDb.audit.push({ id: id('evt'), type: 'hodaya_agent_event_driven_triggered', payload: { inboundId: newestInbound.id, reason, hookStatus: hookResult.status }, createdAt: nowIso() });
+  });
+  return { triggered: true, inboundId: newestInbound.id, hookStatus: hookResult.status };
+}
+
+export function scheduleHodayaEventDrivenTurn(handled = []) {
+  const actionable = newestActionableText(handled);
+  if (!actionable) return { scheduled: false, reason: 'no_actionable_text' };
+  if (!config.hodayaAgent?.eventDrivenEnabled) return { scheduled: false, reason: 'disabled' };
+  if (!eventDrivenIsConfigured()) return { scheduled: false, reason: 'missing_hook_config' };
+  if (eventDrivenTimer) clearTimeout(eventDrivenTimer);
+  const delayMs = Math.max(0, Number(config.hodayaAgent?.eventDebounceMs || 10000));
+  eventDrivenTimer = setTimeout(() => {
+    triggerHodayaEventDrivenTurn({ reason: 'meta_webhook_debounced' }).catch((err) => {
+      console.error('[hodaya-agent] event-driven trigger failed', err.message);
+    });
+  }, delayMs);
+  return { scheduled: true, delayMs, inboundMessageId: actionable.event?.messageId || null };
 }
 
 export async function processHodayaAgentEvents(events = []) {
@@ -93,6 +201,8 @@ export async function processHodayaAgentEvents(events = []) {
     });
   });
 
+  scheduleHodayaEventDrivenTurn(handled);
+
   return handled;
 }
 
@@ -114,7 +224,15 @@ export async function getHodayaAgentStatus() {
     inboundCount: db.hodayaAgent?.inboundMessages?.length || 0,
     outboundCount: db.hodayaAgent?.outboundMessages?.length || 0,
     taskCount: db.hodayaAgent?.tasks?.length || 0,
-    lastInboundAt: state.lastInboundAt || null
+    lastInboundAt: state.lastInboundAt || null,
+    eventDriven: {
+      enabled: Boolean(config.hodayaAgent?.eventDrivenEnabled),
+      hookConfigured: Boolean(config.hodayaAgent?.eventHookUrl && config.hodayaAgent?.eventHookToken),
+      debounceMs: Number(config.hodayaAgent?.eventDebounceMs || 10000),
+      rateLimitMs: Number(config.hodayaAgent?.eventRateLimitMs || 15000),
+      lastTriggeredAt: state.lastEventDrivenTriggeredAt || null,
+      lastInboundId: state.lastEventDrivenInboundId || null
+    }
   };
 }
 

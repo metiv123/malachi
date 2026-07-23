@@ -3,7 +3,7 @@ import path from 'node:path';
 import { addContactByToken, addElderByToken, createFamily, createUserAccount, deleteFamilyByToken, exportFamiliesCsv, getCheckHistoryByToken, getFamilyByToken, getOutboundMessagesByToken, handleElderResponse, listDashboard, loginFamily, optOutByPhone, processDueChecks, processNoResponses, sendCheckNow, setContactOptIn, setElderActiveByToken, setFamilyPasswordByToken, setOptIn, systemReadiness, updateElderByToken, weeklyReportByToken } from './malachi.js';
 import { extractWhatsAppButtonEvents, extractWhatsAppTextEvents, mapButtonToResponse, mapTextToIntent } from './metaWebhook.js';
 import { processWhatsAppWebhookPayload } from './webhookProcessor.js';
-import { getHodayaAgentStatus, prepareHodayaWindowOpenTemplate, sendHodayaAgentReply } from './hodayaAgent.js';
+import { getHodayaAgentStatus, prepareHodayaWindowOpenTemplate, sendHodayaAgentReply, triggerHodayaEventDrivenTurn } from './hodayaAgent.js';
 import { loadDb, saveDb } from './store.js';
 import { config } from './config.js';
 
@@ -106,6 +106,9 @@ async function run() {
   const previousHodayaEnabled = config.hodayaAgent.enabled;
   const previousHodayaPhone = config.hodayaAgent.phone;
   const previousHodayaTemplate = config.hodayaAgent.windowTemplate;
+  const previousHodayaEventDriven = config.hodayaAgent.eventDrivenEnabled;
+  const previousHodayaEventHookUrl = config.hodayaAgent.eventHookUrl;
+  const previousHodayaEventHookToken = config.hodayaAgent.eventHookToken;
   config.hodayaAgent.enabled = true;
   config.hodayaAgent.phone = '+972546984743';
   config.hodayaAgent.windowTemplate = '';
@@ -128,9 +131,28 @@ async function run() {
   db = await loadDb();
   assert(db.hodayaAgent?.outboundMessages?.some((m) => m.kind === 'hodaya_agent_reply'), 'hodaya reply should be stored only under hodayaAgent outbound');
   assert(!db.outboundMessages?.some((m) => m.kind === 'hodaya_agent_reply'), 'hodaya reply must not enter general Malachi outboundMessages');
+
+  const hodayaTextPayload = { entry: [{ changes: [{ value: { messages: [{ type: 'text', from: '972546984743', id: 'wamid.hodaya.text', timestamp: '1', text: { body: 'תזכירי לי לשתות מים' } }] } }] }] };
+  const hodayaTextHandled = await processWhatsAppWebhookPayload(hodayaTextPayload);
+  assert(hodayaTextHandled[0]?.status === 'hodaya_agent_message_received', 'hodaya text should be treated as actionable message, not window opener');
+  db = await loadDb();
+  assert(db.hodayaAgent?.inboundMessages?.some((m) => m.messageId === 'wamid.hodaya.text' && m.text === 'תזכירי לי לשתות מים'), 'hodaya text should be stored in isolated Hodaya inbound');
+  assert(!db.inboundMessages?.some((m) => m.messageId === 'wamid.hodaya.text'), 'hodaya text must not enter general Malachi inboundMessages');
+  config.hodayaAgent.eventDrivenEnabled = true;
+  config.hodayaAgent.eventHookUrl = 'https://example.invalid/hooks/agent';
+  config.hodayaAgent.eventHookToken = 'test-token';
+  const hodayaEventDryRun = await triggerHodayaEventDrivenTurn({ reason: 'selftest', dryRun: true });
+  assert(hodayaEventDryRun.triggered === true && hodayaEventDryRun.dryRun === true, 'hodaya event-driven trigger should be eligible in dry-run');
+  config.hodayaAgent.eventHookUrl = '';
+  const hodayaEventMissingHook = await triggerHodayaEventDrivenTurn({ reason: 'selftest_missing_hook', dryRun: true });
+  assert(hodayaEventMissingHook.triggered === false && hodayaEventMissingHook.reason === 'missing_hook_config', 'hodaya event-driven should fail closed without hook config');
+
   config.hodayaAgent.enabled = previousHodayaEnabled;
   config.hodayaAgent.phone = previousHodayaPhone;
   config.hodayaAgent.windowTemplate = previousHodayaTemplate;
+  config.hodayaAgent.eventDrivenEnabled = previousHodayaEventDriven;
+  config.hodayaAgent.eventHookUrl = previousHodayaEventHookUrl;
+  config.hodayaAgent.eventHookToken = previousHodayaEventHookToken;
 
   await handleElderResponse({ elderId: created.elder.id, checkId: check.id, response: 'ok' });
   db = await loadDb();

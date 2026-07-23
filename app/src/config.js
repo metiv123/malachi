@@ -21,7 +21,13 @@ export const config = {
     enabled: process.env.HODAYA_AGENT_ENABLED === 'true',
     phone: process.env.HODAYA_AGENT_PHONE || '',
     displayName: process.env.HODAYA_AGENT_DISPLAY_NAME || 'הודיה',
-    windowTemplate: process.env.HODAYA_AGENT_WINDOW_TEMPLATE || process.env.META_TEMPLATE_HODAYA_WINDOW_OPEN || ''
+    windowTemplate: process.env.HODAYA_AGENT_WINDOW_TEMPLATE || process.env.META_TEMPLATE_HODAYA_WINDOW_OPEN || '',
+    eventDrivenEnabled: process.env.HODAYA_AGENT_EVENT_DRIVEN === 'true',
+    eventHookUrl: process.env.HODAYA_AGENT_EVENT_HOOK_URL || '',
+    eventHookToken: process.env.HODAYA_AGENT_EVENT_HOOK_TOKEN || '',
+    eventDebounceMs: Number(process.env.HODAYA_AGENT_EVENT_DEBOUNCE_MS || 10000),
+    eventRateLimitMs: Number(process.env.HODAYA_AGENT_EVENT_RATE_LIMIT_MS || 15000),
+    eventHookTimeoutMs: Number(process.env.HODAYA_AGENT_EVENT_HOOK_TIMEOUT_MS || 10000)
   },
   meta: {
     graphVersion: process.env.META_GRAPH_VERSION || 'v23.0',
