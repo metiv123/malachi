@@ -131,10 +131,41 @@ export async function submitConnectionTemplates({ wabaId = defaultWabaId() } = {
   return { wabaId, results };
 }
 
+export async function submitHodayaAgentTemplate({ wabaId = defaultWabaId() } = {}) {
+  const template = {
+    name: 'hodaya_agent_window_open_he',
+    language: 'he',
+    category: 'UTILITY',
+    components: [
+      {
+        type: 'BODY',
+        text: 'היי {{1}} 🌿\nיש לי עדכון שביקשת לקבל. כדי לפתוח שיחה בוואטסאפ ולקבל את הפרטים, אפשר להשיב להודעה או ללחוץ על הכפתור למטה.',
+        example: { body_text: [['הודיה']] }
+      },
+      {
+        type: 'BUTTONS',
+        buttons: [
+          { type: 'QUICK_REPLY', text: 'פתחי שיחה' }
+        ]
+      }
+    ]
+  };
+
+  try {
+    const data = await metaFetch(`${wabaId}/message_templates`, {
+      method: 'POST',
+      body: JSON.stringify(template)
+    });
+    return { wabaId, name: template.name, ok: true, data };
+  } catch (err) {
+    return { wabaId, name: template.name, ok: false, error: err.message };
+  }
+}
+
 export async function listConnectionTemplates({ wabaId = defaultWabaId() } = {}) {
   const fields = 'name,status,category,language,rejected_reason,components';
   const data = await metaFetch(`${wabaId}/message_templates?fields=${encodeURIComponent(fields)}&limit=100`);
-  const names = new Set(['daily_connection_check_he', 'daily_warm_connection_he', 'daily_family_connection_he', 'contact_optin_he', 'family_connection_update_he', 'family_greeting_message_he', 'daily_check_he', 'daily_check_reminder_he', 'daily_ok_ack_he', 'incomplete_signup_reminder_he', 'no_response_alert_he']);
+  const names = new Set(['daily_connection_check_he', 'daily_warm_connection_he', 'daily_family_connection_he', 'contact_optin_he', 'family_connection_update_he', 'family_greeting_message_he', 'daily_check_he', 'daily_check_reminder_he', 'daily_ok_ack_he', 'incomplete_signup_reminder_he', 'no_response_alert_he', 'hodaya_agent_window_open_he']);
   return {
     wabaId,
     templates: (data.data || []).filter((template) => names.has(template.name))

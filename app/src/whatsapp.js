@@ -248,6 +248,22 @@ export async function sendOkAck(elder) {
   return recordOutbound('ok_ack', elder.whatsappPhone, body, [], { elderId: elder.id, whatsappMessageId: providerResponse?.messages?.[0]?.id || null });
 }
 
+export async function sendHodayaWindowOpenTemplate(to, { name = 'הודיה', templateName = '' } = {}) {
+  const selectedTemplate = templateName || config.hodayaAgent?.windowTemplate || config.meta.templates.dailyCheck;
+  const buttonPayload = selectedTemplate === config.meta.templates.dailyCheck ? 'daily_ok' : 'hodaya_open';
+  const buttonTitle = selectedTemplate === config.meta.templates.dailyCheck ? 'אני בסדר' : 'פתחי שיחה';
+  const body = `היי ${name} 🌿\nיש לי עדכון שביקשת לקבל. אפשר ללחוץ על הכפתור כדי לפתוח שיחה.`;
+  const buttons = [{ id: buttonPayload, title: buttonTitle }];
+  let providerResponse = null;
+  if (config.whatsappProvider === 'meta') {
+    providerResponse = await sendMetaTemplate(to, selectedTemplate, 'he', [
+      ...bodyComponent([name]),
+      quickReplyButton(0, buttonPayload)
+    ]);
+  }
+  return recordOutbound('hodaya_window_open', to, body, buttons, { templateName: selectedTemplate, isolatedAgent: 'hodaya', whatsappMessageId: providerResponse?.messages?.[0]?.id || null });
+}
+
 export async function sendBetaUpdate(to, text, meta = {}) {
   const body = String(text || '').trim();
   if (!body) throw new Error('Missing beta update text');

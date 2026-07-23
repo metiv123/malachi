@@ -1,12 +1,16 @@
 import { id, loadDb, mutateDb, nowIso } from './store.js';
 import { extractWhatsAppButtonEvents, extractWhatsAppStatusEvents, extractWhatsAppTextEvents, mapButtonToResponse, mapMetaDeliveryStatus, mapTextToIntent } from './metaWebhook.js';
 import { handleElderResponse, optOutByPhone, setContactOptIn, setOptIn } from './malachi.js';
+import { isHodayaAgentSender, processHodayaAgentEvents } from './hodayaAgent.js';
 
 export async function processWhatsAppWebhookPayload(payload) {
-  const buttons = extractWhatsAppButtonEvents(payload);
-  const texts = extractWhatsAppTextEvents(payload);
+  const allButtons = extractWhatsAppButtonEvents(payload);
+  const allTexts = extractWhatsAppTextEvents(payload);
   const statuses = extractWhatsAppStatusEvents(payload);
-  const handled = [];
+  const hodayaHandled = await processHodayaAgentEvents([...allButtons, ...allTexts]);
+  const buttons = allButtons.filter((event) => !isHodayaAgentSender(event.from));
+  const texts = allTexts.filter((event) => !isHodayaAgentSender(event.from));
+  const handled = [...hodayaHandled];
   const db = await loadDb();
   const findElder = (from) => {
     const normalizedFrom = String(from).replace(/[^0-9]/g, '');
@@ -132,6 +136,7 @@ export async function processWhatsAppWebhookPayload(payload) {
     }
     currentDb.inboundMessages = currentDb.inboundMessages || [];
     for (const item of handled) {
+      if (item.isolatedAgent === 'hodaya') continue;
       const event = item.event || {};
       currentDb.inboundMessages.push({
         id: id('in'),
@@ -155,7 +160,7 @@ export async function processWhatsAppWebhookPayload(payload) {
         buttonEvents: buttons.length,
         textEvents: texts.length,
         statusEvents: statuses.length,
-        handled: handled.map((item) => ({
+        handled: handled.filter((item) => item.isolatedAgent !== 'hodaya').map((item) => ({
           status: item.status,
           mapped: item.mapped || null,
           fromLast4: String(item.event?.from || '').replace(/[^0-9]/g, '').slice(-4),

@@ -17,6 +17,12 @@ export const config = {
   devToolsEnabled: process.env.MALACHI_DEV_TOOLS === 'true' || process.env.NODE_ENV !== 'production',
   whatsappProvider: process.env.WHATSAPP_PROVIDER || 'mock',
   dailyCheckMode: process.env.MALACHI_DAILY_CHECK_MODE || 'single_ok',
+  hodayaAgent: {
+    enabled: process.env.HODAYA_AGENT_ENABLED === 'true',
+    phone: process.env.HODAYA_AGENT_PHONE || '',
+    displayName: process.env.HODAYA_AGENT_DISPLAY_NAME || 'הודיה',
+    windowTemplate: process.env.HODAYA_AGENT_WINDOW_TEMPLATE || process.env.META_TEMPLATE_HODAYA_WINDOW_OPEN || ''
+  },
   meta: {
     graphVersion: process.env.META_GRAPH_VERSION || 'v23.0',
     wabaId: process.env.META_WABA_ID || '',

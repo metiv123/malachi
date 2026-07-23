@@ -3,6 +3,7 @@ import path from 'node:path';
 import { addContactByToken, addElderByToken, createFamily, createUserAccount, deleteFamilyByToken, exportFamiliesCsv, getCheckHistoryByToken, getFamilyByToken, getOutboundMessagesByToken, handleElderResponse, listDashboard, loginFamily, optOutByPhone, processDueChecks, processNoResponses, sendCheckNow, setContactOptIn, setElderActiveByToken, setFamilyPasswordByToken, setOptIn, systemReadiness, updateElderByToken, weeklyReportByToken } from './malachi.js';
 import { extractWhatsAppButtonEvents, extractWhatsAppTextEvents, mapButtonToResponse, mapTextToIntent } from './metaWebhook.js';
 import { processWhatsAppWebhookPayload } from './webhookProcessor.js';
+import { getHodayaAgentStatus, prepareHodayaWindowOpenTemplate } from './hodayaAgent.js';
 import { loadDb, saveDb } from './store.js';
 import { config } from './config.js';
 
@@ -102,8 +103,30 @@ async function run() {
   const check = await sendCheckNow(created.elder.id);
   assert(check.status === 'sent', 'check should be sent');
 
-  await handleElderResponse({ elderId: created.elder.id, checkId: check.id, response: 'ok' });
+  const previousHodayaEnabled = config.hodayaAgent.enabled;
+  const previousHodayaPhone = config.hodayaAgent.phone;
+  const previousHodayaTemplate = config.hodayaAgent.windowTemplate;
+  config.hodayaAgent.enabled = true;
+  config.hodayaAgent.phone = '+972546984743';
+  config.hodayaAgent.windowTemplate = '';
+  const hodayaDryRun = await prepareHodayaWindowOpenTemplate({ dryRun: true });
+  assert(hodayaDryRun.templateName === config.meta.templates.dailyCheck, 'hodaya POC should use existing daily check template by default');
+  assert(hodayaDryRun.buttonPayload === 'daily_ok', 'hodaya POC should use daily_ok/אני בסדר button');
+  const hodayaPayload = { entry: [{ changes: [{ value: { messages: [{ type: 'button', from: '972546984743', id: 'wamid.hodaya.window', timestamp: '1', button: { payload: 'daily_ok', text: 'אני בסדר' } }] } }] }] };
+  const hodayaHandled = await processWhatsAppWebhookPayload(hodayaPayload);
+  assert(hodayaHandled[0]?.status === 'hodaya_agent_window_opened', 'hodaya inbound should route to isolated agent');
   let db = await loadDb();
+  assert(db.hodayaAgent?.inboundMessages?.some((m) => m.messageId === 'wamid.hodaya.window'), 'hodaya inbound should be stored only in hodayaAgent state');
+  assert(!db.inboundMessages?.some((m) => m.messageId === 'wamid.hodaya.window'), 'hodaya inbound must not enter Malachi inboundMessages');
+  assert(db.checks.find((c) => c.id === check.id).status === 'sent', 'hodaya daily_ok must not close a Malachi elder check');
+  const hodayaStatus = await getHodayaAgentStatus();
+  assert(hodayaStatus.enabled === true && hodayaStatus.in24hWindow === true, 'hodaya status should show open 24h window');
+  config.hodayaAgent.enabled = previousHodayaEnabled;
+  config.hodayaAgent.phone = previousHodayaPhone;
+  config.hodayaAgent.windowTemplate = previousHodayaTemplate;
+
+  await handleElderResponse({ elderId: created.elder.id, checkId: check.id, response: 'ok' });
+  db = await loadDb();
   assert(db.checks.find((c) => c.id === check.id).status === 'ok', 'check should become ok');
   assert(db.outboundMessages.some((m) => m.kind === 'ok_ack'), 'ok ack missing');
   assert(!db.outboundMessages.some((m) => ['family_greeting', 'distress_alert', 'no_response_alert'].includes(m.kind) && m.meta?.checkId === check.id), 'ok should not notify family');
