@@ -1,6 +1,6 @@
 import { rm } from 'node:fs/promises';
 import path from 'node:path';
-import { addContactByToken, addElderByToken, cancelOpenChecks, createFamily, createUserAccount, deleteFamilyByToken, exportFamiliesCsv, getCheckHistoryByToken, getFamilyByToken, getOutboundMessagesByToken, handleElderResponse, listDashboard, loginFamily, optOutByPhone, processDueChecks, processNoResponses, sendCheckNow, setContactOptIn, setElderActiveByToken, setFamilyPasswordByToken, setOptIn, systemReadiness, updateElderByToken, weeklyReportByToken } from './malachi.js';
+import { addContactByToken, addElderByToken, cancelOpenChecks, createFamily, createUserAccount, deleteFamilyByToken, exportFamiliesCsv, getCheckHistoryByToken, getFamilyByToken, getOutboundMessagesByToken, handleElderResponse, listDashboard, loginFamily, normalizeFamilyContactOptIns, optOutByPhone, processDueChecks, processNoResponses, sendCheckNow, setContactOptIn, setElderActiveByToken, setFamilyPasswordByToken, setOptIn, systemReadiness, updateElderByToken, weeklyReportByToken } from './malachi.js';
 import { extractWhatsAppButtonEvents, extractWhatsAppTextEvents, mapButtonToResponse, mapTextToIntent } from './metaWebhook.js';
 import { processWhatsAppWebhookPayload } from './webhookProcessor.js';
 import { getHodayaAgentStatus, prepareHodayaWindowOpenTemplate, sendHodayaAgentReply, triggerHodayaEventDrivenTurn } from './hodayaAgent.js';
@@ -91,6 +91,11 @@ async function run() {
   assert(contactOptInHandled[0]?.status === 'contact_opt_in_approved', 'processor should approve contact opt-in');
   updatedFamily = await getFamilyByToken(created.family.managementToken);
   assert(updatedFamily.elders[0].contacts[0].optInStatus === 'approved', 'webhook contact opt-in should approve contact');
+  const contactOptInCountBeforeInherited = (await getOutboundMessagesByToken(created.family.managementToken)).filter((message) => message.kind === 'contact_optin').length;
+  const inheritedContactElder = await addElderByToken(created.family.managementToken, { elderName: 'סבתא', elderPhone: '0523333333', dailyCheckTime: '11:00', contactName: 'שלמה', contactPhone: '+972501111111', skipOptIn: true, elderConsent: true });
+  assert(inheritedContactElder.contact.optInStatus === 'approved', 'same family approved contact phone should inherit approval');
+  const contactOptInCountAfterInherited = (await getOutboundMessagesByToken(created.family.managementToken)).filter((message) => message.kind === 'contact_optin').length;
+  assert(contactOptInCountAfterInherited === contactOptInCountBeforeInherited, 'inherited approved contact should not receive duplicate contact opt-in');
   let duplicateRejected = false;
   try {
     await addContactByToken(created.family.managementToken, created.elder.id, { contactName: 'כפול', contactPhone: '+972501111111' });
@@ -99,6 +104,8 @@ async function run() {
   }
   assert(duplicateRejected, 'duplicate contact phone for same elder should be rejected');
 
+  const normalizedContacts = await normalizeFamilyContactOptIns({ ownerEmail: 'family2@example.com', dryRun: true });
+  assert(normalizedContacts.changedCount === 0, 'already inherited family contact approvals should not need normalization');
   await setOptIn(created.elder.id, true);
   await setContactOptIn(created.contact.id, true);
   await updateElderByToken(created.family.managementToken, created.elder.id, { dailyCheckTime: new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jerusalem', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date()) });

@@ -72,6 +72,16 @@ function isTestFamilyRecord(family = {}, elders = [], contacts = []) {
   return /בדיק|test|example\.invalid|openclaw_autonomy_test/i.test(haystack);
 }
 
+function familyContacts(db, familyId) {
+  const elderIds = new Set((db.elders || []).filter((elder) => elder.familyId === familyId).map((elder) => elder.id));
+  return (db.contacts || []).filter((contact) => elderIds.has(contact.elderId));
+}
+
+function approvedSameFamilyContact(db, familyId, phone) {
+  const normalized = normalizePhone(phone);
+  return familyContacts(db, familyId).find((contact) => normalizePhone(contact.whatsappPhone) === normalized && contact.optInStatus === 'approved') || null;
+}
+
 function alertDelayMinutes(input = {}) {
   const value = Number(input.noResponseGraceMinutes ?? input.reminderIntervalMinutes ?? input.alertDelayMinutes ?? config.reminderIntervalMinutes ?? 30);
   return [15, 30, 45, 60].includes(value) ? value : 30;
@@ -239,12 +249,13 @@ export async function addContactByToken(token, elderId, input) {
     if (!elder) throw new Error('Elder not found');
     const existing = db.contacts.find((c) => c.elderId === elderId && normalizePhone(c.whatsappPhone) === phone);
     if (existing) throw new Error('איש קשר עם מספר WhatsApp זה כבר קיים עבור האדם הזה');
-    const contact = { id: id('contact'), elderId, name, whatsappPhone: phone, relationship: input.relationship || 'קרוב משפחה', optInStatus: 'pending', createdAt: nowIso() };
+    const inheritedApproval = approvedSameFamilyContact(db, family.id, phone);
+    const contact = { id: id('contact'), elderId, name, whatsappPhone: phone, relationship: input.relationship || 'קרוב משפחה', optInStatus: inheritedApproval ? 'approved' : 'pending', createdAt: nowIso() };
     db.contacts.push(contact);
-    db.audit.push({ id: id('evt'), type: 'contact_added', payload: { elderId, contactId: contact.id }, createdAt: nowIso() });
+    db.audit.push({ id: id('evt'), type: 'contact_added', payload: { elderId, contactId: contact.id, inheritedApprovalFromContactId: inheritedApproval?.id || null }, createdAt: nowIso() });
     return { contact: { ...contact }, elder: { ...elder }, family: { ...family } };
   });
-  await sendContactOptIn(created.contact, created.elder, created.family);
+  if (created.contact.optInStatus !== 'approved') await sendContactOptIn(created.contact, created.elder, created.family);
   return created.contact;
 }
 
@@ -272,18 +283,19 @@ export async function addElderByToken(token, input = {}) {
       active: true,
       createdAt: nowIso()
     };
+    const inheritedApproval = approvedSameFamilyContact(db, family.id, contactPhone);
     const contact = {
       id: id('contact'),
       elderId: elder.id,
       name: contactName,
       whatsappPhone: contactPhone,
       relationship: input.relationship || 'קרוב משפחה',
-      optInStatus: input.skipContactOptIn ? 'approved' : 'pending',
+      optInStatus: input.skipContactOptIn || inheritedApproval ? 'approved' : 'pending',
       createdAt: nowIso()
     };
     db.elders.push(elder);
     db.contacts.push(contact);
-    db.audit.push({ id: id('evt'), type: 'elder_added', payload: { familyId: family.id, elderId: elder.id, contactId: contact.id }, createdAt: nowIso() });
+    db.audit.push({ id: id('evt'), type: 'elder_added', payload: { familyId: family.id, elderId: elder.id, contactId: contact.id, inheritedContactApprovalFromContactId: inheritedApproval?.id || null }, createdAt: nowIso() });
     return { family: { ...family }, elder: { ...elder }, contact: { ...contact } };
   });
   const warnings = [];
@@ -291,7 +303,7 @@ export async function addElderByToken(token, input = {}) {
     try { await sendOptIn(created.elder, created.family); }
     catch (err) { warnings.push(`שליחת אישור להורה נכשלה: ${err.message}`); await recordSendFailure('optin', created.elder.whatsappPhone, err, { elderId: created.elder.id }); }
   }
-  if (!input.skipContactOptIn) {
+  if (!input.skipContactOptIn && created.contact.optInStatus !== 'approved') {
     try { await sendContactOptIn(created.contact, created.elder, created.family); }
     catch (err) { warnings.push(`שליחת אישור לבן/בת המשפחה נכשלה: ${err.message}`); await recordSendFailure('contact_optin', created.contact.whatsappPhone, err, { elderId: created.elder.id, contactId: created.contact.id }); }
   }
@@ -577,6 +589,43 @@ export async function sendIncompleteSignupReminders({ familyId = '', phoneLast4 
     targets: targets.map(({ family, missing, isTest }) => ({ familyId: family.id, name: family.ownerName || '', email: family.ownerEmail || '', maskedPhone: maskPhone(family.ownerPhone), missing, isTest })),
     sent
   };
+}
+
+export async function normalizeFamilyContactOptIns({ familyId = '', ownerEmail = '', phoneLast4 = '', dryRun = true } = {}) {
+  const db = await loadDb();
+  const email = cleanEmail(ownerEmail);
+  const last4 = normalizeDigits(phoneLast4).slice(-4);
+  const families = (db.families || [])
+    .filter((family) => !familyId || family.id === familyId)
+    .filter((family) => !email || cleanEmail(family.ownerEmail) === email)
+    .filter((family) => !last4 || normalizeDigits(family.ownerPhone).endsWith(last4));
+  if ((familyId || ownerEmail || phoneLast4) && families.length !== 1) throw new Error(`Expected exactly one family, found ${families.length}`);
+
+  const changes = [];
+  const apply = (targetDb) => {
+    for (const family of families) {
+      const contacts = familyContacts(targetDb, family.id);
+      const approvedByPhone = new Map();
+      for (const contact of contacts) {
+        const phone = normalizePhone(contact.whatsappPhone);
+        if (phone && contact.optInStatus === 'approved') approvedByPhone.set(phone, contact);
+      }
+      for (const contact of contacts) {
+        const phone = normalizePhone(contact.whatsappPhone);
+        const approved = approvedByPhone.get(phone);
+        if (!approved || approved.id === contact.id || contact.optInStatus === 'approved') continue;
+        changes.push({ familyId: family.id, contactId: contact.id, inheritedFromContactId: approved.id, previousStatus: contact.optInStatus, phone: maskPhone(contact.whatsappPhone) });
+        if (!dryRun) contact.optInStatus = 'approved';
+      }
+    }
+    if (!dryRun && changes.length) {
+      targetDb.audit.push({ id: id('evt'), type: 'family_contact_opt_ins_normalized', payload: { count: changes.length, changes }, createdAt: nowIso() });
+    }
+    return { dryRun: Boolean(dryRun), changedCount: changes.length, changes };
+  };
+
+  if (dryRun) return apply(db);
+  return mutateDb(apply);
 }
 
 export async function sendBetaUpdateToRecentContact({ contactId = '', phoneLast4 = '', message, hours = 24, includeTests = false, dryRun = true } = {}) {

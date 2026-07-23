@@ -159,6 +159,8 @@ async function load() {
     const { family } = await api(`/api/family?token=${encodeURIComponent(token)}`);
     const eldersMarkup = family.elders.map((elder) => {
       const contacts = (elder.contacts || [elder.contact].filter(Boolean));
+      const canSendManualCheck = elder.active && elder.optInStatus === 'approved';
+      const manualCheckNote = elder.optInStatus !== 'approved' ? 'אפשר לשלוח בדיקה רק אחרי שהאדם מאשר ב־WhatsApp.' : !elder.active ? 'השירות מושהה כרגע.' : '';
       const visibleContacts = contacts.slice(0, 3);
       const hiddenContactsCount = Math.max(0, contacts.length - visibleContacts.length);
       return `<section class="dashboard-card elder-card">
@@ -167,7 +169,7 @@ async function load() {
             <span class="card-kicker">הורה / אדם מבוגר</span>
             <div class="elder-title-row"><h3>${esc(elder.name)}</h3><span class="status ${elder.active ? 'ok' : 'warning'}">${elder.active ? 'פעיל' : 'מושהה'}</span></div>
           </div>
-          <button class="button primary elder-primary-action" onclick="sendCheck('${elder.id}')">שלח הודעת בדיקה ב־WhatsApp עכשיו</button>
+          ${canSendManualCheck ? `<button class="button primary elder-primary-action" onclick="sendCheck('${elder.id}')">שלח הודעת בדיקה ב־WhatsApp עכשיו</button>` : `<span class="small elder-primary-action muted-action">${esc(manualCheckNote)}</span>`}
         </div>
         <div class="elder-summary-layout">
           <div class="today-card ${statusClass(elder.latestCheck?.status)}"><span class="today-label">המצב היום</span><b>${statusLabel(elder.latestCheck?.status)}</b><p>${actionHint(elder.latestCheck?.status)}</p></div>
