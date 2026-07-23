@@ -47,30 +47,47 @@
       </div>
     </section>
 
-    <section class="section demo-preview-section" aria-labelledby="demo-preview-title">
-      <div class="demo-preview-copy">
-        <p class="eyebrow">דוגמה על המסך</p>
-        <h2 id="demo-preview-title">ככה זה נראה בפועל</h2>
-        <p>ההורה מקבל הודעת WhatsApp פשוטה עם כפתור אחד. המשפחה רואה בדשבורד אם הכול בסדר — ואם אין מענה, מתקבל עדכון ברור.</p>
+    <section class="section homepage-demo" aria-labelledby="homepage-demo-title">
+      <div class="homepage-demo-copy">
+        <p class="eyebrow">דמו כמו במערכת</p>
+        <h2 id="homepage-demo-title">כך מלאכי נראה כשאמא לוחצת “אני בסדר”.</h2>
+        <p>דוגמה קצרה מתוך הדמו: הודעת WhatsApp פשוטה, לחיצה אחת, ודשבורד משפחתי שמראה למטיב שהכול תקין.</p>
         <div class="actions">
           <a href="/demo-ai.html" class="button primary">פתח דמו מלא</a>
           <a href="/create-user.html" class="button secondary">צור משתמש</a>
         </div>
       </div>
-      <div class="demo-preview-mockup" aria-label="דוגמת מלאכי">
-        <div class="phone-card demo-preview-phone">
-          <span class="chat-label">WhatsApp</span>
-          <div class="bubble">בוקר טוב אתי 🌿<br/>כאן מלאכי. רק לסמן שהכול בסדר הבוקר.</div>
-          <button>אני בסדר</button>
-          <p class="small">ברגע שלוחצים — המשפחה רואה שהכול תקין.</p>
+
+      <aside class="homepage-demo-phone" aria-label="דמו שיחת WhatsApp של מלאכי">
+        <div class="homepage-phone-screen">
+          <div class="homepage-phone-top">
+            <div class="homepage-chat-title">
+              <div class="homepage-avatar">מ</div>
+              <div><b>מלאכי</b><small>המלאך השומר של המשפחה</small></div>
+            </div>
+          </div>
+          <div class="homepage-chat">
+            <div class="homepage-bubble homepage-system">הדגמה: בדיקת בוקר רגועה</div>
+            <div class="homepage-bubble homepage-bot">בוקר טוב אמא 🌿<br/>כאן מלאכי. רק לוודא שהכול בסדר היום.</div>
+            <div class="homepage-bubble homepage-bot">אם הכול בסדר, אפשר ללחוץ על הכפתור:</div>
+            <div class="homepage-quick-actions">
+              <span>כפתור WhatsApp שההורה מקבל:</span>
+              <button>אני בסדר</button>
+            </div>
+            <div class="homepage-bubble homepage-system">אמא לחצה על “אני בסדר”</div>
+            <div class="homepage-bubble homepage-bot">שמחנו לשמוע 💚 עדכנתי את מטיב שהכול בסדר.</div>
+          </div>
+          <div class="homepage-phone-input"><span>כתוב הודעה…</span><button>שליחה</button></div>
         </div>
-        <div class="note demo-preview-dashboard">
-          <h3>דשבורד משפחתי</h3>
-          <ul>
-            <li><strong>אתי</strong> — הכול בסדר ✅</li>
-            <li>בדיקה יומית: 10:00</li>
-            <li>אם אין מענה — תמיר יקבל עדכון</li>
-          </ul>
+      </aside>
+
+      <div class="homepage-demo-panel">
+        <h3>דשבורד משפחתי לדוגמה</h3>
+        <div class="homepage-metrics">
+          <div class="homepage-metric ok"><strong>הכול בסדר</strong><span>תגובה אחרונה: היום 09:04</span></div>
+          <div class="homepage-metric"><strong>09:00</strong><span>שעת בדיקה יומית</span></div>
+          <div class="homepage-metric"><strong>מטיב</strong><span>איש קשר משפחתי</span></div>
+          <div class="homepage-metric warn"><strong>אין מענה?</strong><span>רק אז נשלחת התראה</span></div>
         </div>
       </div>
     </section>
