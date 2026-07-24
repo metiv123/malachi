@@ -437,7 +437,8 @@ export async function adminSimpleOverview() {
       inbound: (db.inboundMessages || []).length,
       outbound: (db.outboundMessages || []).length,
       failedOutbound: (db.outboundMessages || []).filter((message) => message.status === 'failed').length,
-      pendingOptIns: db.elders.filter((elder) => elder.optInStatus !== 'approved').length + db.contacts.filter((contact) => contact.optInStatus !== 'approved').length
+      pendingOptIns: db.elders.filter((elder) => elder.optInStatus === 'pending').length + db.contacts.filter((contact) => contact.optInStatus === 'pending').length,
+      declinedOptIns: db.elders.filter((elder) => elder.optInStatus === 'declined').length + db.contacts.filter((contact) => contact.optInStatus === 'declined').length
     },
     families,
     inbound,

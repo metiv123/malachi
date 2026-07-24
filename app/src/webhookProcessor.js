@@ -8,10 +8,12 @@ export async function processWhatsAppWebhookPayload(payload) {
   const allTexts = extractWhatsAppTextEvents(payload);
   const statuses = extractWhatsAppStatusEvents(payload);
   const hodayaHandled = await processHodayaAgentEvents([...allButtons, ...allTexts]);
-  const buttons = allButtons.filter((event) => !isHodayaAgentSender(event.from));
-  const texts = allTexts.filter((event) => !isHodayaAgentSender(event.from));
   const handled = [...hodayaHandled];
   const db = await loadDb();
+  const alreadyHandledMessageIds = new Set((db.inboundMessages || []).map((message) => message.messageId).filter(Boolean));
+  const isDuplicateInbound = (event) => Boolean(event.messageId && alreadyHandledMessageIds.has(event.messageId));
+  const buttons = allButtons.filter((event) => !isHodayaAgentSender(event.from) && !isDuplicateInbound(event));
+  const texts = allTexts.filter((event) => !isHodayaAgentSender(event.from) && !isDuplicateInbound(event));
   const findElder = (from) => {
     const normalizedFrom = String(from).replace(/[^0-9]/g, '');
     const candidates = db.elders.filter((elder) => {

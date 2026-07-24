@@ -1,6 +1,6 @@
 import { rm } from 'node:fs/promises';
 import path from 'node:path';
-import { addContactByToken, addElderByToken, cancelOpenChecks, createFamily, createUserAccount, deleteFamilyByToken, exportFamiliesCsv, getCheckHistoryByToken, getFamilyByToken, getOutboundMessagesByToken, handleElderResponse, listDashboard, loginFamily, normalizeFamilyContactOptIns, optOutByPhone, processDueChecks, processNoResponses, sendCheckNow, setContactOptIn, setElderActiveByToken, setFamilyPasswordByToken, setOptIn, systemReadiness, updateElderByToken, weeklyReportByToken } from './malachi.js';
+import { addContactByToken, addElderByToken, adminSimpleOverview, cancelOpenChecks, createFamily, createUserAccount, deleteFamilyByToken, exportFamiliesCsv, getCheckHistoryByToken, getFamilyByToken, getOutboundMessagesByToken, handleElderResponse, listDashboard, loginFamily, normalizeFamilyContactOptIns, optOutByPhone, processDueChecks, processNoResponses, resendElderOptInByToken, sendCheckNow, setContactOptIn, setElderActiveByToken, setFamilyPasswordByToken, setOptIn, systemReadiness, updateElderByToken, weeklyReportByToken } from './malachi.js';
 import { extractWhatsAppButtonEvents, extractWhatsAppTextEvents, mapButtonToResponse, mapTextToIntent } from './metaWebhook.js';
 import { processWhatsAppWebhookPayload } from './webhookProcessor.js';
 import { getHodayaAgentStatus, prepareHodayaWindowOpenTemplate, sendHodayaAgentReply, triggerHodayaEventDrivenTurn } from './hodayaAgent.js';
@@ -85,6 +85,21 @@ async function run() {
   assert(optInHandled[0]?.status === 'opt_in_approved', 'processor should approve opt-in from trial-number style webhook');
   updatedFamily = await getFamilyByToken(created.family.managementToken);
   assert(updatedFamily.elders[0].optInStatus === 'approved', 'webhook opt-in should approve elder');
+
+  const declineRetryPayload = { entry: [{ changes: [{ value: { messages: [{ type: 'interactive', from: '972502222222', id: 'wamid.optin.decline.retry', timestamp: '2', interactive: { button_reply: { id: 'decline_optin', title: 'לא מעוניין/ת' } } }] } }] }] };
+  const declineHandled = await processWhatsAppWebhookPayload(declineRetryPayload);
+  assert(declineHandled[0]?.status === 'opt_in_declined', 'processor should decline opt-in once');
+  let overview = await adminSimpleOverview();
+  assert(overview.summary.pendingOptIns === 1, 'pending summary should count only pending contacts, not declined elders');
+  assert(overview.summary.declinedOptIns === 1, 'declined summary should count declined elders separately');
+  await resendElderOptInByToken(created.family.managementToken, created.elder.id);
+  updatedFamily = await getFamilyByToken(created.family.managementToken);
+  assert(updatedFamily.elders[0].optInStatus === 'pending', 'resend opt-in should move elder back to pending');
+  const duplicateDeclineHandled = await processWhatsAppWebhookPayload(declineRetryPayload);
+  assert(duplicateDeclineHandled.length === 0, 'duplicate webhook messageId should be ignored');
+  updatedFamily = await getFamilyByToken(created.family.managementToken);
+  assert(updatedFamily.elders[0].optInStatus === 'pending', 'duplicate old decline must not flip resent opt-in back to declined');
+  await setOptIn(created.elder.id, true);
 
   const contactOptInPayload = { entry: [{ changes: [{ value: { messages: [{ type: 'button', from: '972501111111', id: 'wamid.contact.optin', timestamp: '1', button: { payload: `approve_contact_optin:${created.contact.id}`, text: 'מאשר/ת' } }] } }] }] };
   const contactOptInHandled = await processWhatsAppWebhookPayload(contactOptInPayload);
