@@ -132,6 +132,63 @@ async function sendFastAckBestEffort(handled = []) {
   }
 }
 
+function quickReplyForText(text = '') {
+  const normalized = String(text || '').trim().replace(/[!?.…\s]+$/g, '');
+  if (!normalized) return '';
+  const lower = normalized.toLowerCase();
+  const greetings = new Set(['היי', 'הי', 'הייי', 'שלום', 'אהלן', 'הלוו', 'hello', 'hi']);
+  if (greetings.has(lower)) return 'היי הודיה 🌸 אני כאן. מה תרצי שאעזור לך לסדר עכשיו?';
+  if (['בוקר טוב', 'צהריים טובים', 'ערב טוב', 'לילה טוב'].includes(lower)) return `${normalized} הודיה 🌸 אני כאן. מה תרצי שאעזור לך לסדר עכשיו?`;
+  if (['מה נשמע', 'מה שלומך', 'מה קורה'].includes(lower)) return 'שלומי טוב, תודה ששאלת 🌸 אני כאן איתך. במה תרצי שאעזור?';
+  return '';
+}
+
+async function sendQuickReplyBestEffort(handled = []) {
+  if (config.whatsappProvider !== 'meta') return { sent: false, reason: 'provider_not_meta' };
+  const actionable = newestActionableText(handled);
+  if (!actionable) return { sent: false, reason: 'no_actionable_text' };
+  const reply = quickReplyForText(actionable.event?.text || '');
+  if (!reply) return { sent: false, reason: 'no_quick_reply_match' };
+  try {
+    const db = await loadDb();
+    const state = db.hodayaAgent?.state || {};
+    if (!serviceWindowIsOpen(state)) return { sent: false, reason: 'outside_24h_window' };
+    const inboundMessageId = actionable.event?.messageId || null;
+    const alreadyReplied = (db.hodayaAgent?.outboundMessages || []).some((message) =>
+      message.kind === 'hodaya_agent_quick_reply' && message.meta?.inboundMessageId && message.meta.inboundMessageId === inboundMessageId
+    );
+    if (alreadyReplied) return { sent: false, reason: 'already_replied' };
+    const to = configuredPhone();
+    const providerResponse = await sendMetaText(to, reply);
+    const outbound = {
+      id: id('hodaya_quick'),
+      provider: config.whatsappProvider,
+      kind: 'hodaya_agent_quick_reply',
+      to,
+      body: reply,
+      status: 'sent',
+      meta: { isolatedAgent: 'hodaya', inboundMessageId, whatsappMessageId: providerResponse?.messages?.[0]?.id || null },
+      createdAt: nowIso()
+    };
+    await mutateDb((currentDb) => {
+      currentDb.hodayaAgent = currentDb.hodayaAgent || { inboundMessages: [], outboundMessages: [], tasks: [], state: {} };
+      currentDb.hodayaAgent.outboundMessages = currentDb.hodayaAgent.outboundMessages || [];
+      currentDb.hodayaAgent.state = currentDb.hodayaAgent.state || {};
+      currentDb.hodayaAgent.tasks = currentDb.hodayaAgent.tasks || [];
+      currentDb.hodayaAgent.outboundMessages.push(outbound);
+      currentDb.hodayaAgent.state.lastEventDrivenInboundId = actionable.id || null;
+      currentDb.hodayaAgent.state.lastEventDrivenTriggeredAt = outbound.createdAt;
+      currentDb.hodayaAgent.tasks.push({ id: id('hodaya_task'), kind: 'quick_reply', inboundId: actionable.id || null, status: 'sent', createdAt: outbound.createdAt });
+      currentDb.audit = currentDb.audit || [];
+      currentDb.audit.push({ id: id('evt'), type: 'hodaya_agent_quick_reply_sent', payload: { to: maskPhone(to), inboundId: actionable.id || null, messageId: outbound.id }, createdAt: nowIso() });
+    });
+    return { sent: true, inboundId: actionable.id || null };
+  } catch (err) {
+    console.error('[hodaya-agent] quick reply failed', err.message);
+    return { sent: false, reason: 'failed', error: err.message };
+  }
+}
+
 async function postEventDrivenHook() {
   const url = config.hodayaAgent?.eventHookUrl;
   const token = config.hodayaAgent?.eventHookToken;
@@ -255,8 +312,11 @@ export async function processHodayaAgentEvents(events = []) {
   });
 
   sendTypingIndicatorsBestEffort(handled);
-  sendFastAckBestEffort(handled);
-  scheduleHodayaEventDrivenTurn(handled);
+  sendQuickReplyBestEffort(handled).then((result) => {
+    if (result?.sent) return;
+    sendFastAckBestEffort(handled);
+    scheduleHodayaEventDrivenTurn(handled);
+  });
 
   return handled;
 }
