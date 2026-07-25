@@ -96,6 +96,10 @@ function reminderPlanLabel(elder = {}) {
   return `תזכורת כל ${intervalLabel} · ${attempts} ניסיונות למבוגר · התראה למשפחה אחרי כ־${totalLabel}`;
 }
 
+function shomerShabbatLabel(elder = {}) {
+  return elder.shomerShabbat ? 'שומר שבת — בשבת ההודעה תישלח בשעה 21:00 במקום השעה הרגילה' : 'לפי השעה היומית הרגילה';
+}
+
 
 function parentPreparationNotice() {
   return `<section class="parent-prep-box">
@@ -114,6 +118,7 @@ function addElderCard(open = false) {
     <label>שם ההורה / האדם המבוגר<input name="elderName" required placeholder="למשל: רחל"></label>
     <label>טלפון WhatsApp של ההורה<input name="elderPhone" required placeholder="0521234567 או +972521234567"></label>
     <label>שעת בדיקה יומית<input type="time" name="dailyCheckTime" required value="09:00"></label>
+    <label class="check dashboard-consent"><input type="checkbox" name="shomerShabbat"><span>שומר שבת (הודעה תישלח ביום שבת בשעה 21:00 במקום השעה הרגילה)</span></label>
     <div class="form-subtitle">בן משפחה ראשון להתראות</div>
     <p class="form-help">זה האדם הראשון שיקבל התראה אם אין מענה. אחרי שמירת המבוגר אפשר להוסיף בני משפחה נוספים.</p>
     <label>שם בן/בת משפחה ראשון להתראה<input name="contactName" placeholder="אפשר להשאיר ריק — נשתמש בבן המשפחה הראשי"></label>
@@ -175,6 +180,7 @@ async function load() {
           <div class="today-card ${statusClass(elder.latestCheck?.status)}"><span class="today-label">המצב היום</span><b>${statusLabel(elder.latestCheck?.status)}</b><p>${actionHint(elder.latestCheck?.status)}</p></div>
           <dl class="elder-facts">
             <div><dt>בדיקה יומית</dt><dd>${esc(elder.dailyCheckTime)}</dd></div>
+            <div><dt>שבת</dt><dd>${esc(shomerShabbatLabel(elder))}</dd></div>
             <div><dt>אי־מענה</dt><dd>${esc(reminderPlanLabel(elder))}</dd></div>
             <div><dt>WhatsApp</dt><dd>${esc(elder.whatsappPhone)}</dd></div>
             <div><dt>קבלת הודעות WhatsApp</dt><dd>${optInLabel(elder.optInStatus)} <button class="text-action" onclick="resendElderOptIn('${elder.id}')">שלח בקשת אישור שוב</button></dd></div>
@@ -195,6 +201,7 @@ async function load() {
               <label>שם<input name="elderName" value="${esc(elder.name)}"></label>
               <label>טלפון WhatsApp<input name="elderPhone" value="${esc(elder.whatsappPhone)}"></label>
               <label>שעה יומית<input type="time" name="dailyCheckTime" value="${esc(elder.dailyCheckTime)}"></label>
+              <label class="check dashboard-consent"><input type="checkbox" name="shomerShabbat" ${elder.shomerShabbat ? 'checked' : ''}><span>שומר שבת (הודעה תישלח ביום שבת בשעה 21:00 במקום השעה הרגילה)</span></label>
               <label>כל כמה זמן לשלוח תזכורת אם אין מענה<select name="noResponseGraceMinutes">${alertDelayOptions(elder.noResponseGraceMinutes || 30)}</select></label>
               <label>כמה ניסיונות לפני התראה למשפחה<select name="noResponseAlertRepeatCount">${alertRepeatOptions(elder.noResponseAlertRepeatCount || 3)}</select></label>
               <label>שם איש קשר להתראה<input name="contactName" value="${esc(elder.contact?.name || '')}"></label>
@@ -349,6 +356,7 @@ window.addElder = async (event) => {
   const unlock = lockSubmit(event, 'שומר…');
   try {
     const payload = Object.fromEntries(new FormData(event.currentTarget).entries());
+    payload.shomerShabbat = event.currentTarget.elements.shomerShabbat?.checked ? 'on' : '';
     payload.token = token;
     await api('/api/elders', { method:'POST', body:JSON.stringify(payload) });
     await load();
@@ -367,6 +375,7 @@ window.updateElder = async (event, elderId) => {
   const unlock = lockSubmit(event, 'שומר…');
   try {
     const payload = Object.fromEntries(new FormData(event.currentTarget).entries());
+    payload.shomerShabbat = event.currentTarget.elements.shomerShabbat?.checked ? 'on' : '';
     payload.token = token;
     await api(`/api/elders/${elderId}/update`, { method:'POST', body:JSON.stringify(payload) });
     await load();

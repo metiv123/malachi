@@ -30,6 +30,18 @@ function leadAttribution(input = {}) {
   };
 }
 
+function checkbox(input = {}, field) {
+  const value = input[field];
+  return value === true || value === 'true' || value === 'on' || value === '1' || value === 1;
+}
+
+function effectiveDailyCheckTime(elder, date = new Date()) {
+  const timezone = elder.timezone || 'Asia/Jerusalem';
+  const weekday = new Intl.DateTimeFormat('en-US', { timeZone: timezone, weekday: 'short' }).format(date);
+  if (elder.shomerShabbat && weekday === 'Sat') return '21:00';
+  return elder.dailyCheckTime;
+}
+
 async function recordSendFailure(kind, to, err, meta = {}) {
   await mutateDb((db) => {
     db.outboundMessages.push({
@@ -199,6 +211,7 @@ export async function createFamily(input) {
       whatsappPhone: elderPhone,
       dailyCheckTime,
       timezone: input.timezone || 'Asia/Jerusalem',
+      shomerShabbat: checkbox(input, 'shomerShabbat'),
       noResponseGraceMinutes: alertDelayMinutes(input),
       noResponseAlertRepeatCount: alertRepeatCount(input),
       optInStatus: input.skipOptIn ? 'approved' : 'pending',
@@ -277,6 +290,7 @@ export async function addElderByToken(token, input = {}) {
       whatsappPhone: elderPhone,
       dailyCheckTime,
       timezone: input.timezone || 'Asia/Jerusalem',
+      shomerShabbat: checkbox(input, 'shomerShabbat'),
       noResponseGraceMinutes: alertDelayMinutes(input),
       noResponseAlertRepeatCount: alertRepeatCount(input),
       optInStatus: input.skipOptIn ? 'approved' : 'pending',
@@ -893,6 +907,7 @@ export async function updateElderByToken(token, elderId, updates) {
       if (!isValidTime(updates.dailyCheckTime)) throw new Error('שעה לא תקינה');
       elder.dailyCheckTime = String(updates.dailyCheckTime).trim();
     }
+    if (Object.prototype.hasOwnProperty.call(updates, 'shomerShabbat')) elder.shomerShabbat = checkbox(updates, 'shomerShabbat');
     if (updates.noResponseGraceMinutes || updates.alertDelayMinutes) elder.noResponseGraceMinutes = alertDelayMinutes(updates);
     if (updates.noResponseAlertRepeatCount || updates.alertRepeatCount) elder.noResponseAlertRepeatCount = alertRepeatCount(updates);
     if (updates.contactName && contact) contact.name = String(updates.contactName).trim();
@@ -1103,6 +1118,7 @@ export async function processNoResponses({ graceMinutes = 60 } = {}) {
     for (const check of db.checks) {
       const elder = db.elders.find((e) => e.id === check.elderId);
       if (!elder || !check.sentAt) continue;
+      if (check.status !== 'sent') continue;
       if (!elder.active || elder.optInStatus !== 'approved') {
         check.status = 'cancelled';
         check.cancelledAt = nowIso();
@@ -1115,7 +1131,6 @@ export async function processNoResponses({ graceMinutes = 60 } = {}) {
       const reminderCount = Number(check.noResponseReminderCount || 0);
       const attemptsSoFar = 1 + reminderCount;
       const currentAlerts = Number(check.noResponseAlertCount || (check.alertSentAt ? 1 : 0));
-      if (check.status !== 'sent') continue;
       const anchor = reminderCount > 0 ? (check.lastNoResponseReminderAt || check.sentAt) : check.sentAt;
       const elapsedMin = (now - new Date(anchor).getTime()) / 60000;
       if (elapsedMin < delayMinutes) continue;
@@ -1156,7 +1171,8 @@ export async function processDueChecks(date = new Date()) {
   const due = db.elders.filter((elder) => {
     const local = localParts(date, elder.timezone || 'Asia/Jerusalem');
     if (!elder.active || elder.optInStatus !== 'approved') return false;
-    if (elder.dailyCheckTime !== local.time) return false;
+    const dueTime = effectiveDailyCheckTime(elder, date);
+    if (local.time < dueTime) return false;
     return !db.checks.some((c) => c.elderId === elder.id && c.scheduledLocalDate === local.date && c.source === 'scheduled');
   });
   const sent = [];

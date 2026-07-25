@@ -26,7 +26,14 @@ const emptyDb = () => ({
 
 function normalizeDb(db = {}) {
   const base = emptyDb();
-  return { ...base, ...db };
+  const normalized = { ...base, ...db };
+  normalized.elders = (normalized.elders || []).map((elder) => ({
+    ...elder,
+    // Existing beta families joined before this preference existed. Per current
+    // beta policy they are treated as Shabbat-observant unless explicitly changed.
+    shomerShabbat: elder.shomerShabbat === undefined || elder.shomerShabbat === null ? true : Boolean(elder.shomerShabbat)
+  }));
+  return normalized;
 }
 
 function parseFirebaseServiceAccount() {

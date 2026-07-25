@@ -123,11 +123,24 @@ async function run() {
   assert(normalizedContacts.changedCount === 0, 'already inherited family contact approvals should not need normalization');
   await setOptIn(created.elder.id, true);
   await setContactOptIn(created.contact.id, true);
+  await updateElderByToken(created.family.managementToken, inheritedContactElder.elder.id, { dailyCheckTime: '23:59', shomerShabbat: '' });
   await updateElderByToken(created.family.managementToken, created.elder.id, { dailyCheckTime: new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Jerusalem', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date()) });
   const scheduled = await processDueChecks(new Date());
   assert(scheduled.length === 1, 'scheduled due check should send once');
   const scheduledAgain = await processDueChecks(new Date());
   assert(scheduledAgain.length === 0, 'scheduled due check should not duplicate');
+
+  await updateElderByToken(created.family.managementToken, inheritedContactElder.elder.id, { dailyCheckTime: '09:00', shomerShabbat: '' });
+  const catchUpScheduled = await processDueChecks(new Date('2026-07-26T10:00:00.000Z'));
+  assert(catchUpScheduled.some((c) => c.elderId === inheritedContactElder.elder.id), 'scheduler should catch up after the exact minute passed');
+  const catchUpAgain = await processDueChecks(new Date('2026-07-26T10:01:00.000Z'));
+  assert(!catchUpAgain.some((c) => c.elderId === inheritedContactElder.elder.id), 'catch-up scheduler should not duplicate same local day');
+
+  await updateElderByToken(created.family.managementToken, inheritedContactElder.elder.id, { dailyCheckTime: '09:00', shomerShabbat: 'on' });
+  const beforeSaturdayNight = await processDueChecks(new Date('2026-08-01T17:59:00.000Z'));
+  assert(!beforeSaturdayNight.some((c) => c.elderId === inheritedContactElder.elder.id), 'Shabbat-observant elder should not receive regular Saturday check before 21:00');
+  const saturdayNight = await processDueChecks(new Date('2026-08-01T18:00:00.000Z'));
+  assert(saturdayNight.some((c) => c.elderId === inheritedContactElder.elder.id), 'Shabbat-observant elder should receive Saturday check at 21:00 Israel time');
 
   const check = await sendCheckNow(created.elder.id);
   assert(check.status === 'sent', 'check should be sent');
