@@ -11,6 +11,13 @@ const STORE_DRIVER = process.env.MALACHI_STORE || (process.env.FIREBASE_SERVICE_
 const FIRESTORE_COLLECTION = process.env.FIRESTORE_COLLECTION || 'malachi_runtime';
 const FIRESTORE_DOCUMENT = process.env.FIRESTORE_DOCUMENT || 'main';
 
+const HEAVY_LOG_LIMITS = {
+  audit: Number(process.env.MALACHI_AUDIT_LIMIT || 300),
+  inboundMessages: Number(process.env.MALACHI_INBOUND_MESSAGES_LIMIT || 150),
+  outboundMessages: Number(process.env.MALACHI_OUTBOUND_MESSAGES_LIMIT || 300),
+  errors: Number(process.env.MALACHI_ERRORS_LIMIT || 100)
+};
+
 const emptyDb = () => ({
   families: [],
   elders: [],
@@ -34,6 +41,23 @@ function normalizeDb(db = {}) {
     shomerShabbat: elder.shomerShabbat === undefined || elder.shomerShabbat === null ? true : Boolean(elder.shomerShabbat)
   }));
   return normalized;
+}
+
+function trimArrayTail(value, limit) {
+  if (!Array.isArray(value)) return [];
+  if (!Number.isFinite(limit) || limit <= 0) return [];
+  return value.length > limit ? value.slice(-limit) : value;
+}
+
+function compactDb(db = {}) {
+  const normalized = normalizeDb(db);
+  return {
+    ...normalized,
+    audit: trimArrayTail(normalized.audit, HEAVY_LOG_LIMITS.audit),
+    inboundMessages: trimArrayTail(normalized.inboundMessages, HEAVY_LOG_LIMITS.inboundMessages),
+    outboundMessages: trimArrayTail(normalized.outboundMessages, HEAVY_LOG_LIMITS.outboundMessages),
+    errors: trimArrayTail(normalized.errors, HEAVY_LOG_LIMITS.errors)
+  };
 }
 
 function parseFirebaseServiceAccount() {
@@ -76,7 +100,7 @@ async function loadFileDb() {
 
 async function saveFileDb(db) {
   await mkdir(DATA_DIR, { recursive: true });
-  await writeFile(DB_PATH, JSON.stringify(normalizeDb(db), null, 2), 'utf8');
+  await writeFile(DB_PATH, JSON.stringify(compactDb(db), null, 2), 'utf8');
 }
 
 async function loadFirestoreDb() {
@@ -90,7 +114,7 @@ async function loadFirestoreDb() {
 }
 
 async function saveFirestoreDb(db) {
-  await firestoreRef().set({ db: normalizeDb(db), updatedAt: new Date().toISOString() }, { merge: true });
+  await firestoreRef().set({ db: compactDb(db), updatedAt: new Date().toISOString() }, { merge: true });
 }
 
 export async function loadDb() {
@@ -110,7 +134,7 @@ export async function mutateDb(mutator) {
       const snap = await transaction.get(ref);
       const db = normalizeDb(snap.exists ? (snap.data()?.db || {}) : {});
       const result = await mutator(db);
-      transaction.set(ref, { db: normalizeDb(db), updatedAt: new Date().toISOString() }, { merge: true });
+      transaction.set(ref, { db: compactDb(db), updatedAt: new Date().toISOString() }, { merge: true });
       return result;
     });
   }
