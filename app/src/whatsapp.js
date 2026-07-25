@@ -127,6 +127,37 @@ export async function sendMetaTypingIndicator(messageId) {
   return data;
 }
 
+export async function sendMetaReaction(to, messageId, emoji = '❤️') {
+  if (!messageId) return { skipped: true, reason: 'missing_message_id' };
+  if (!config.meta.phoneNumberId || !config.meta.accessToken) {
+    throw new Error('Meta credentials missing: META_PHONE_NUMBER_ID / META_ACCESS_TOKEN');
+  }
+
+  const url = `https://graph.facebook.com/${config.meta.graphVersion}/${config.meta.phoneNumberId}/messages`;
+  const payload = {
+    messaging_product: 'whatsapp',
+    recipient_type: 'individual',
+    to: normalizePhone(to),
+    type: 'reaction',
+    reaction: { message_id: messageId, emoji }
+  };
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${config.meta.accessToken}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  });
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(`Meta reaction failed ${res.status}: ${JSON.stringify(data)}`);
+  }
+  return data;
+}
+
 async function sendMetaInteractiveButtons(to, text, buttons = []) {
   if (!config.meta.phoneNumberId || !config.meta.accessToken) {
     throw new Error('Meta credentials missing: META_PHONE_NUMBER_ID / META_ACCESS_TOKEN');
@@ -276,6 +307,21 @@ export async function sendOkAck(elder) {
     providerResponse = await sendMetaTemplate(elder.whatsappPhone, config.meta.templates.okAck, 'he', bodyComponent([elder.name]));
   }
   return recordOutbound('ok_ack', elder.whatsappPhone, body, [], { elderId: elder.id, whatsappMessageId: providerResponse?.messages?.[0]?.id || null });
+}
+
+export async function sendOkReaction(elder, check, inboundMessageId, emoji = '❤️') {
+  const body = `${emoji} reaction על הודעת “אני בסדר”`;
+  let providerResponse = null;
+  if (config.whatsappProvider === 'meta') {
+    providerResponse = await sendMetaReaction(elder.whatsappPhone, inboundMessageId, emoji);
+  }
+  return recordOutbound('ok_reaction', elder.whatsappPhone, body, [], {
+    elderId: elder.id,
+    checkId: check?.id || null,
+    inboundMessageId,
+    emoji,
+    whatsappMessageId: providerResponse?.messages?.[0]?.id || null
+  });
 }
 
 export async function sendIncompleteSignupReminder(family, { signupUrl = '' } = {}) {

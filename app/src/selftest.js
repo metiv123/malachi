@@ -216,6 +216,9 @@ async function run() {
   assert(singleOkHandled[0]?.status === 'response_recorded', 'single ok webhook should record response');
   db = await loadDb();
   assert(db.checks.find((c) => c.id === singleOkCheck.id).status === 'ok', 'single ok check should become ok');
+  const singleOkReaction = db.outboundMessages.find((m) => m.kind === 'ok_reaction' && m.meta?.checkId === singleOkCheck.id);
+  assert(singleOkReaction?.meta?.inboundMessageId === 'wamid.single.ok', 'single ok should react to the inbound WhatsApp message');
+  assert(singleOkReaction?.meta?.emoji === '❤️', 'single ok reaction should use heart emoji');
   assert(!db.outboundMessages.some((m) => ['family_greeting', 'distress_alert', 'no_response_alert'].includes(m.kind) && m.meta?.checkId === singleOkCheck.id), 'single ok should not notify family');
   config.dailyCheckMode = previousDailyCheckMode;
 
@@ -231,6 +234,7 @@ async function run() {
   assert(processorHandled[0]?.status === 'response_recorded', 'processor should record daily check button response');
   db = await loadDb();
   assert(db.checks.find((c) => c.id === checkViaWebhook.id).status === 'ok', 'webhook processor should mark latest open check ok');
+  assert(db.outboundMessages.some((m) => m.kind === 'ok_reaction' && m.meta?.checkId === checkViaWebhook.id && m.meta?.inboundMessageId === 'wamid.processor.ok'), 'webhook ok should send emoji reaction instead of a separate routine ack');
   assert(db.audit.some((evt) => evt.type === 'whatsapp_webhook_received'), 'webhook processor audit event missing');
 
   const duplicate = await createFamily({

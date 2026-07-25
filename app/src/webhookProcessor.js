@@ -96,7 +96,7 @@ export async function processWhatsAppWebhookPayload(payload) {
       }
     }
     else {
-      const check = await handleElderResponse({ elderId: elder.id, response: mapped });
+      const check = await handleElderResponse({ elderId: elder.id, response: mapped, inboundMessageId: button.messageId });
       handled.push({ event: button, mapped, status: check ? 'response_recorded' : 'ignored_no_open_check', check });
     }
   }
@@ -107,7 +107,7 @@ export async function processWhatsAppWebhookPayload(payload) {
     if (!mapped || !elder) handled.push({ event: textEvent, mapped, status: 'ignored' });
     else if (mapped === 'opt_out') handled.push({ event: textEvent, mapped, status: 'opted_out', result: await optOutByPhone(textEvent.from) });
     else {
-      const check = await handleElderResponse({ elderId: elder.id, response: mapped });
+      const check = await handleElderResponse({ elderId: elder.id, response: mapped, inboundMessageId: textEvent.messageId });
       handled.push({ event: textEvent, mapped, status: check ? 'response_recorded' : 'ignored_no_open_check', check });
     }
   }

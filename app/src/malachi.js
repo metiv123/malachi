@@ -1,6 +1,6 @@
 import { audit, id, loadDb, mutateDb, nowIso, saveDb } from './store.js';
 import { randomUUID } from 'node:crypto';
-import { sendBetaUpdate, sendContactOptIn, sendDailyCheck, sendDailyReminder, sendDistressAlert, sendFamilyGreeting, sendIncompleteSignupReminder, sendNoResponseAlert, sendOkAck, sendOptIn } from './whatsapp.js';
+import { sendBetaUpdate, sendContactOptIn, sendDailyCheck, sendDailyReminder, sendDistressAlert, sendFamilyGreeting, sendIncompleteSignupReminder, sendNoResponseAlert, sendOkAck, sendOkReaction, sendOptIn } from './whatsapp.js';
 import { localParts } from './time.js';
 import { validateJoinInput, isValidTime, normalizePhone } from './validators.js';
 import { config } from './config.js';
@@ -1014,7 +1014,7 @@ export async function cancelOpenChecks({ elderId = '', checkId = '', reason = 'a
 }
 
 
-export async function handleElderResponse({ elderId, checkId, response }) {
+export async function handleElderResponse({ elderId, checkId, response, inboundMessageId = '' }) {
   const result = await mutateDb((db) => {
     const elder = db.elders.find((e) => e.id === elderId);
     if (!elder) throw new Error('Elder not found');
@@ -1051,7 +1051,10 @@ export async function handleElderResponse({ elderId, checkId, response }) {
     return { check: { ...check }, elder: { ...elder }, contact: contact ? { ...contact } : null, action };
   });
 
-  if (result.action === 'ok') await sendOkAck(result.elder);
+  if (result.action === 'ok') {
+    if (inboundMessageId) await sendOkReaction(result.elder, result.check, inboundMessageId, '❤️');
+    else await sendOkAck(result.elder);
+  }
   if (result.action === 'greeting') {
     const db = await loadDb();
     const contacts = db.contacts.filter((c) => c.elderId === result.elder.id && c.optInStatus === 'approved');
