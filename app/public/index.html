@@ -41,55 +41,6 @@
       </div>
     </section>
 
-    <section class="section homepage-demo" aria-labelledby="homepage-demo-title">
-      <div class="homepage-demo-copy">
-        <p class="eyebrow">דמו כמו במערכת</p>
-        <h2 id="homepage-demo-title">כך מלאכי נראה בשני המצבים החשובים.</h2>
-        <p>דוגמה קצרה מתוך הדמו: עוברים בין “הכול בסדר” לבין “אין מענה”, ורואים איך הודעת ה־WhatsApp והדשבורד של מטיב משתנים בהתאם.</p>
-        <div class="homepage-scenario-tabs" aria-label="שני מצבים בדמו">
-          <button type="button" id="homepage-tab-ok" class="homepage-tab active" onclick="setHomepageDemoScenario('ok')">מצב 1: הכול בסדר</button>
-          <button type="button" id="homepage-tab-late" class="homepage-tab" onclick="setHomepageDemoScenario('late')">מצב 2: אין מענה</button>
-        </div>
-        <div class="actions">
-          <a href="/demo-ai.html" class="button primary">פתח דמו מלא</a>
-          <a href="/create-user.html" class="button secondary">צור משתמש</a>
-        </div>
-      </div>
-
-      <aside id="homepage-demo-ok" class="homepage-demo-phone" aria-label="דמו שיחת WhatsApp של מלאכי">
-        <div class="homepage-phone-screen">
-          <div class="homepage-phone-top">
-            <div class="homepage-chat-title">
-              <div class="homepage-avatar">מ</div>
-              <div><b>מלאכי</b><small>המלאך השומר של המשפחה</small></div>
-            </div>
-          </div>
-          <div class="homepage-chat" id="homepage-demo-chat">
-            <div class="homepage-bubble homepage-system">הדגמה: בדיקת בוקר רגועה</div>
-            <div class="homepage-bubble homepage-bot">בוקר טוב אמא 🌿<br/>כאן מלאכי. רק לוודא שהכול בסדר היום.</div>
-            <div class="homepage-bubble homepage-bot">אם הכול בסדר, אפשר ללחוץ על הכפתור:</div>
-            <div class="homepage-quick-actions">
-              <span>כפתור WhatsApp שההורה מקבל:</span>
-              <button>אני בסדר</button>
-            </div>
-            <div class="homepage-bubble homepage-system">אמא לחצה על “אני בסדר”</div>
-            <div class="homepage-bubble homepage-bot">שמחנו לשמוע 💚 עדכנתי את מטיב שהכול בסדר.</div>
-          </div>
-          <div class="homepage-phone-input"><span>כתוב הודעה…</span><button>שליחה</button></div>
-        </div>
-      </aside>
-
-      <div class="homepage-demo-panel" id="homepage-demo-panel">
-        <h3 id="homepage-panel-title">דשבורד משפחתי לדוגמה</h3>
-        <div class="homepage-metrics" id="homepage-demo-metrics">
-          <div class="homepage-metric ok"><strong>הכול בסדר</strong><span>תגובה אחרונה: היום 09:04</span></div>
-          <div class="homepage-metric"><strong>09:00</strong><span>שעת בדיקה יומית</span></div>
-          <div class="homepage-metric"><strong>מטיב</strong><span>איש קשר משפחתי</span></div>
-          <div class="homepage-metric warn"><strong>אין מענה?</strong><span>רק אז נשלחת התראה</span></div>
-        </div>
-      </div>
-    </section>
-
     <section class="section split">
       <div>
         <h2>למי זה מתאים?</h2>
@@ -180,62 +131,7 @@
     </nav>
     <p class="small">מלאכי הוא כלי עזר משפחתי בלבד ואינו מוקד חירום או שירות רפואי.</p>
   </footer>
-  <script>
-    const homepageDemoScenarios = {
-      ok: {
-        title: 'דשבורד משפחתי לדוגמה',
-        chat: [
-          { type: 'system', text: 'הדגמה: בדיקת בוקר רגועה' },
-          { type: 'bot', text: 'בוקר טוב אמא 🌿<br/>כאן מלאכי. רק לוודא שהכול בסדר היום.' },
-          { type: 'bot', text: 'אם הכול בסדר, אפשר ללחוץ על הכפתור:' },
-          { type: 'actions', label: 'כפתור WhatsApp שההורה מקבל:', actions: ['אני בסדר'] },
-          { type: 'system', text: 'אמא לחצה על “אני בסדר”' },
-          { type: 'bot', text: 'שמחנו לשמוע 💚 עדכנתי את מטיב שהכול בסדר.' }
-        ],
-        metrics: [
-          ['ok', 'הכול בסדר', 'תגובה אחרונה: היום 09:04'],
-          ['', '09:00', 'שעת בדיקה יומית'],
-          ['', 'מטיב', 'איש קשר משפחתי'],
-          ['warn', 'אין מענה?', 'רק אז נשלחת התראה']
-        ]
-      },
-      late: {
-        title: 'דשבורד משפחתי — מצב אין מענה',
-        chat: [
-          { type: 'system', text: 'הדגמה: אין תגובה בזמן שנקבע' },
-          { type: 'bot', text: 'בוקר טוב אמא 🌿<br/>כאן מלאכי. רק לוודא שהכול בסדר היום.' },
-          { type: 'actions', label: 'כפתור WhatsApp שממתין ללחיצה:', actions: ['אני בסדר'] },
-          { type: 'system', text: 'עברה תזכורת ועדיין אין מענה' },
-          { type: 'bot', text: 'שלחתי עדכון עדין למטיב: לא התקבלה תגובה לבדיקה של היום.' }
-        ],
-        metrics: [
-          ['warn', 'אין מענה', 'לא התקבלה תגובה לבדיקה'],
-          ['', '09:00', 'נשלחה בדיקה יומית'],
-          ['', '09:30', 'נשלחה תזכורת עדינה'],
-          ['warn', 'מטיב עודכן', 'כדאי ליצור קשר ולוודא שהכול בסדר']
-        ]
-      }
-    };
 
-    function setHomepageDemoScenario(name) {
-      const scenario = homepageDemoScenarios[name] || homepageDemoScenarios.ok;
-      const chat = document.getElementById('homepage-demo-chat');
-      const metrics = document.getElementById('homepage-demo-metrics');
-      const title = document.getElementById('homepage-panel-title');
-      document.getElementById('homepage-tab-ok')?.classList.toggle('active', name === 'ok');
-      document.getElementById('homepage-tab-late')?.classList.toggle('active', name === 'late');
-      if (title) title.textContent = scenario.title;
-      if (chat) {
-        chat.innerHTML = scenario.chat.map((item) => {
-          if (item.type === 'actions') return `<div class="homepage-quick-actions"><span>${item.label}</span>${item.actions.map((action) => `<button>${action}</button>`).join('')}</div>`;
-          return `<div class="homepage-bubble homepage-${item.type}">${item.text}</div>`;
-        }).join('');
-      }
-      if (metrics) {
-        metrics.innerHTML = scenario.metrics.map(([tone, strong, text]) => `<div class="homepage-metric ${tone}"><strong>${strong}</strong><span>${text}</span></div>`).join('');
-      }
-    }
-  </script>
   <script src="/app.js"></script>
 <script src="/accessibility.js"></script></body>
 </html>
