@@ -72,25 +72,19 @@ function sendTypingIndicatorsBestEffort(handled = []) {
 }
 
 function buildEventDrivenPrompt() {
-  return `You are Shiri replying to Hodaya through the isolated Malachi Hodaya Agent bridge. Run once and stop.
+  return `Reply once as Shiri to Hodaya via the isolated Malachi Hodaya bridge.
 
-Hard safety rules:
-- Workspace: /data/.openclaw/workspace/malachi
-- Live base URL: https://malachi-v78v.onrender.com
-- Admin token is stored at /data/.openclaw/workspace/.secrets/malachi-admin-token. Never print it.
-- Only use Hodaya endpoints:
+Rules:
+- Use only these live endpoints on https://malachi-v78v.onrender.com:
   GET /api/admin/hodaya-agent/status
   GET /api/admin/hodaya-agent/messages?limit=20
   POST /api/admin/hodaya-agent/reply
-- Never use /api/admin/inbound-reply, /api/inbound-messages, family, elder, check, beta, or general Malachi reply endpoints for Hodaya.
-- If status.enabled is false or in24hWindow is false, do not send free-form text; answer HEARTBEAT_OK.
-- Reply only to the newest actionable Hodaya text message that has not already received a real Hodaya outbound reply after it.
-- Ignore hodaya_agent_fast_ack; it is only an instant acknowledgement and does not count as the real reply.
-- Ignore window-opening button messages like “אני בסדר”.
-- Answer in warm concise Hebrew as Shiri. You are not Metiv and do not speak on his behalf.
-- Send at most one reply via POST /api/admin/hodaya-agent/reply with {dryRun:false,message:<reply>}.
-
-This turn was triggered by Hodaya's Meta WhatsApp webhook, so check immediately and reply if there is a new text message.`;
+- Admin token is in /data/.openclaw/workspace/.secrets/malachi-admin-token. Never print it.
+- If disabled or outside the 24h WhatsApp window, do not send; answer HEARTBEAT_OK.
+- Reply only to the newest actionable Hodaya text without a later real hodaya_agent_reply or hodaya_agent_quick_reply.
+- Ignore fast ACKs and window-opening buttons.
+- Hebrew, warm, concise, like Shiri. Do not speak as Metiv.
+- Send at most one POST /api/admin/hodaya-agent/reply with dryRun:false.`;
 }
 
 async function sendFastAckBestEffort(handled = []) {
@@ -140,6 +134,7 @@ function quickReplyForText(text = '') {
   if (greetings.has(lower)) return 'היי הודיה 🌸 אני כאן. מה תרצי שאעזור לך לסדר עכשיו?';
   if (['בוקר טוב', 'צהריים טובים', 'ערב טוב', 'לילה טוב'].includes(lower)) return `${normalized} הודיה 🌸 אני כאן. מה תרצי שאעזור לך לסדר עכשיו?`;
   if (['מה נשמע', 'מה שלומך', 'מה קורה'].includes(lower)) return 'שלומי טוב, תודה ששאלת 🌸 אני כאן איתך. במה תרצי שאעזור?';
+  if (['תודה', 'תודה רבה', 'תודה לך', 'מעולה', 'סבבה', 'אוקיי', 'אוקי'].includes(lower)) return 'בשמחה הודיה 🌸';
   return '';
 }
 
@@ -203,8 +198,9 @@ async function postEventDrivenHook() {
         name: 'Hodaya immediate WhatsApp reply',
         message: buildEventDrivenPrompt(),
         agentId: 'main',
-        timeoutSeconds: 120,
-        thinking: 'medium'
+        timeoutSeconds: 45,
+        thinking: 'low',
+        lightContext: true
       }),
       signal: controller.signal
     });
@@ -314,8 +310,8 @@ export async function processHodayaAgentEvents(events = []) {
   sendTypingIndicatorsBestEffort(handled);
   sendQuickReplyBestEffort(handled).then((result) => {
     if (result?.sent) return;
-    sendFastAckBestEffort(handled);
     scheduleHodayaEventDrivenTurn(handled);
+    sendFastAckBestEffort(handled);
   });
 
   return handled;

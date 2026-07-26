@@ -25,11 +25,11 @@ export const config = {
     eventDrivenEnabled: process.env.HODAYA_AGENT_EVENT_DRIVEN === 'true',
     eventHookUrl: process.env.HODAYA_AGENT_EVENT_HOOK_URL || '',
     eventHookToken: process.env.HODAYA_AGENT_EVENT_HOOK_TOKEN || '',
-    eventDebounceMs: Number(process.env.HODAYA_AGENT_EVENT_DEBOUNCE_MS || 1500),
-    eventRateLimitMs: Number(process.env.HODAYA_AGENT_EVENT_RATE_LIMIT_MS || 15000),
+    eventDebounceMs: Number(process.env.HODAYA_AGENT_EVENT_DEBOUNCE_MS || 300),
+    eventRateLimitMs: Number(process.env.HODAYA_AGENT_EVENT_RATE_LIMIT_MS || 1000),
     eventHookTimeoutMs: Number(process.env.HODAYA_AGENT_EVENT_HOOK_TIMEOUT_MS || 10000),
     typingIndicatorEnabled: process.env.HODAYA_AGENT_TYPING_INDICATOR !== 'false',
-    fastAckEnabled: process.env.HODAYA_AGENT_FAST_ACK !== 'false',
+    fastAckEnabled: process.env.HODAYA_AGENT_FAST_ACK === 'force_true',
     fastAckMinGapMs: Number(process.env.HODAYA_AGENT_FAST_ACK_MIN_GAP_MS || 15000)
   },
   meta: {
