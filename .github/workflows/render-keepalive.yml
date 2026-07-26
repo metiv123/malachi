@@ -1,8 +1,8 @@
-name: Render Keepalive
+name: Render Manual Health Check
 
 on:
-  schedule:
-    - cron: '*/5 * * * *'
+  # Disabled scheduled keepalive: it burns Render free monthly quota.
+  # Run manually only when intentionally waking/testing the service.
   workflow_dispatch:
 
 permissions:
