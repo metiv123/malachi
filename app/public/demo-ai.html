@@ -3,463 +3,72 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>מלאכי — דמו ממשק AI באתר</title>
+  <title>דמו לחיץ — מלאכי</title>
   <style>
-    :root {
-      --bg: #f6f2ea;
-      --card: #fffaf2;
-      --ink: #17332c;
-      --muted: #65756e;
-      --brand: #1d8f73;
-      --brand-dark: #11745b;
-      --soft: #e7f4ee;
-      --line: #e4ddd0;
-      --warn: #b96c1a;
-      --shadow: 0 20px 60px rgba(21, 53, 43, .14);
-      --radius: 28px;
-    }
-
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      color: var(--ink);
-      background:
-        radial-gradient(circle at top left, rgba(29,143,115,.20), transparent 28rem),
-        radial-gradient(circle at bottom right, rgba(255,191,105,.22), transparent 24rem),
-        var(--bg);
-      min-height: 100vh;
-    }
-
-    .page {
-      width: min(1180px, calc(100% - 32px));
-      margin: 0 auto;
-      padding: 28px 0 48px;
-    }
-
-    header {
-      display: flex;
-      justify-content: flex-start;
-      align-items: center;
-      gap: 16px;
-      margin-bottom: 34px;
-    }
-
-    .logo {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-weight: 900;
-      font-size: 1.3rem;
-    }
-
-    .logo-mark {
-      width: 44px;
-      height: 44px;
-      border-radius: 16px;
-      display: grid;
-      place-items: center;
-      background: linear-gradient(135deg, var(--brand), #76c99f);
-      color: white;
-      box-shadow: 0 12px 30px rgba(29,143,115,.25);
-    }
-
-    .header-actions {
-      display: flex;
-      gap: 10px;
-      flex-wrap: nowrap;
-      justify-content: flex-start;
-      align-items: center;
-      margin-inline-start: 8px;
-    }
-
-    .pill, button, .header-link {
-      border: 1px solid rgba(23, 51, 44, .1);
-      background: rgba(255,255,255,.72);
-      color: var(--ink);
-      padding: 10px 16px;
-      border-radius: 999px;
-      font-weight: 700;
-      backdrop-filter: blur(10px);
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    button { cursor: pointer; font-family: inherit; }
-    button.primary {
-      background: var(--brand);
-      color: white;
-      border: none;
-      box-shadow: 0 12px 28px rgba(29,143,115,.28);
-    }
-
-    .hero {
-      display: grid;
-      grid-template-columns: 1fr 430px;
-      gap: 34px;
-      align-items: center;
-    }
-
-    .hero-copy h1 {
-      font-size: clamp(2.3rem, 5vw, 4.6rem);
-      line-height: 1.02;
-      margin: 0 0 20px;
-      letter-spacing: -0.055em;
-    }
-
-    .hero-copy p {
-      font-size: 1.22rem;
-      line-height: 1.75;
-      color: var(--muted);
-      max-width: 720px;
-      margin: 0 0 22px;
-    }
-
-    .hero-copy strong { color: var(--ink); }
-
-    .hero-buttons { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 26px; }
-    .hero-buttons button { font-size: 1rem; padding: 13px 20px; }
-    .hero-buttons button.scenario-active {
-      background: var(--brand);
-      color: white;
-      border: none;
-      box-shadow: 0 12px 28px rgba(29,143,115,.28);
-    }
-    .hero-buttons button.scenario-inactive {
-      background: rgba(255,255,255,.72);
-      color: var(--ink);
-      border: 1px solid rgba(23, 51, 44, .1);
-      box-shadow: none;
-    }
-
-    .trust-row {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 12px;
-      margin-top: 28px;
-      max-width: 780px;
-    }
-
-    .trust-card {
-      background: rgba(255,255,255,.55);
-      border: 1px solid rgba(23,51,44,.08);
-      border-radius: 18px;
-      padding: 14px;
-      font-weight: 800;
-      color: var(--ink);
-    }
-    .trust-card span { display: block; color: var(--muted); font-size: .9rem; font-weight: 600; margin-top: 5px; }
-
-    .phone {
-      background: #151f1b;
-      border-radius: 42px;
-      padding: 14px;
-      box-shadow: var(--shadow);
-      border: 1px solid rgba(255,255,255,.2);
-      transform: rotate(-1.5deg);
-    }
-
-    .phone-screen {
-      background: #f7f1e8;
-      border-radius: 32px;
-      overflow: hidden;
-      min-height: 650px;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .phone-top {
-      padding: 18px;
-      background: linear-gradient(135deg, #ffffff, #eaf6f1);
-      border-bottom: 1px solid var(--line);
-    }
-
-    .chat-title { display: flex; align-items: center; gap: 10px; }
-    .avatar {
-      width: 42px;
-      height: 42px;
-      border-radius: 50%;
-      display: grid;
-      place-items: center;
-      background: var(--brand);
-      color: white;
-      font-weight: 900;
-    }
-    .chat-title b { display: block; }
-    .chat-title small { color: var(--muted); }
-
-    .chat {
-      padding: 18px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      flex: 1;
-    }
-
-    .bubble {
-      width: fit-content;
-      max-width: 88%;
-      padding: 12px 14px;
-      border-radius: 18px;
-      line-height: 1.45;
-      font-size: .97rem;
-      box-shadow: 0 5px 16px rgba(23,51,44,.06);
-    }
-    .bot { background: white; border-top-right-radius: 6px; }
-    .user { background: #dcf8c6; align-self: flex-start; border-top-left-radius: 6px; }
-    .system {
-      align-self: center;
-      background: rgba(255,255,255,.62);
-      color: var(--muted);
-      font-size: .82rem;
-      padding: 8px 12px;
-      border-radius: 999px;
-      box-shadow: none;
-    }
-
-    .quick-actions {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 7px;
-      margin-top: -4px;
-      margin-bottom: 4px;
-    }
-    .button-label {
-      color: var(--muted);
-      font-size: .78rem;
-      padding-inline-start: 8px;
-    }
-    .quick-actions button {
-      font-size: .92rem;
-      padding: 10px 16px;
-      background: white;
-      border: 2px solid rgba(29,143,115,.35);
-      color: var(--brand-dark);
-      box-shadow: 0 8px 18px rgba(29,143,115,.12);
-    }
-
-    .phone-input {
-      margin: 0 18px 18px;
-      background: white;
-      border-radius: 999px;
-      padding: 10px 12px;
-      display: flex;
-      gap: 8px;
-      align-items: center;
-      color: var(--muted);
-      border: 1px solid var(--line);
-    }
-    .phone-input span { flex: 1; }
-
-    .section {
-      margin-top: 42px;
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 18px;
-    }
-
-    .panel {
-      background: rgba(255,250,242,.82);
-      border: 1px solid rgba(23,51,44,.09);
-      border-radius: var(--radius);
-      padding: 24px;
-      box-shadow: 0 14px 42px rgba(23,51,44,.08);
-    }
-
-    .panel h2 { margin: 0 0 12px; font-size: 1.45rem; }
-    .panel p { color: var(--muted); line-height: 1.65; margin: 0 0 18px; }
-
-    .timeline { display: grid; gap: 12px; }
-    .step {
-      display: grid;
-      grid-template-columns: 34px 1fr;
-      gap: 12px;
-      align-items: start;
-    }
-    .num {
-      width: 34px;
-      height: 34px;
-      border-radius: 12px;
-      display: grid;
-      place-items: center;
-      background: var(--soft);
-      color: var(--brand-dark);
-      font-weight: 900;
-    }
-    .step b { display: block; }
-    .step span { color: var(--muted); line-height: 1.5; }
-
-    .dashboard {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-    }
-    .metric {
-      background: white;
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      padding: 14px;
-    }
-    .metric strong { font-size: 1.6rem; display: block; }
-    .metric span { color: var(--muted); font-size: .92rem; }
-    .metric.ok strong { color: var(--brand-dark); }
-    .metric.warn strong { color: var(--warn); }
-
-    .demo-note {
-      margin-top: 24px;
-      color: var(--muted);
-      font-size: .94rem;
-      line-height: 1.6;
-      background: rgba(255,255,255,.6);
-      border: 1px dashed rgba(23,51,44,.18);
-      border-radius: 18px;
-      padding: 14px;
-    }
-
-    .scenario-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 18px 0; }
-    .scenario-tabs button.active { background: var(--ink); color: white; }
-
-    @media (max-width: 920px) {
-      .hero, .section { grid-template-columns: 1fr; }
-      .phone { max-width: 430px; margin: 0 auto; }
-      .trust-row { grid-template-columns: 1fr; }
-      header { align-items: flex-start; flex-direction: column; }
-      .header-actions { flex-wrap: wrap; justify-content: flex-start; margin-inline-start: 0; }
-    }
+    :root{--bg:#f5efe5;--ink:#17332c;--muted:#65756e;--green:#1d8f73;--green2:#dff6eb;--line:#e4ddd0;--warn:#b96c1a;--danger:#b94242;--blue:#2d6cdf}
+    *{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;background:radial-gradient(circle at 15% 0,#dff6eb 0,transparent 360px),radial-gradient(circle at 100% 100%,#ffe4b8 0,transparent 360px),var(--bg);color:var(--ink);min-height:100vh}.wrap{width:min(1120px,calc(100% - 28px));margin:auto;padding:28px 0 42px}.top{display:flex;justify-content:space-between;gap:14px;align-items:center;margin-bottom:22px}.brand{display:flex;align-items:center;gap:10px;font-weight:900;font-size:22px}.mark{width:44px;height:44px;border-radius:16px;background:linear-gradient(135deg,var(--green),#7fd3a9);color:white;display:grid;place-items:center;box-shadow:0 14px 35px #1d8f733}.grid{display:grid;grid-template-columns:minmax(0,1fr) 410px;gap:30px;align-items:start}.copy{padding-top:20px}.copy h1{font-size:clamp(36px,5vw,62px);line-height:1.03;margin:0 0 14px;letter-spacing:-.045em}.copy p{font-size:19px;line-height:1.7;color:var(--muted);max-width:690px}.panel{background:rgba(255,255,255,.74);border:1px solid rgba(23,51,44,.09);border-radius:26px;padding:18px;box-shadow:0 18px 48px rgba(23,51,44,.08);margin-top:18px}.fields{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}label{font-weight:900;font-size:14px}input{display:block;width:100%;margin-top:6px;border:1px solid var(--line);border-radius:15px;padding:12px 14px;font:inherit;background:white}.buttons{display:flex;gap:10px;flex-wrap:wrap}button{font:inherit;font-weight:900;border:1px solid rgba(23,51,44,.12);background:white;color:var(--ink);border-radius:999px;padding:11px 16px;cursor:pointer;transition:.18s transform,.18s box-shadow,.18s background}button:hover{transform:translateY(-1px);box-shadow:0 10px 22px rgba(23,51,44,.12)}button.primary{background:var(--green);border-color:var(--green);color:white}.status{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:16px}.metric{background:white;border:1px solid var(--line);border-radius:18px;padding:13px}.metric strong{display:block;font-size:21px}.metric span{font-size:13px;color:var(--muted)}.metric.ok strong{color:var(--green)}.metric.warn strong{color:var(--warn)}.metric.danger strong{color:var(--danger)}.phone{background:#111b17;border-radius:46px;padding:14px;border:1px solid rgba(255,255,255,.25);box-shadow:0 26px 70px rgba(21,53,43,.22);position:sticky;top:18px}.screen{height:735px;background:#efe7dc;border-radius:34px;overflow:hidden;display:flex;flex-direction:column;position:relative}.notch{position:absolute;top:9px;left:50%;transform:translateX(-50%);width:110px;height:24px;background:#111b17;border-radius:0 0 16px 16px;z-index:3}.chatTop{padding:38px 16px 13px;background:linear-gradient(135deg,#fff,#e8f5ee);border-bottom:1px solid var(--line)}.who{display:flex;gap:10px;align-items:center}.avatar{width:42px;height:42px;border-radius:50%;background:var(--green);color:white;font-weight:900;display:grid;place-items:center}.who b,.who small{display:block}.who small{color:var(--muted)}.chat{flex:1;overflow:auto;padding:16px;display:flex;flex-direction:column;gap:10px;background-image:radial-gradient(rgba(23,51,44,.035) 1px,transparent 1px);background-size:18px 18px}.bubble{max-width:86%;width:fit-content;padding:11px 13px;border-radius:18px;line-height:1.45;box-shadow:0 4px 14px rgba(23,51,44,.07);white-space:pre-line;font-size:15px}.bot{background:white;border-top-right-radius:5px}.user{align-self:flex-start;background:#dcf8c6;border-top-left-radius:5px}.family{align-self:flex-end;background:#e8f0ff;border-top-right-radius:5px}.system{align-self:center;background:rgba(255,255,255,.72);color:var(--muted);font-size:12px;padding:7px 11px;border-radius:999px;box-shadow:none}.actionBox{display:flex;flex-direction:column;gap:7px;align-items:flex-start}.actionBox small{color:var(--muted);padding-inline-start:8px}.waButton{background:white!important;color:#11745b!important;border:2px solid rgba(29,143,115,.35)!important;box-shadow:0 8px 18px rgba(29,143,115,.12)!important}.input{margin:0 16px 16px;background:white;border:1px solid var(--line);border-radius:999px;padding:10px 12px;display:flex;gap:8px;align-items:center;color:var(--muted)}.input span{flex:1}.timer{height:8px;background:#f0d9b7;border-radius:99px;overflow:hidden;width:82%;align-self:center}.bar{height:100%;background:var(--warn);width:0%;transition:width 2.4s linear}.note{font-size:14px!important;background:#fff8ed;border:1px dashed #e2bd86;border-radius:18px;padding:12px;margin-top:14px;color:#6f4b1f!important}@media(max-width:900px){.grid{grid-template-columns:1fr}.phone{position:static;max-width:430px;margin:auto}.fields,.status{grid-template-columns:1fr}.screen{height:680px}}@media(max-width:480px){.wrap{width:min(100% - 16px,1120px);padding-top:14px}.top{align-items:flex-start;flex-direction:column}.phone{padding:9px;border-radius:34px}.screen{height:650px;border-radius:25px}.copy h1{font-size:34px}.buttons button{width:100%}}
+  .screenSwitch{align-self:center;background:#17332c;color:white;border-radius:18px;padding:12px 14px;font-weight:900;box-shadow:0 10px 24px rgba(23,51,44,.18);text-align:center;max-width:88%}.screenSwitch small{display:block;color:#cfe7dd;font-weight:700;margin-top:4px}.topFlash{animation:flashTop .7s ease}@keyframes flashTop{0%{background:#fff3d7}100%{background:linear-gradient(135deg,#fff,#e8f5ee)}}
   </style>
 </head>
 <body>
-  <main class="page">
-    <header>
-      <div class="logo"><div class="logo-mark">מ</div> מלאכי</div>
-      <div class="header-actions">
-        <a class="header-link" href="/#how">איך זה עובד</a>
-        <a class="header-link" href="/faq.html">שאלות נפוצות</a>
-        <a class="header-link primary" href="#demo-chat">הדגמה חיה</a>
-      </div>
-    </header>
-
-    <section class="hero">
-      <div class="hero-copy">
-        <h1>כך נראה מלאכי כשההורה לוחץ “הכול בסדר”.</h1>
-        <p>
-          דמו עדין ופשוט: ההורה מקבל הודעת WhatsApp יומית עם כפתור אחד —
-          <strong>“הכול בסדר”</strong>. המשפחה רואה שקט בדשבורד, ורק אם אין תגובה בזמן — נשלחת התראה.
-        </p>
-        <div class="hero-buttons">
-          <button id="scenario-ok" class="scenario-active" onclick="setScenario('ok')">הראה לחיצה על כפתור “הכול בסדר”</button>
-          <button id="scenario-late" class="scenario-inactive" onclick="setScenario('late')">הראה מצב ללא מענה</button>
-                  </div>
-        <div class="trust-row">
-          <div class="trust-card">בלי אפליקציה חדשה<span>הכול ב־WhatsApp</span></div>
-          <div class="trust-card">בלי לחץ מיותר<span>התראה רק כשצריך</span></div>
-          <div class="trust-card">פרטי למשפחה<span>דשבורד עם קישור מאובטח</span></div>
-        </div>
-      </div>
-
-      <aside id="demo-chat" class="phone" aria-label="דמו שיחת וואטסאפ">
-        <div class="phone-screen">
-          <div class="phone-top">
-            <div class="chat-title">
-              <div class="avatar">מ</div>
-              <div><b>מלאכי</b><small>המלאך השומר של המשפחה</small></div>
-            </div>
+  <main class="wrap">
+    <div class="top"><div class="brand"><div class="mark">מ</div> מלאכי — דמו לחיץ</div><button onclick="resetDemo()">איפוס מלא</button></div>
+    <section class="grid">
+      <div class="copy">
+        <h1>כאן ממש מרגישים את מלאכי בטלפון.</h1>
+        <p>זה דמו שאפשר ללחוץ בו: מתחילים הרשמה, מאשרים מהצד של ההורה, מפעילים בדיקת בוקר, לוחצים “הכול בסדר”, או בוחרים מצב של אי־מענה ורואים איך נשלחת התראה למשפחה.</p>
+        <div class="panel">
+          <div class="fields">
+            <label>שם ההורה<input id="parent" value="רות" oninput="refreshNames()"></label>
+            <label>שם בן המשפחה<input id="family" value="מטיב" oninput="refreshNames()"></label>
           </div>
+          <div class="buttons">
+            <button class="primary" onclick="registration()">התחל הרשמה</button>
+            <button onclick="morningCheck()">שלח בדיקת בוקר</button>
+            <button onclick="noAnswer()">אי־מענה</button>
+          </div>
+          <p class="note">הכול כאן דמו בלבד — לא נשלחת הודעת WhatsApp אמיתית ולא נוצר משתמש.</p>
+        </div>
+        <div class="status" id="status"></div>
+      </div>
+      <aside class="phone" aria-label="מסך טלפון דמו">
+        <div class="screen">
+          <div class="notch" aria-hidden="true"></div>
+          <div class="chatTop"><div class="who"><div class="avatar">מ</div><div><b>מלאכי</b><small id="subtitle">ממתין להתחלה</small></div></div></div>
           <div class="chat" id="chat"></div>
-          <div class="phone-input"><span>כתוב הודעה…</span><button class="primary">שליחה</button></div>
+          <div class="input"><span>כתוב הודעה…</span><button class="primary">שליחה</button></div>
         </div>
       </aside>
     </section>
-
-    <section class="section">
-      <div class="panel">
-        <h2>מה המשפחה מבינה תוך 10 שניות?</h2>
-        <div class="timeline">
-          <div class="step"><div class="num">1</div><div><b>קובעים שעה</b><span>למשל כל בוקר ב־09:00.</span></div></div>
-          <div class="step"><div class="num">2</div><div><b>המשפחה מקבלת שקט</b><span>תגובה נרשמת בדשבורד. אין תגובה? רק אז התראה.</span></div></div>
-        </div>
-      </div>
-
-      <div class="panel">
-        <h2>דשבורד משפחתי לדוגמה</h2>
-        <p>מסך פשוט שמראה את מצב הבדיקות — רק מה שקיים בדמו: תגובות, שעה יומית והתראה כשאין מענה.</p>
-        <div class="dashboard">
-          <div class="metric ok"><strong>הכול בסדר</strong><span>תגובה אחרונה: היום 09:04</span></div>
-          <div class="metric"><strong>7</strong><span>ימי בדיקה רצופים</span></div>
-          <div class="metric"><strong>09:00</strong><span>שעת בדיקה יומית</span></div>
-          <div class="metric warn"><strong>אין מענה</strong><span>רק אז נשלחת התראה למשפחה</span></div>
-        </div>
-      </div>
-    </section>
   </main>
+<script>
+const chat=document.getElementById('chat'), statusBox=document.getElementById('status'), subtitle=document.getElementById('subtitle');
+function n(){return {p:(document.getElementById('parent').value||'רות').trim(),f:(document.getElementById('family').value||'מטיב').trim()}}
+function add(type,text){const d=document.createElement('div');d.className='bubble '+type;d.textContent=text;chat.appendChild(d);chat.scrollTop=chat.scrollHeight;return d}
+function actions(label,items){const box=document.createElement('div');box.className='actionBox';const s=document.createElement('small');s.textContent=label;box.appendChild(s);items.forEach(it=>{const b=document.createElement('button');b.className='waButton';b.textContent=it.text;b.onclick=it.fn;box.appendChild(b)});chat.appendChild(box);chat.scrollTop=chat.scrollHeight}
+function setStatus(kind){const {p,f}=n();const data={start:[['','ממתין','אפשר להתחיל הרשמה'],['',p,'שם ההורה'],['',f,'בן משפחה'],['','09:00','שעת בדיקה לדוגמה']],registered:[['ok','אושר','ההורה אישר/ה שירות'],['',p,'מקבל/ת הודעות'],['',f,'מקבל/ת עדכונים'],['','פעיל','מוכן לבדיקת בוקר']],ok:[['ok','הכול בסדר','תגובה אחרונה: עכשיו'],['','09:04','זמן מענה'],['',f,'קיבל/ה עדכון רגוע'],['ok','שקט','אין צורך בהתראה']],late:[['danger','אין מענה','לא התקבלה תגובה'],['warn','תזכורת','נשלחה פעם אחת'],['danger',f,'קיבל/ה התראה'],['','המלצה','ליצור קשר כשאפשר']]};statusBox.innerHTML=data[kind].map(x=>`<div class="metric ${x[0]}"><strong>${x[1]}</strong><span>${x[2]}</span></div>`).join('')}
+function resetDemo(){chat.innerHTML='';subtitle.textContent='ממתין להתחלה';setStatus('start');add('system','ברוכים הבאים לדמו הלחיץ של מלאכי');add('bot','בחרו פעולה בצד: הרשמה, בדיקת בוקר, או אי־מענה.');}
+function refreshNames(){setStatus('start')}
+function registration(){const {p,f}=n();chat.innerHTML='';subtitle.textContent='הרשמה ואישור';setStatus('start');add('system','הרשמה ראשונית');add('family',`${f}: התחיל/ה הרשמה למלאכי`);setTimeout(()=>add('bot',`שלום ${p} 🌿
+כאן מלאכי. ${f} ביקש/ה לצרף אותך לשירות קשר משפחתי ב־WhatsApp. ההודעות יישלחו לפי ההגדרות בשעה 09:00.`),450);setTimeout(()=>add('bot','להמשך השירות יש לאשר קבלת הודעות.'),900);setTimeout(()=>actions('כפתורי הטמפלט:',[{text:'מאשר/ת',fn:()=>{add('user',`${p}: מאשר/ת`);setStatus('registered');subtitle.textContent='השירות אושר';setTimeout(()=>add('bot',`תודה ${p} ❤️
+שמחנו לשמוע שהכול בסדר.
+נבדוק שוב מחר בבוקר.`),350)}},{text:'לא מעוניין/ת',fn:()=>{add('user',`${p}: לא מעוניין/ת`);subtitle.textContent='לא אושר';add('system','בדמו: השירות לא יופעל בלי אישור ההורה')}}]),1250)}
+function morningCheck(){const {p,f}=n();chat.innerHTML='';subtitle.textContent='בדיקת בוקר';setStatus('registered');add('system','היום בשעה 09:00');setTimeout(()=>add('bot',`בוקר טוב ${p} 🌿
+כאן מלאכי. רק לסמן שהכול בסדר הבוקר.`),350);setTimeout(()=>actions('כפתור הטמפלט:',[{text:'אני בסדר',fn:()=>{add('user',`${p}: אני בסדר`);setStatus('ok');subtitle.textContent='הכול בסדר';setTimeout(()=>add('bot',`תודה ${p} ❤️
+שמחנו לשמוע שהכול בסדר.
+נבדוק שוב מחר בבוקר.`),300)}}]),800)}
+function noAnswer(){const {p,f}=n();chat.innerHTML='';subtitle.textContent='אי־מענה';setStatus('registered');add('system','בדיקת בוקר ללא מענה');setTimeout(()=>add('bot',`בוקר טוב ${p} 🌿
+כאן מלאכי. רק לסמן שהכול בסדר הבוקר.`),300);setTimeout(()=>actions('כפתור הטמפלט שממתין ללחיצה:',[{text:'אני בסדר',fn:()=>{add('user',`${p}: אני בסדר`);setStatus('ok');subtitle.textContent='הכול בסדר';setTimeout(()=>add('bot',`תודה ${p} ❤️
+שמחנו לשמוע שהכול בסדר.
+נבדוק שוב מחר בבוקר.`),250)}}]),700);setTimeout(()=>{add('system','מריצים זמן המתנה מקוצר לדמו');const t=document.createElement('div');t.className='timer';t.innerHTML='<div class="bar"></div>';chat.appendChild(t);chat.scrollTop=chat.scrollHeight;setTimeout(()=>t.querySelector('.bar').style.width='100%',50)},1200);setTimeout(()=>add('bot',`היי ${p} 🌿
+לא קיבלנו ממך מענה עדיין.
+רק רוצים לוודא שהכול בסדר.
+אפשר ללחוץ על הכפתור למטה.`),3900);setTimeout(()=>add('system','עדיין אין מענה אחרי התזכורת'),4700);setTimeout(()=>switchToFamilyScreen(),5400);setTimeout(()=>familyAlertFlow(),6650)}
 
-  <script>
-    const scenarios = {
-      ok: [
-        { type: 'system', text: 'הדגמה: בדיקת בוקר רגועה' },
-        { type: 'bot', text: 'בוקר טוב רות 🌿 רק לוודא שהכול בסדר היום.' },
-        { type: 'bot', text: 'אם הכול בסדר, לחצי על הכפתור:' },
-        { type: 'actions', label: 'כפתור WhatsApp שההורה מקבל:', actions: ['הכול בסדר'] },
-        { type: 'system', text: 'רות לחצה על הכפתור “הכול בסדר”' },
-        { type: 'bot', text: 'שמחנו לשמוע 💚 עדכנתי את המשפחה שהכול בסדר.' }
-      ],
-      late: [
-        { type: 'system', text: 'הדגמה: אין תגובה בזמן שנקבע' },
-        { type: 'bot', text: 'בוקר טוב רות 🌿 רק לוודא שהכול בסדר היום.' },
-        { type: 'actions', label: 'כפתור WhatsApp שממתין ללחיצה:', actions: ['הכול בסדר'] },
-        { type: 'system', text: 'עבר זמן ההמתנה שהמשפחה הגדירה' },
-        { type: 'bot', text: 'נשלחה התראה עדינה לבן המשפחה: לא התקבלה תגובה לבדיקה של היום.' }
-      ],
-    };
+function switchToFamilyScreen(){const {f}=n();const d=document.createElement('div');d.className='screenSwitch';d.innerHTML=`עוברים לשיחה עם ${f}<small>מסך בן המשפחה אחרי אי־מענה</small>`;chat.appendChild(d);chat.scrollTop=chat.scrollHeight;setTimeout(()=>{chat.innerHTML='';document.querySelector('.avatar').textContent='מ';subtitle.textContent='שיחה עם בן המשפחה';document.querySelector('.chatTop').classList.add('topFlash');setTimeout(()=>document.querySelector('.chatTop').classList.remove('topFlash'),800)},1050)}
+function familyAlertFlow(){const {p,f}=n();add('system',`שיחה עם ${f}`);add('bot',`שלום ${f} 🌿`);setTimeout(()=>add('bot',`מלאכי: ${p} לא ענה/ענתה להודעת הבוקר עד השעה 09:30. כדאי ליצור קשר ולוודא שהכול בסדר.`),350);setStatus('late');subtitle.textContent='נשלחה התראה למשפחה'}
 
-    function setScenario(name) {
-      const okButton = document.getElementById('scenario-ok');
-      const lateButton = document.getElementById('scenario-late');
-      if (okButton && lateButton) {
-        okButton.classList.toggle('scenario-active', name === 'ok');
-        okButton.classList.toggle('scenario-inactive', name !== 'ok');
-        lateButton.classList.toggle('scenario-active', name === 'late');
-        lateButton.classList.toggle('scenario-inactive', name !== 'late');
-      }
-      const chat = document.getElementById('chat');
-      chat.innerHTML = '';
-      scenarios[name].forEach((item, index) => {
-        setTimeout(() => {
-          if (item.type === 'actions') {
-            const wrap = document.createElement('div');
-            wrap.className = 'quick-actions';
-            if (item.label) {
-              const label = document.createElement('div');
-              label.className = 'button-label';
-              label.textContent = item.label;
-              wrap.appendChild(label);
-            }
-            item.actions.forEach((text) => {
-              const btn = document.createElement('button');
-              btn.textContent = text;
-              btn.setAttribute('aria-label', 'כפתור וואטסאפ: ' + text);
-              wrap.appendChild(btn);
-            });
-            chat.appendChild(wrap);
-          } else {
-            const div = document.createElement('div');
-            div.className = `bubble ${item.type}`;
-            div.textContent = item.text;
-            chat.appendChild(div);
-          }
-          chat.scrollTop = chat.scrollHeight;
-        }, index * 260);
-      });
-    }
-
-    if (location.hash === '#late') {
-      setScenario('late');
-    } else {
-      setScenario('ok');
-    }
-  </script>
+resetDemo();
+</script>
 </body>
 </html>
