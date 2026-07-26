@@ -5,7 +5,7 @@ services:
     plan: free
     region: oregon
     rootDir: app
-    buildCommand: npm install
+    buildCommand: npm ci --omit=dev --no-audit --no-fund && npm cache clean --force
     startCommand: npm start
     healthCheckPath: /api/health
     envVars:

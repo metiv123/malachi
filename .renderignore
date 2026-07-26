@@ -1,0 +1,20 @@
+# Keep Render builds lean
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+
+# Local/runtime-only artifacts
+node_modules/
+app/node_modules/
+app/data/
+backups/
+previews/
+ops/tmp/
+ops/.tmp/
+ops/*.json
+ops/*.tmp.json
+
+# Source brand drafts are not needed by the deployed app.
+# The deployed mascot lives under app/public/assets/brand/.
+assets/brand/
