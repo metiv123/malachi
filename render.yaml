@@ -16,9 +16,7 @@ services:
       - key: MALACHI_SCHEDULER
         value: "true"
       - key: MALACHI_SELF_KEEPALIVE
-        value: "true"
-      - key: MALACHI_SELF_KEEPALIVE_INTERVAL_MS
-        value: "240000"
+        value: "false"
       - key: MALACHI_NO_RESPONSE_GRACE_MINUTES
         value: "30"
       - key: MALACHI_REMINDER_INTERVAL_MINUTES
