@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="he" dir="rtl">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>סטטוס שירות — מלאכי</title><link rel="stylesheet" href="/style.css"></head>
-<body><a class="skip-link" href="#main">דלג לתוכן</a><main id="main" class="section legal"><h1>סטטוס שירות מלאכי</h1><p id="statusBox">בודק...</p><p class="small">עמוד זה לא מציג מידע אישי.</p><p><a class="button secondary" href="/">חזרה לדף הבית</a></p></main><script>
-fetch('/api/health').then(r=>r.json()).then(d=>{document.querySelector('#statusBox').textContent=d.ok?'השירות פעיל':'יש בעיה בשירות'}).catch(()=>{document.querySelector('#statusBox').textContent='לא ניתן לבדוק כרגע'});
+<body><a class="skip-link" href="#main">דלג לתוכן</a><main id="main" class="section legal"><h1>סטטוס שירות מלאכי</h1><p id="statusBox">בודק...</p><p class="small">עמוד זה לא מציג מידע אישי.</p><p><a class="button secondary" href="/">חזרה לדף הבית</a></p></main><script src="/config.js"></script><script>
+const statusApiBase = (window.MALACHI_API_BASE || '').replace(/\/$/, '');
+fetch(`${statusApiBase}/api/health`).then(r=>{if(!r.ok) throw new Error(`HTTP ${r.status}`); return r.json();}).then(d=>{document.querySelector('#statusBox').textContent=d.ok?'השירות פעיל':'יש בעיה בשירות'}).catch(()=>{document.querySelector('#statusBox').textContent='לא ניתן לבדוק כרגע'});
 </script><script src="/accessibility.js"></script></body></html>
