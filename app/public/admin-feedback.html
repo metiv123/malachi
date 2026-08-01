@@ -5,10 +5,11 @@
 <header class="hero small-hero"><nav><a class="brand" href="/"><span class="logo">מ</span> מלאכי</a><span><a href="/admin.html" class="nav-cta">אדמין</a> · <a href="/" class="nav-cta">דף הבית</a></span></nav></header>
 
 <script>
-const adminToken = new URLSearchParams(location.search).get('adminToken') || localStorage.getItem('malachi_admin_token') || '';
+let adminToken = localStorage.getItem('malachi_admin_token') || '';
+if (!adminToken) adminToken = prompt('קוד מנהל')?.trim() || '';
 if (adminToken) localStorage.setItem('malachi_admin_token', adminToken);
-function adminUrl(path){ const u = new URL(path, location.origin); if (adminToken) u.searchParams.set('adminToken', adminToken); return u.pathname + u.search; }
-function adminFetch(path, options){ return fetch(adminUrl(path), options); }
+function adminUrl(path){ return new URL(path, location.origin).pathname; }
+function adminFetch(path, options = {}){ return fetch(adminUrl(path), { ...options, headers: { ...(options.headers || {}), Authorization: `Bearer ${adminToken}` } }); }
 
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('a[href^="/admin"]').forEach((link) => {

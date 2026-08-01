@@ -3,7 +3,7 @@ const form = document.querySelector('#loginForm');
 const result = document.querySelector('#loginResult');
 
 async function api(path, options = {}) {
-  const res = await fetch(`${API_BASE}${path}`, { headers: { 'Content-Type': 'application/json' }, ...options });
+  const res = await fetch(`${API_BASE}${path}`, { credentials: 'include', headers: { 'Content-Type': 'application/json' }, ...options });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'API error');
   return data;
@@ -17,9 +17,8 @@ if (form) {
     if (submit) submit.disabled = true;
     if (result) result.textContent = 'בודק פרטים...';
     try {
-      const data = await api('/api/auth/login', { method: 'POST', body: JSON.stringify(payload) });
-      localStorage.setItem('malachi_management_token', data.managementToken);
-      location.href = `/dashboard.html?token=${encodeURIComponent(data.managementToken)}`;
+      await api('/api/auth/login', { method: 'POST', body: JSON.stringify(payload) });
+      location.href = '/dashboard.html';
     } catch (err) {
       if (result) result.textContent = err.message;
     } finally {

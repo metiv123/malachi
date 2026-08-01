@@ -1,11 +1,8 @@
-const urlToken = new URLSearchParams(location.search).get('token');
-const token = urlToken || localStorage.getItem('malachi_management_token');
-if (urlToken) localStorage.setItem('malachi_management_token', urlToken);
 const root = document.querySelector('#familyBox');
 const API_BASE = (window.MALACHI_API_BASE || '').replace(/\/$/, '');
 
 async function api(path, options = {}) {
-  const res = await fetch(`${API_BASE}${path}`, { headers: { 'Content-Type': 'application/json' }, ...options });
+  const res = await fetch(`${API_BASE}${path}`, { credentials: 'include', headers: { 'Content-Type': 'application/json' }, ...options });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'API error');
   return data;
@@ -32,7 +29,7 @@ function pageUrl(page = '') {
 }
 
 function statusLabel(status) {
-  return { sent:'נשלחה הודעה — מחכים ללחיצה על “אני בסדר”', ok:'התקבל אישור שהכול בסדר', greeting_sent:'נשלח ד״ש למשפחה', distress:'התראת מצוקה ישנה', no_response:'לא התקבלה תגובה', failed:'השליחה נכשלה' }[status] || 'לא נשלחה עדיין בדיקה היום';
+  return { sent:'נשלחה הודעה — מחכים ללחיצה על “אני בסדר”', ok:'התקבלה תגובת “אני בסדר”', greeting_sent:'נשלח ד״ש למשפחה', distress:'התראת מצוקה ישנה', no_response:'לא התקבלה תגובה', failed:'השליחה נכשלה' }[status] || 'לא נשלחה עדיין בדיקה היום';
 }
 function statusClass(status){ return { ok:'ok', greeting_sent:'ok', distress:'danger', no_response:'warning', sent:'pending', failed:'danger' }[status] || 'pending'; }
 function optInLabel(status){ return { pending:'עדיין לא אושר לקבל הודעות WhatsApp', approved:'מאושר לקבל הודעות WhatsApp', declined:'בוטל/הוסר' }[status] || 'לא ידוע'; }
@@ -72,7 +69,7 @@ function actionHint(status){
   if(status==='distress') return 'סטטוס ישן ממודל קודם. בגרסת הבטא החדשה ההתראה למשפחה נשלחת בעיקר כשאין תגובה.';
   if(status==='no_response') return 'המלצה: להתקשר ולוודא שהכול בסדר. ייתכן שהטלפון לא זמין או שהאדם לא ראה את ההודעה.';
   if(status==='sent') return 'ממתינים לתגובה. אם לא תהיה תגובה בזמן — נשלח קודם תזכורות למבוגר, ורק אחר כך התראה למשפחה.';
-  if(status==='ok') return 'הכול תקין להיום. לא נשלחה הודעה למשפחה.';
+  if(status==='ok') return 'התקבלה תגובה היום. לא נשלחה הודעה למשפחה.';
   if(status==='greeting_sent') return 'נשלחה דרישת שלום לאנשי הקשר שאישרו קבלת התראות.';
   return 'עדיין לא נשלחה בדיקה היום.';
 }
@@ -148,8 +145,7 @@ function addContactForm(elderId) {
 }
 
 function shareText() {
-  const ref = token ? `family_referral_${token.slice(0,8)}` : 'family_referral';
-  return `מצאתי כלי חינמי בשם מלאכי.\nהוא שולח להורה מבוגר הודעת WhatsApp כל בוקר, ואם אין תשובה — מעדכן בן משפחה.\nבלי אפליקציה ובלי מצלמות.\n${new URL(`./?ref=${encodeURIComponent(ref)}`, location.href).href}`;
+  return `מצאתי כלי חינמי בשם מלאכי.\nהוא שולח להורה מבוגר הודעת WhatsApp כל בוקר, ואם אין תשובה — מעדכן בן משפחה.\nבלי אפליקציה ובלי מצלמות.\n${new URL('./?ref=family_referral', location.href).href}`;
 }
 
 async function copyShare() {
@@ -159,9 +155,8 @@ async function copyShare() {
 }
 
 async function load() {
-  if (!token) { root.innerHTML = `<article class="family"><h2>צריך להתחבר</h2><p>כדי לראות את האזור האישי צריך להתחבר עם מייל וסיסמה או לפתוח את קישור הניהול הפרטי שקיבלתם אחרי ההרשמה.</p><p><a class="button primary" href="${pageUrl('login.html')}">כניסה לאזור אישי</a> <a class="button secondary" href="${pageUrl('index.html')}">חזרה להרשמה</a></p></article>`; return; }
   try {
-    const { family } = await api(`/api/family?token=${encodeURIComponent(token)}`);
+    const { family } = await api('/api/family');
     const eldersMarkup = family.elders.map((elder) => {
       const contacts = (elder.contacts || [elder.contact].filter(Boolean));
       const canSendManualCheck = elder.active && elder.optInStatus === 'approved';
@@ -230,10 +225,10 @@ async function load() {
         </details>
         <details class="edit-box"><summary>פעולות מתקדמות</summary>
           <div class="dashboard-actions quiet-actions">
-            <button class="button secondary" onclick="regenerateToken()">קישור ניהול חדש</button>
+            <button class="button secondary" onclick="regenerateToken()">ניתוק חיבורים קודמים</button>
             <button class="button secondary danger-action" onclick="deleteFamily()">מחיקת המשפחה והמידע</button>
           </div>
-          <p class="small">קישור ניהול פרטי לגיבוי: ${esc(location.href)}</p>
+          <p class="small">הכניסה נשמרת בעוגיית אבטחה שאינה חשופה לכתובת האתר. ניתוק חיבורים קודמים יבטל כל כניסה ישנה.</p>
         </details>
       </section>`;
     root.innerHTML = `<section class="personal-dashboard">
@@ -245,7 +240,7 @@ async function load() {
         </div>
         <div class="dashboard-actions top-actions">
           <button class="button primary" onclick="copyShare()">שיתוף</button>
-          <a class="button secondary" href="${pageUrl(`feedback.html?token=${encodeURIComponent(token)}`)}">פידבק</a>
+          <a class="button secondary" href="${pageUrl('feedback.html')}">פידבק</a>
         </div>
       </section>
       ${family.elders.length === 0 ? `${addElderCard(true)}${accountMarkup}` : `${eldersMarkup}<div class="dashboard-utility-grid">${addElderCard(false)}${accountMarkup}</div>`}
@@ -260,7 +255,7 @@ async function loadHistories() {
   for (const box of boxes) {
     const elderId = box.id.replace('history-', '');
     try {
-      const { checks } = await api(`/api/elders/${elderId}/history?token=${encodeURIComponent(token)}`);
+      const { checks } = await api(`/api/elders/${elderId}/history`);
       if (!checks.length) { box.innerHTML = '<p class="small">אין עדיין היסטוריית בדיקות.</p>'; continue; }
       box.innerHTML = `<h4>היסטוריה אחרונה</h4><ul>${checks.slice(0, 7).map((c) => `<li>${new Date(c.sentAt || c.scheduledAt).toLocaleString('he-IL')} — ${statusLabel(c.status)}</li>`).join('')}</ul>`;
     } catch (err) { box.textContent = 'לא ניתן לטעון היסטוריה'; }
@@ -272,7 +267,7 @@ async function loadOutboundMessages() {
   for (const box of boxes) {
     const elderId = box.id.replace('messages-', '');
     try {
-      const { messages } = await api(`/api/outbound-messages?token=${encodeURIComponent(token)}&elderId=${encodeURIComponent(elderId)}`);
+      const { messages } = await api(`/api/outbound-messages?elderId=${encodeURIComponent(elderId)}`);
       if (!messages.length) { box.innerHTML = '<p class="small">אין עדיין לוג הודעות.</p>'; continue; }
       box.innerHTML = `<h4>לוג הודעות אחרונות</h4><ul class="message-log">${messages.slice(0, 10).map((m) => `<li>${new Date(m.createdAt).toLocaleString('he-IL')} — ${esc(messageKindLabel(m.kind))} · ${esc(m.to || '')}<br><span class="status ${outboundStatusClass(m.status || 'sent')}">${esc(outboundStatusLabel(m.status || 'sent'))}</span> <small>${esc(outboundStatusHint(m.status || 'sent'))}</small>${m.error ? `<br><small class="danger-text">${esc(m.error)}</small>` : ''}</li>`).join('')}</ul>`;
     } catch (err) { box.textContent = 'לא ניתן לטעון לוג הודעות'; }
@@ -282,34 +277,30 @@ async function loadOutboundMessages() {
 
 window.copyShare = copyShare;
 window.regenerateToken = async () => {
-  if (!confirm('ליצור קישור ניהול חדש? הקישור הישן יפסיק להיות שימושי רק אחרי שתשתמשו בחדש.')) return;
-  const data = await api('/api/family/regenerate-token', { method:'POST', body:JSON.stringify({ token }) });
-  const newUrl = new URL(`dashboard.html?token=${encodeURIComponent(data.managementToken)}`, location.href).href;
-  alert(`קישור חדש נוצר. שמרו אותו עכשיו:
-${newUrl}`);
-  location.href = newUrl;
+  if (!confirm('לנתק חיבורים קודמים לחשבון? החיבור במכשיר הזה יישאר פעיל.')) return;
+  await api('/api/family/regenerate-token', { method:'POST', body:'{}' });
+  alert('החיבורים הקודמים נותקו.');
 };
 window.deleteFamily = async () => {
-  if (!confirm('למחוק את המשפחה וכל המידע מהמערכת? פעולה זו לא ניתנת לשחזור ב-MVP.')) return;
-  await api('/api/family/delete', { method:'POST', body:JSON.stringify({ token }) });
-  root.innerHTML = '<p>המידע נמחק מהמערכת.</p>';
+  if (!confirm('למחוק את המשפחה וכל המידע המשויך מהמערכת? הפעולה אינה ניתנת לביטול.')) return;
+  const result = await api('/api/family/delete', { method:'POST', body:'{}' });
+  root.innerHTML = `<p>המידע נמחק מהמערכת. מספר אישור: ${esc(result.receiptId || '')}</p><p><a class="button primary" href="/">חזרה לדף הבית</a></p>`;
 };
 window.setPassword = async (event) => {
   event.preventDefault();
   const payload = Object.fromEntries(new FormData(event.currentTarget).entries());
-  payload.token = token;
   await api('/api/auth/set-password', { method:'POST', body:JSON.stringify(payload) });
   alert('המייל והסיסמה נשמרו. בפעם הבאה אפשר להיכנס דרך דף הכניסה.');
   await load();
 };
-window.logout = () => {
-  localStorage.removeItem('malachi_management_token');
+window.logout = async () => {
+  await api('/api/auth/logout', { method:'POST', body:'{}' }).catch(() => {});
   location.href = '/login.html';
 };
 window.sendCheck = async (elderId) => {
   if (!confirm('לשלוח עכשיו הודעת WhatsApp עם כפתור “אני בסדר”?')) return;
   try {
-    await api(`/api/elders/${elderId}/send-check`, { method:'POST', body:JSON.stringify({ token }) });
+    await api(`/api/elders/${elderId}/send-check`, { method:'POST', body:'{}' });
     alert('הודעת בדיקה נשלחה ל־WhatsApp. אפשר לראות את סטטוס המסירה בלוג ההודעות.');
     await load();
   } catch (err) {
@@ -320,7 +311,7 @@ window.resendElderOptIn = async (elderId) => {
   const ok = confirm('לפני השליחה חשוב לוודא שההורה יודע שהוא עומד לקבל הודעה ממלאכי.\n\nכדאי להגיד לו: “תקבל/י עכשיו הודעת WhatsApp ממלאכי — רק ללחוץ אישור.”\n\nלשלוח עכשיו בקשת אישור WhatsApp?');
   if (!ok) return;
   try {
-    await api(`/api/elders/${elderId}/resend-optin`, { method:'POST', body:JSON.stringify({ token }) });
+    await api(`/api/elders/${elderId}/resend-optin`, { method:'POST', body:'{}' });
     alert('בקשת האישור נשלחה ל־WhatsApp.');
     await load();
   } catch (err) {
@@ -330,20 +321,19 @@ window.resendElderOptIn = async (elderId) => {
 window.resendContactOptIn = async (contactId) => {
   if (!confirm('לשלוח שוב הודעת אישור WhatsApp לבן/בת המשפחה?')) return;
   try {
-    await api(`/api/contacts/${contactId}/resend-optin`, { method:'POST', body:JSON.stringify({ token }) });
+    await api(`/api/contacts/${contactId}/resend-optin`, { method:'POST', body:'{}' });
     alert('בקשת האישור נשלחה ל־WhatsApp.');
     await load();
   } catch (err) {
     alert(err.message || 'לא הצלחנו לשלוח בקשת אישור');
   }
 };
-window.setActive = async (elderId, active) => { await api(`/api/elders/${elderId}/active`, { method:'POST', body:JSON.stringify({ token, active }) }); await load(); };
+window.setActive = async (elderId, active) => { await api(`/api/elders/${elderId}/active`, { method:'POST', body:JSON.stringify({ active }) }); await load(); };
 window.addContact = async (event, elderId) => {
   event.preventDefault();
   const unlock = lockSubmit(event, 'מוסיף…');
   try {
     const payload = Object.fromEntries(new FormData(event.currentTarget).entries());
-    payload.token = token;
     await api(`/api/elders/${elderId}/contacts`, { method:'POST', body:JSON.stringify(payload) });
     await load();
   } catch (err) {
@@ -357,7 +347,6 @@ window.addElder = async (event) => {
   try {
     const payload = Object.fromEntries(new FormData(event.currentTarget).entries());
     payload.shomerShabbat = event.currentTarget.elements.shomerShabbat?.checked ? 'on' : '';
-    payload.token = token;
     await api('/api/elders', { method:'POST', body:JSON.stringify(payload) });
     await load();
   } catch (err) {
@@ -367,7 +356,7 @@ window.addElder = async (event) => {
 };
 window.deleteContact = async (contactId) => {
   if (!confirm('למחוק איש קשר זה?')) return;
-  await api(`/api/contacts/${contactId}/delete`, { method:'POST', body:JSON.stringify({ token }) });
+  await api(`/api/contacts/${contactId}/delete`, { method:'POST', body:'{}' });
   await load();
 };
 window.updateElder = async (event, elderId) => {
@@ -376,7 +365,6 @@ window.updateElder = async (event, elderId) => {
   try {
     const payload = Object.fromEntries(new FormData(event.currentTarget).entries());
     payload.shomerShabbat = event.currentTarget.elements.shomerShabbat?.checked ? 'on' : '';
-    payload.token = token;
     await api(`/api/elders/${elderId}/update`, { method:'POST', body:JSON.stringify(payload) });
     await load();
   } catch (err) {

@@ -2,6 +2,8 @@ export const config = {
   port: Number(process.env.PORT || process.env.MALACHI_PORT || 8787),
   timezone: process.env.MALACHI_TIMEZONE || 'Asia/Jerusalem',
   publicBaseUrl: process.env.MALACHI_PUBLIC_BASE_URL || 'http://localhost:8787',
+  allowedOrigins: String(process.env.MALACHI_ALLOWED_ORIGINS || process.env.MALACHI_PUBLIC_BASE_URL || 'http://localhost:8787')
+    .split(',').map((value) => value.trim()).filter(Boolean),
   schedulerEnabled: process.env.MALACHI_SCHEDULER !== 'false',
   schedulerIntervalMs: Number(process.env.MALACHI_SCHEDULER_INTERVAL_MS || 60000),
   selfKeepaliveEnabled: process.env.MALACHI_SELF_KEEPALIVE === 'true',
@@ -18,6 +20,15 @@ export const config = {
   websiteLeadMatchText: process.env.MALACHI_WEBSITE_LEAD_MATCH_TEXT || 'הגעתי דרך אתר מלאכי',
   websiteLeadAutoReplyText: process.env.MALACHI_WEBSITE_LEAD_AUTO_REPLY_TEXT || 'היי 👋 תודה שפנית למלאכי.\nהפנייה שלך התקבלה.\nאפשר לכתוב כאן בקצרה במה נוכל לעזור, ומלאכי יחזור אליך בהקדם.',
   devToolsEnabled: process.env.MALACHI_DEV_TOOLS === 'true' || process.env.NODE_ENV !== 'production',
+  retention: {
+    checksDays: Number(process.env.MALACHI_RETENTION_CHECKS_DAYS || 180),
+    messagesDays: Number(process.env.MALACHI_RETENTION_MESSAGES_DAYS || 180),
+    auditDays: Number(process.env.MALACHI_RETENTION_AUDIT_DAYS || 365),
+    feedbackDays: Number(process.env.MALACHI_RETENTION_FEEDBACK_DAYS || 365),
+    waitlistDays: Number(process.env.MALACHI_RETENTION_WAITLIST_DAYS || 180),
+    errorsDays: Number(process.env.MALACHI_RETENTION_ERRORS_DAYS || 365),
+    backupsDays: Number(process.env.MALACHI_RETENTION_BACKUPS_DAYS || 30)
+  },
   whatsappProvider: process.env.WHATSAPP_PROVIDER || 'mock',
   dailyCheckMode: process.env.MALACHI_DAILY_CHECK_MODE || 'single_ok',
   hodayaAgent: {

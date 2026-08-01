@@ -18,7 +18,7 @@ async function reset() {
 
 async function run() {
   await reset();
-  const accountOnly = await createUserAccount({ ownerName: 'משתמש חדש', ownerEmail: 'new-user@example.com', password: 'strongpass123', ownerPhone: '0521111111', marketingEmailConsent: true, source: 'unit_test' });
+  const accountOnly = await createUserAccount({ ownerName: 'משתמש חדש', ownerEmail: 'new-user@example.com', password: 'strongpass123', ownerPhone: '0521111111', termsConsent: true, privacyConsent: true, marketingEmailConsent: true, source: 'unit_test' });
   assert(accountOnly.family.id, 'account-only family id missing');
   assert(accountOnly.family.marketingEmailConsent === true, 'marketing consent should be saved');
   const accountLogin = await loginFamily({ email: 'new-user@example.com', password: 'strongpass123' });

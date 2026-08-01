@@ -8,8 +8,11 @@
     "start": "node src/server.js",
     "dev": "MALACHI_PORT=8787 node src/server.js",
     "test": "node src/selftest.js",
+    "test:launch": "node src/launch-selftest.js",
+    "test:public": "node src/static-selftest.js",
     "test:scheduler": "node src/loadtest-scheduler.js",
     "test:consistency": "node src/check-project-consistency.js",
+    "backup:verify": "node src/verify-backup.js",
     "version:sync": "node src/update-version.js"
   },
   "engines": {

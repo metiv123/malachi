@@ -17,3 +17,24 @@ export async function createFirebaseAuthUser({ email, password, displayName }) {
     return { enabled: true, error: err.message };
   }
 }
+
+export async function updateFirebaseAuthUser(uid, { email, password } = {}) {
+  if (!config.firebaseAuthEnabled || !uid) return { enabled: false };
+  const updates = {};
+  if (email) updates.email = email;
+  if (password) updates.password = password;
+  if (!Object.keys(updates).length) return { enabled: true, updated: false };
+  await getAuth().updateUser(uid, updates);
+  return { enabled: true, updated: true };
+}
+
+export async function deleteFirebaseAuthUser(uid) {
+  if (!config.firebaseAuthEnabled || !uid) return { enabled: false };
+  try {
+    await getAuth().deleteUser(uid);
+    return { enabled: true, deleted: true };
+  } catch (err) {
+    if (err?.code === 'auth/user-not-found') return { enabled: true, deleted: false };
+    throw err;
+  }
+}

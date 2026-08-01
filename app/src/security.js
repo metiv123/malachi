@@ -12,6 +12,9 @@ export function rateLimit(req, { key = 'global', limit = 120, windowMs = 60_000 
   }
   bucket.count += 1;
   buckets.set(bucketKey, bucket);
+  if (buckets.size > 10_000) {
+    for (const [storedKey, stored] of buckets) if (now > stored.resetAt) buckets.delete(storedKey);
+  }
   return bucket.count <= limit;
 }
 
@@ -38,9 +41,10 @@ export function maskPhone(phone = '') {
 }
 
 export function hashPassword(password) {
+  const rounds = 600000;
   const salt = randomBytes(16).toString('hex');
-  const hash = pbkdf2Sync(String(password), salt, 120000, 32, 'sha256').toString('hex');
-  return `pbkdf2_sha256$120000$${salt}$${hash}`;
+  const hash = pbkdf2Sync(String(password), salt, rounds, 32, 'sha256').toString('hex');
+  return `pbkdf2_sha256$${rounds}$${salt}$${hash}`;
 }
 
 export function verifyPassword(password, stored = '') {

@@ -3,6 +3,7 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { cert, getApps, initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
+import { config } from './config.js';
 
 const DATA_DIR = path.resolve(process.cwd(), 'data');
 const DB_PATH = path.join(DATA_DIR, 'db.json');
@@ -49,14 +50,30 @@ function trimArrayTail(value, limit) {
   return value.length > limit ? value.slice(-limit) : value;
 }
 
+function withinRetention(record, days, dateFields = ['createdAt', 'updatedAt', 'sentAt', 'scheduledAt']) {
+  if (!Number.isFinite(days) || days <= 0) return false;
+  const raw = dateFields.map((field) => record?.[field]).find(Boolean);
+  if (!raw) return true;
+  const time = new Date(raw).getTime();
+  if (!Number.isFinite(time)) return true;
+  return time >= Date.now() - days * 24 * 60 * 60 * 1000;
+}
+
+function retain(value, days, fields) {
+  return Array.isArray(value) ? value.filter((record) => withinRetention(record, days, fields)) : [];
+}
+
 function compactDb(db = {}) {
   const normalized = normalizeDb(db);
   return {
     ...normalized,
-    audit: trimArrayTail(normalized.audit, HEAVY_LOG_LIMITS.audit),
-    inboundMessages: trimArrayTail(normalized.inboundMessages, HEAVY_LOG_LIMITS.inboundMessages),
-    outboundMessages: trimArrayTail(normalized.outboundMessages, HEAVY_LOG_LIMITS.outboundMessages),
-    errors: trimArrayTail(normalized.errors, HEAVY_LOG_LIMITS.errors)
+    checks: retain(normalized.checks, config.retention.checksDays, ['respondedAt', 'sentAt', 'scheduledAt', 'createdAt']),
+    audit: trimArrayTail(retain(normalized.audit, config.retention.auditDays), HEAVY_LOG_LIMITS.audit),
+    inboundMessages: trimArrayTail(retain(normalized.inboundMessages, config.retention.messagesDays), HEAVY_LOG_LIMITS.inboundMessages),
+    outboundMessages: trimArrayTail(retain(normalized.outboundMessages, config.retention.messagesDays), HEAVY_LOG_LIMITS.outboundMessages),
+    waitlist: retain(normalized.waitlist, config.retention.waitlistDays),
+    feedback: retain(normalized.feedback, config.retention.feedbackDays),
+    errors: trimArrayTail(retain(normalized.errors, config.retention.errorsDays), HEAVY_LOG_LIMITS.errors)
   };
 }
 

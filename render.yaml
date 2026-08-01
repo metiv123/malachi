@@ -27,12 +27,30 @@ services:
         value: single_ok
       - key: MALACHI_BETA_OPEN
         value: "true"
+      - key: MALACHI_BETA_MAX_FAMILIES
+        value: "50"
       - key: MALACHI_DEV_TOOLS
         value: "false"
       - key: MALACHI_TIMEZONE
         value: Asia/Jerusalem
       - key: MALACHI_PUBLIC_BASE_URL
         value: https://malachi-v78v.onrender.com
+      - key: MALACHI_ALLOWED_ORIGINS
+        value: https://malachi-v78v.onrender.com,https://malachi-static.onrender.com
+      - key: MALACHI_RETENTION_CHECKS_DAYS
+        value: "180"
+      - key: MALACHI_RETENTION_MESSAGES_DAYS
+        value: "180"
+      - key: MALACHI_RETENTION_AUDIT_DAYS
+        value: "365"
+      - key: MALACHI_RETENTION_FEEDBACK_DAYS
+        value: "365"
+      - key: MALACHI_RETENTION_WAITLIST_DAYS
+        value: "180"
+      - key: MALACHI_RETENTION_ERRORS_DAYS
+        value: "365"
+      - key: MALACHI_RETENTION_BACKUPS_DAYS
+        value: "30"
       - key: HODAYA_AGENT_WINDOW_TEMPLATE
         value: hodaya_agent_window_open_he
       - key: HODAYA_AGENT_FAST_ACK

@@ -5,10 +5,14 @@
 <header class="hero small-hero"><nav><a class="brand" href="/"><span class="logo">מ</span> מלאכי</a><a href="/" class="nav-cta">דף הבית</a></nav></header>
 
 <script>
-const adminToken = new URLSearchParams(location.search).get('adminToken') || localStorage.getItem('malachi_admin_token') || '';
+let adminToken = localStorage.getItem('malachi_admin_token') || '';
+if (!adminToken) adminToken = prompt('קוד מנהל')?.trim() || '';
 if (adminToken) localStorage.setItem('malachi_admin_token', adminToken);
-function adminUrl(path){ const u = new URL(path, location.origin); if (adminToken) u.searchParams.set('adminToken', adminToken); return u.pathname + u.search; }
-function adminFetch(path, options){ return fetch(adminUrl(path), options); }
+function adminUrl(path){ return new URL(path, location.origin).pathname; }
+function adminFetch(path, options = {}){
+  const headers = { ...(options.headers || {}), Authorization: `Bearer ${adminToken}` };
+  return fetch(adminUrl(path), { ...options, headers });
+}
 
 document.addEventListener('DOMContentLoaded', () => {
   document.querySelectorAll('a[href^="/admin"]').forEach((link) => {
@@ -34,9 +38,9 @@ document.addEventListener('DOMContentLoaded', () => {
     <button class="button secondary" onclick="loadAudit()">Audit log</button>
     <button class="button secondary" onclick="loadMeta()">מוכנות Meta</button>
     <button class="button secondary" onclick="loadPayloads()">דוגמאות Payload</button>
-    <a class="button secondary" id="familiesCsvLink" href="/api/export/families.csv">ייצוא CSV</a>
-    <a class="button secondary" id="dbJsonLink" href="/api/export/db.json">ייצוא JSON</a>
-    <button class="button secondary" onclick="createBackup()">גיבוי DB</button>
+    <button class="button secondary" onclick="downloadAdmin('/api/export/families.csv','malachi-families.csv')">ייצוא CSV</button>
+    <button class="button secondary" onclick="downloadAdmin('/api/export/db.json','malachi-firestore-backup.json')">הורדת גיבוי Firestore</button>
+    <button class="button secondary" onclick="createBackup()">יצירת גיבוי שרת</button>
   </div>
   <pre id="readinessBox">לחצו על בדיקת מצב.</pre>
   <div id="simpleOverview" class="admin-simple hidden"></div>
@@ -129,6 +133,15 @@ async function createBackup(){
   showJson(data);
 }
 
+async function downloadAdmin(path, filename){
+  const res = await adminFetch(path);
+  if (!res.ok) return showJson(await res.json());
+  const href = URL.createObjectURL(await res.blob());
+  const link = document.createElement('a');
+  link.href = href; link.download = filename; link.click();
+  URL.revokeObjectURL(href);
+}
+
 async function loadWaitlist(){
   const res = await adminFetch('/api/waitlist');
   const data = await res.json();
@@ -172,7 +185,5 @@ async function loadFeedback(){
   showJson(data);
 }
 
-if (document.querySelector('#familiesCsvLink')) document.querySelector('#familiesCsvLink').href = adminUrl('/api/export/families.csv');
-if (document.querySelector('#dbJsonLink')) document.querySelector('#dbJsonLink').href = adminUrl('/api/export/db.json');
 </script>
 <script src="/accessibility.js"></script></body></html>

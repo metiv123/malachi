@@ -3,17 +3,21 @@ set -eu
 ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
 OUT="$ROOT/static-site"
 API_BASE="${MALACHI_STATIC_API_BASE:-https://malachi-v78v.onrender.com}"
+export API_BASE
 rm -rf "$OUT"
 mkdir -p "$OUT"
 cp "$ROOT/app/public/"*.html "$OUT/"
 cp "$ROOT/app/public/"*.css "$OUT/"
 cp "$ROOT/app/public/"*.js "$OUT/"
+cp -R "$ROOT/app/public/assets" "$OUT/assets"
 cat > "$OUT/config.js" <<EOF
 window.MALACHI_API_BASE = '$API_BASE';
 EOF
 python3 - <<'PY'
 from pathlib import Path
+import os
 root=Path('static-site')
+api=os.environ['API_BASE'].rstrip('/')
 for p in root.glob('*.html'):
     s=p.read_text()
     # Assets: project-page friendly relative paths
@@ -31,8 +35,11 @@ for p in root.glob('*.html'):
         'href="/privacy.html"':'href="privacy.html"',
         'href="/terms.html"':'href="terms.html"',
         'href="/data-deletion.html"':'href="data-deletion.html"',
-        'href="/dashboard.html"':'href="dashboard.html"',
-        'href="/feedback.html"':'href="feedback.html"',
+        'href="/accessibility.html"':'href="accessibility.html"',
+        'href="/create-user.html"':f'href="{api}/create-user.html"',
+        'href="/login.html"':f'href="{api}/login.html"',
+        'href="/dashboard.html"':f'href="{api}/dashboard.html"',
+        'href="/feedback.html"':f'href="{api}/feedback.html"',
         'href="/status.html"':'href="status.html"',
         'href="/manager.html"':'href="manager.html"',
     }
@@ -44,6 +51,8 @@ for p in root.glob('*.html'):
         s=s.replace('<script src="dashboard.js"></script>', '<script src="config.js"></script><script src="dashboard.js"></script>')
     s=s.replace('src="/config.js"', 'src="config.js"')
     s=s.replace('src="/accessibility.js"', 'src="accessibility.js"')
+    s=s.replace('src="/assets/', 'src="assets/')
+    s=s.replace('href="/assets/', 'href="assets/')
     p.write_text(s)
 PY
 printf '%s\n' "$OUT"

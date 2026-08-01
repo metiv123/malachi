@@ -15,18 +15,15 @@
   <pre id="result"></pre>
 </main>
 <script>
-const params = new URLSearchParams(location.search);
-const token = params.get('token') || localStorage.getItem('malachi_management_token') || '';
 document.querySelector('#feedbackForm').addEventListener('submit', async (e) => {
   e.preventDefault();
   const payload = Object.fromEntries(new FormData(e.target).entries());
-  payload.token = token;
-  payload.source = token ? 'dashboard' : 'public_feedback_page';
+  payload.source = 'feedback_page';
   payload.page = location.pathname;
   payload.userAgent = navigator.userAgent;
   const result = document.querySelector('#result');
   result.textContent = 'שומר פידבק...';
-  const r = await fetch('/api/feedback', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
+  const r = await fetch('/api/feedback', { method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload) });
   result.textContent = r.ok ? 'תודה, הפידבק נשמר ונשלח לניהול.' : 'שגיאה בשמירה';
   if (r.ok) e.target.reset();
 });

@@ -1,5 +1,5 @@
 {
-  "latest": 124,
+  "latest": 128,
   "versions": [
     {
       "version": 4,
@@ -726,6 +726,30 @@
       "file": "specs/v124_release_notes.md",
       "title": "# מלאכי V124 - Hodaya Instant Acknowledgement",
       "zip": "malachi-mvp-project-v124.zip"
+    },
+    {
+      "version": 125,
+      "file": "specs/v125_release_notes.md",
+      "title": "# מלאכי V125 — תיקון השלמות שליחה ושומר שבת",
+      "zip": "malachi-mvp-project-v125.zip"
+    },
+    {
+      "version": 126,
+      "file": "specs/v126_release_notes.md",
+      "title": "# מלאכי V126 — תגובת אימוג׳י ל“אני בסדר”",
+      "zip": "malachi-mvp-project-v126.zip"
+    },
+    {
+      "version": 127,
+      "file": "specs/v127_release_notes.md",
+      "title": "# V127 Release Notes — Hodaya reply latency + token control",
+      "zip": "malachi-mvp-project-v127.zip"
+    },
+    {
+      "version": 128,
+      "file": "specs/v128_release_notes.md",
+      "title": "# מלאכי V128 — מיזוג מבוקר של עיצוב, אבטחה ופרטיות",
+      "zip": "malachi-mvp-project-v128.zip"
     }
   ]
 }

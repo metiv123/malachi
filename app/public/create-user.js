@@ -15,7 +15,7 @@ for (const [id, value] of Object.entries(trackingFields)) {
 }
 
 async function api(path, options = {}) {
-  const res = await fetch(`${API_BASE}${path}`, { headers: { 'Content-Type': 'application/json' }, ...options });
+  const res = await fetch(`${API_BASE}${path}`, { credentials: 'include', headers: { 'Content-Type': 'application/json' }, ...options });
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'API error');
   return data;
@@ -35,12 +35,8 @@ if (form) {
     try {
       const data = await api('/api/users', { method: 'POST', body: JSON.stringify(payload) });
       if (data.waitlist) { result.textContent = 'הבטא מלאה כרגע. נכנסת לרשימת המתנה.'; return; }
-      localStorage.setItem('malachi_management_token', data.family.managementToken);
-      const authNote = data.emailVerificationLink
-        ? `<br><strong>אימות מייל:</strong> נוצר קישור אימות. בשלב הבטא אם המייל לא נשלח אוטומטית, פתח/י את הקישור: <a href="${data.emailVerificationLink}" target="_blank" rel="noopener">אימות מייל</a><br>`
-        : (data.authWarning ? `<br><strong>שים לב:</strong> ${data.authWarning}<br>` : '');
-      result.innerHTML = `המשתמש נוצר בהצלחה.${authNote}<br><a class="button primary" href="/dashboard.html?token=${encodeURIComponent(data.family.managementToken)}">מעבר לאזור האישי</a>`;
-      setTimeout(() => { location.href = `/dashboard.html?token=${encodeURIComponent(data.family.managementToken)}`; }, 800);
+      result.textContent = 'המשתמש נוצר בהצלחה. מעבירים אותך לאזור האישי…';
+      setTimeout(() => { location.href = '/dashboard.html'; }, 600);
     } catch (err) {
       if (result) result.textContent = err.message;
     } finally {

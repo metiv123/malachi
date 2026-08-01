@@ -5,7 +5,9 @@ import { localParts } from './time.js';
 import { validateJoinInput, isValidTime, normalizePhone } from './validators.js';
 import { config } from './config.js';
 import { hashPassword, verifyPassword } from './security.js';
-import { createFirebaseAuthUser } from './firebaseAuth.js';
+import { createFirebaseAuthUser, deleteFirebaseAuthUser, updateFirebaseAuthUser } from './firebaseAuth.js';
+import { consentRecord, legalVersions } from './legal.js';
+import { purgeFamilyFromBackups } from './backup.js';
 
 function requireField(input, field) {
   if (!input[field] || String(input[field]).trim() === '') {
@@ -128,10 +130,10 @@ function requireAccountInput(input = {}) {
 export async function createUserAccount(input = {}) {
   const { ownerName, ownerPhone, ownerEmail, password } = requireAccountInput(input);
   const attribution = leadAttribution(input);
-  const authResult = await createFirebaseAuthUser({ email: ownerEmail, password, displayName: ownerName });
+  const legalConsent = consentRecord(input);
   const created = await mutateDb((db) => {
     if (!config.betaOpen || db.families.length >= config.betaMaxFamilies) {
-      const wait = { id: id('wait'), ownerName, ownerPhone, ownerEmail, ...attribution, createdAt: nowIso() };
+      const wait = { id: id('wait'), ownerName, ownerPhone, ownerEmail, ...attribution, ...legalConsent, createdAt: nowIso() };
       db.waitlist = db.waitlist || [];
       db.waitlist.push(wait);
       return { waitlist: true, wait };
@@ -143,9 +145,10 @@ export async function createUserAccount(input = {}) {
       ownerPhone,
       ownerEmail,
       emailVerified: false,
-      firebaseAuthUid: authResult.uid || '',
+      firebaseAuthUid: '',
       marketingEmailConsent: Boolean(input.marketingEmailConsent),
       marketingEmailConsentAt: input.marketingEmailConsent ? nowIso() : null,
+      ...legalConsent,
       passwordHash: hashPassword(password),
       managementToken: randomUUID(),
       tokenCreatedAt: nowIso(),
@@ -156,9 +159,18 @@ export async function createUserAccount(input = {}) {
       createdAt: nowIso()
     };
     db.families.push(family);
-    db.audit.push({ id: id('evt'), type: 'user_account_created', payload: { familyId: family.id, attribution, marketingEmailConsent: family.marketingEmailConsent }, createdAt: nowIso() });
+    db.audit.push({ id: id('evt'), type: 'user_account_created', payload: { familyId: family.id, attribution, marketingEmailConsent: family.marketingEmailConsent, termsVersion: family.termsVersion, privacyVersion: family.privacyVersion }, createdAt: nowIso() });
     return { family };
   });
+  if (created.waitlist) return created;
+  const authResult = await createFirebaseAuthUser({ email: ownerEmail, password, displayName: ownerName });
+  if (authResult.uid) {
+    await mutateDb((db) => {
+      const family = db.families.find((item) => item.id === created.family.id);
+      if (family) family.firebaseAuthUid = authResult.uid;
+    });
+    created.family.firebaseAuthUid = authResult.uid;
+  }
   if (authResult.error) created.authWarning = `Firebase Auth: ${authResult.error}`;
   if (authResult.emailVerificationLink) created.emailVerificationLink = authResult.emailVerificationLink;
   return created;
@@ -215,6 +227,9 @@ export async function createFamily(input) {
       noResponseGraceMinutes: alertDelayMinutes(input),
       noResponseAlertRepeatCount: alertRepeatCount(input),
       optInStatus: input.skipOptIn ? 'approved' : 'pending',
+      optInRequestedAt: input.skipOptIn ? null : nowIso(),
+      optInAcceptedAt: input.skipOptIn ? nowIso() : null,
+      optInVersion: legalVersions.whatsappOptIn,
       active: true,
       createdAt: nowIso()
     };
@@ -225,6 +240,9 @@ export async function createFamily(input) {
       whatsappPhone: contactPhone,
       relationship: input.relationship || 'קרוב משפחה',
       optInStatus: input.skipContactOptIn ? 'approved' : 'pending',
+      optInRequestedAt: input.skipContactOptIn ? null : nowIso(),
+      optInAcceptedAt: input.skipContactOptIn ? nowIso() : null,
+      optInVersion: legalVersions.whatsappOptIn,
       createdAt: nowIso()
     };
 
@@ -326,7 +344,7 @@ export async function addElderByToken(token, input = {}) {
 }
 
 export async function deleteContactByToken(token, contactId) {
-  return mutateDb((db) => {
+  const result = await mutateDb((db) => {
     const family = db.families.find((f) => f.managementToken === token);
     if (!family) throw new Error('Family not found');
     const elderIds = db.elders.filter((e) => e.familyId === family.id).map((e) => e.id);
@@ -336,6 +354,7 @@ export async function deleteContactByToken(token, contactId) {
     db.audit.push({ id: id('evt'), type: 'contact_deleted', payload: { contactId }, createdAt: nowIso() });
     return { deleted: true };
   });
+  return result;
 }
 
 export async function getOutboundMessagesByToken(token, elderId = null) {
@@ -854,7 +873,7 @@ export async function getCheckHistoryByToken(token, elderId) {
 }
 
 export async function regenerateFamilyToken(oldToken) {
-  return mutateDb((db) => {
+  const result = await mutateDb((db) => {
     const family = db.families.find((f) => f.managementToken === oldToken);
     if (!family || family.tokenRevokedAt) throw new Error('Family not found');
     family.managementToken = randomUUID();
@@ -864,6 +883,7 @@ export async function regenerateFamilyToken(oldToken) {
     db.audit.push({ id: id('evt'), type: 'family_token_regenerated', payload: { familyId: family.id }, createdAt: nowIso() });
     return { managementToken: family.managementToken };
   });
+  return result;
 }
 
 export async function revokeFamilyToken(token) {
@@ -877,17 +897,35 @@ export async function revokeFamilyToken(token) {
 }
 
 export async function deleteFamilyByToken(token) {
-  return mutateDb((db) => {
-    const family = db.families.find((f) => f.managementToken === token);
-    if (!family) throw new Error('Family not found');
-    const elderIds = db.elders.filter((e) => e.familyId === family.id).map((e) => e.id);
-    db.families = db.families.filter((f) => f.id !== family.id);
-    db.elders = db.elders.filter((e) => e.familyId !== family.id);
-    db.contacts = db.contacts.filter((c) => !elderIds.includes(c.elderId));
-    db.checks = db.checks.filter((c) => !elderIds.includes(c.elderId));
-    db.audit.push({ id: id('evt'), type: 'family_deleted', payload: { familyId: family.id }, createdAt: nowIso() });
-    return { deleted: true, familyId: family.id };
+  const current = await loadDb();
+  const family = current.families.find((item) => item.managementToken === token);
+  if (!family) throw new Error('Family not found');
+  const elders = current.elders.filter((item) => item.familyId === family.id);
+  const elderIds = new Set(elders.map((item) => item.id));
+  const contacts = current.contacts.filter((item) => elderIds.has(item.elderId));
+  const contactIds = new Set(contacts.map((item) => item.id));
+  const phoneKey = (value) => String(value || '').replace(/\D/g, '').replace(/^0/, '972');
+  const phones = new Set([family.ownerPhone, ...elders.map((item) => item.whatsappPhone), ...contacts.map((item) => item.whatsappPhone)].map(phoneKey).filter(Boolean));
+  await deleteFirebaseAuthUser(family.firebaseAuthUid);
+  const receiptId = id('deletion');
+  const result = await mutateDb((db) => {
+    const relatedId = (payload = {}) => payload.familyId === family.id || elderIds.has(payload.elderId) || contactIds.has(payload.contactId);
+    const relatedMessage = (message = {}) => relatedId(message.meta || {}) || phones.has(phoneKey(message.to)) || phones.has(phoneKey(message.from));
+    db.families = db.families.filter((item) => item.id !== family.id);
+    db.elders = db.elders.filter((item) => item.familyId !== family.id && !elderIds.has(item.id));
+    db.contacts = db.contacts.filter((item) => !elderIds.has(item.elderId) && !contactIds.has(item.id));
+    db.checks = db.checks.filter((item) => !elderIds.has(item.elderId));
+    db.inboundMessages = (db.inboundMessages || []).filter((item) => !relatedMessage(item));
+    db.outboundMessages = (db.outboundMessages || []).filter((item) => !relatedMessage(item));
+    db.feedback = (db.feedback || []).filter((item) => item.family?.familyId !== family.id && item.familyId !== family.id);
+    db.errors = (db.errors || []).filter((item) => !relatedId(item.context || {}) && !relatedId(item.payload || {}));
+    db.waitlist = (db.waitlist || []).filter((item) => String(item.ownerEmail || '').toLowerCase() !== String(family.ownerEmail || '').toLowerCase() && !phones.has(phoneKey(item.ownerPhone)));
+    db.audit = (db.audit || []).filter((item) => !relatedId(item.payload || {}));
+    db.audit.push({ id: id('evt'), type: 'account_deletion_completed', payload: { receiptId }, createdAt: nowIso() });
+    return { deleted: true, receiptId };
   });
+  await purgeFamilyFromBackups({ familyId: family.id, elderIds, contactIds, phones, ownerEmail: family.ownerEmail });
+  return result;
 }
 
 export async function optOutByPhone(phone) {
@@ -930,7 +968,8 @@ export async function getFamilyByToken(token) {
     const latestCheck = db.checks.filter((c) => c.elderId === elder.id).sort((a, b) => b.scheduledAt.localeCompare(a.scheduledAt))[0] || null;
     return { ...elder, contact, contacts, latestCheck };
   });
-  return { ...family, elders };
+  const { passwordHash: _passwordHash, managementToken: _managementToken, firebaseAuthUid: _firebaseAuthUid, ...safeFamily } = family;
+  return { ...safeFamily, elders };
 }
 
 export async function loginFamily({ email, password }) {
@@ -949,7 +988,7 @@ export async function setFamilyPasswordByToken(token, { email, password }) {
   const cleanPassword = String(password || '').trim();
   if (!normalizedEmail || !normalizedEmail.includes('@')) throw new Error('צריך להזין מייל תקין');
   if (cleanPassword.length < 8) throw new Error('הסיסמה צריכה לכלול לפחות 8 תווים');
-  return mutateDb((db) => {
+  const result = await mutateDb((db) => {
     const family = db.families.find((f) => f.managementToken === token);
     if (!family || family.tokenRevokedAt) throw new Error('Family not found');
     const existing = db.families.find((f) => f.id !== family.id && String(f.ownerEmail || '').trim().toLowerCase() === normalizedEmail);
@@ -957,8 +996,10 @@ export async function setFamilyPasswordByToken(token, { email, password }) {
     family.ownerEmail = normalizedEmail;
     family.passwordHash = hashPassword(cleanPassword);
     db.audit.push({ id: id('evt'), type: 'family_password_set', payload: { familyId: family.id }, createdAt: nowIso() });
-    return { ok: true, ownerEmail: family.ownerEmail };
+    return { ok: true, ownerEmail: family.ownerEmail, firebaseAuthUid: family.firebaseAuthUid };
   });
+  await updateFirebaseAuthUser(result.firebaseAuthUid, { email: result.ownerEmail, password: cleanPassword });
+  return { ok: true, ownerEmail: result.ownerEmail };
 }
 
 export async function setMarketingConsentByEmail({ email, consent = false }) {
