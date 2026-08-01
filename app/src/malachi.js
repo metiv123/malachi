@@ -1,6 +1,6 @@
 import { audit, id, loadDb, mutateDb, nowIso, saveDb } from './store.js';
 import { randomUUID } from 'node:crypto';
-import { sendBetaUpdate, sendContactOptIn, sendDailyCheck, sendDailyReminder, sendDistressAlert, sendFamilyGreeting, sendIncompleteSignupReminder, sendNoResponseAlert, sendOkAck, sendOkReaction, sendOptIn } from './whatsapp.js';
+import { sendBetaUpdate, sendContactOptIn, sendDailyCheck, sendDailyReminder, sendDistressAlert, sendFamilyGreeting, sendIncompleteSignupReminder, sendNoResponseAlert, sendOkAck, sendOkReaction, sendOptIn, sendWebsiteLeadAutoReply } from './whatsapp.js';
 import { localParts } from './time.js';
 import { validateJoinInput, isValidTime, normalizePhone } from './validators.js';
 import { config } from './config.js';
@@ -381,7 +381,8 @@ function messageStatusLabel(status = '') {
     contact_opt_in_declined: 'אישור איש קשר נדחה',
     owner_opt_in_approved: 'אישור בעל חשבון התקבל',
     owner_opt_in_declined: 'אישור בעל חשבון נדחה',
-    response_recorded: 'תגובה נשמרה'
+    response_recorded: 'תגובה נשמרה',
+    website_lead_ack_sent: 'מענה אוטומטי נשלח'
   };
   return labels[status] || status || 'לא ידוע';
 }
@@ -684,17 +685,17 @@ export async function sendBetaUpdateToRecentContact({ contactId = '', phoneLast4
   return { dryRun: false, sent: true, maskedPhone: maskPhone(selected.contact.whatsappPhone), familyId: selected.family.id, elderId: selected.elder.id, contactId: selected.contact.id, messageId: outbound.id };
 }
 
-export async function sendReplyToRecentInbound({ phoneLast4 = '', message, hours = 24, dryRun = true } = {}) {
+export async function sendReplyToRecentInbound({ inboundId = '', phoneLast4 = '', message, hours = 24, dryRun = true } = {}) {
   const db = await loadDb();
   const body = String(message || '').trim();
   if (!body) throw new Error('Missing reply message');
   const last4 = normalizeDigits(phoneLast4).slice(-4);
-  if (!last4 || last4.length < 4) throw new Error('Missing phoneLast4');
+  if (!inboundId && (!last4 || last4.length < 4)) throw new Error('Missing inboundId or phoneLast4');
 
   const sinceMs = Date.now() - Number(hours || 24) * 60 * 60 * 1000;
   const matches = (db.inboundMessages || [])
     .filter((item) => new Date(item.createdAt || Number(item.timestamp || 0) * 1000 || 0).getTime() >= sinceMs)
-    .filter((item) => normalizeDigits(item.from).endsWith(last4))
+    .filter((item) => inboundId ? item.id === inboundId : normalizeDigits(item.from).endsWith(last4))
     .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
 
   if (!matches.length) throw new Error('Recent inbound sender not found');
@@ -709,6 +710,88 @@ export async function sendReplyToRecentInbound({ phoneLast4 = '', message, hours
   const outbound = await sendBetaUpdate(to, body, { inboundId: selected.id, hours: Number(hours || 24), targetedInboundReply: true });
   await audit('inbound_reply_sent', { inboundId: selected.id, to: maskPhone(to), hours: Number(hours || 24), messageId: outbound.id });
   return { dryRun: false, sent: true, to: maskPhone(to), inboundId: selected.id, messageId: outbound.id };
+}
+
+export async function acknowledgeWebsiteLead({ from = '', inboundMessageId = '', inboundText = '' } = {}) {
+  if (!config.websiteLeadAutoReplyEnabled) return { sent: false, reason: 'disabled' };
+  const matchText = String(config.websiteLeadMatchText || '').trim();
+  if (!matchText || !String(inboundText || '').includes(matchText)) return { sent: false, reason: 'not_website_lead' };
+
+  const db = await loadDb();
+  const duplicate = (db.outboundMessages || []).find((item) =>
+    item.kind === 'website_lead_auto_reply' && item.meta?.inboundMessageId === inboundMessageId
+  );
+  if (duplicate) return { sent: false, reason: 'already_acknowledged', messageId: duplicate.id };
+
+  const to = normalizeDigits(from);
+  if (!to) throw new Error('Website lead sender has no phone');
+  const outbound = await sendWebsiteLeadAutoReply(to, config.websiteLeadAutoReplyText, {
+    inboundMessageId,
+    source: 'website_whatsapp_link'
+  });
+  await audit('website_lead_auto_reply_sent', { inboundMessageId, to: maskPhone(to), messageId: outbound.id });
+  return { sent: true, messageId: outbound.id };
+}
+
+export async function adminConversations({ limit = 50 } = {}) {
+  const db = await loadDb();
+  const normalize = (value) => normalizeDigits(value);
+  const inbound = (db.inboundMessages || [])
+    .filter((message) => normalize(message.from))
+    .sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)));
+  const outbound = (db.outboundMessages || [])
+    .filter((message) => normalize(message.to))
+    .sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)));
+  const byPhone = new Map();
+
+  for (const message of inbound) {
+    const phone = normalize(message.from);
+    if (!byPhone.has(phone)) byPhone.set(phone, { phone, inbound: [], outbound: [] });
+    byPhone.get(phone).inbound.push(message);
+  }
+  for (const message of outbound) {
+    const phone = normalize(message.to);
+    if (!byPhone.has(phone)) continue;
+    byPhone.get(phone).outbound.push(message);
+  }
+
+  const now = Date.now();
+  return Array.from(byPhone.values())
+    .map((thread) => {
+      const latestInbound = thread.inbound[thread.inbound.length - 1];
+      const latestAt = latestInbound?.createdAt || '';
+      const latestMs = new Date(latestAt).getTime();
+      const messages = [
+        ...thread.inbound.map((message) => ({
+          id: message.id,
+          direction: 'inbound',
+          type: message.type,
+          content: message.text || message.buttonTitle || '(הודעה ללא טקסט)',
+          status: messageStatusLabel(message.status),
+          createdAt: message.createdAt
+        })),
+        ...thread.outbound.map((message) => ({
+          id: message.id,
+          direction: 'outbound',
+          type: message.kind,
+          content: message.body || '',
+          status: messageStatusLabel(message.status || 'sent'),
+          createdAt: message.createdAt
+        }))
+      ].sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)));
+      return {
+        phone: thread.phone,
+        maskedPhone: maskPhone(thread.phone),
+        latestInboundId: latestInbound?.id || '',
+        latestAt,
+        latestText: latestInbound?.text || latestInbound?.buttonTitle || '',
+        websiteLead: thread.inbound.some((message) => String(message.text || '').includes(config.websiteLeadMatchText)),
+        replyWindowOpen: Number.isFinite(latestMs) && now - latestMs <= 24 * 60 * 60 * 1000,
+        messages
+      };
+    })
+    .sort((a, b) => String(b.latestAt).localeCompare(String(a.latestAt)))
+    .slice(0, Math.min(Math.max(Number(limit) || 50, 1), 100));
 }
 
 export async function sourceReport() {

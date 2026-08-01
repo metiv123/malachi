@@ -1,6 +1,6 @@
 import { rm } from 'node:fs/promises';
 import path from 'node:path';
-import { addContactByToken, addElderByToken, adminSimpleOverview, cancelOpenChecks, createFamily, createUserAccount, deleteFamilyByToken, exportFamiliesCsv, getCheckHistoryByToken, getFamilyByToken, getOutboundMessagesByToken, handleElderResponse, listDashboard, loginFamily, normalizeFamilyContactOptIns, optOutByPhone, processDueChecks, processNoResponses, resendElderOptInByToken, sendCheckNow, setContactOptIn, setElderActiveByToken, setFamilyPasswordByToken, setOptIn, systemReadiness, updateElderByToken, weeklyReportByToken } from './malachi.js';
+import { addContactByToken, addElderByToken, adminConversations, adminSimpleOverview, cancelOpenChecks, createFamily, createUserAccount, deleteFamilyByToken, exportFamiliesCsv, getCheckHistoryByToken, getFamilyByToken, getOutboundMessagesByToken, handleElderResponse, listDashboard, loginFamily, normalizeFamilyContactOptIns, optOutByPhone, processDueChecks, processNoResponses, resendElderOptInByToken, sendCheckNow, setContactOptIn, setElderActiveByToken, setFamilyPasswordByToken, setOptIn, systemReadiness, updateElderByToken, weeklyReportByToken } from './malachi.js';
 import { extractWhatsAppButtonEvents, extractWhatsAppTextEvents, mapButtonToResponse, mapTextToIntent } from './metaWebhook.js';
 import { processWhatsAppWebhookPayload } from './webhookProcessor.js';
 import { getHodayaAgentStatus, prepareHodayaWindowOpenTemplate, sendHodayaAgentReply, triggerHodayaEventDrivenTurn } from './hodayaAgent.js';
@@ -299,6 +299,18 @@ async function run() {
   assert(mapTextToIntent(texts[0]) === 'opt_out', 'opt-out text mapping failed');
   const optOut = await optOutByPhone('972502222222');
   assert(optOut.found === true, 'opt out should find elder');
+
+  const websiteLeadPayload = { entry: [{ changes: [{ value: { messages: [{ type: 'text', from: '972509876543', id: 'wamid.website.lead', timestamp: String(Math.floor(Date.now()/1000)), text: { body: 'שלום מטיב, הגעתי דרך אתר מלאכי ואשמח לקבל פרטים.' } }] } }] }] };
+  const websiteLeadHandled = await processWhatsAppWebhookPayload(websiteLeadPayload);
+  assert(websiteLeadHandled[0]?.status === 'website_lead_ack_sent', 'website lead should receive automatic acknowledgement');
+  db = await loadDb();
+  assert(db.outboundMessages.filter((message) => message.kind === 'website_lead_auto_reply' && message.meta?.inboundMessageId === 'wamid.website.lead').length === 1, 'website lead acknowledgement should be recorded once');
+  await processWhatsAppWebhookPayload(websiteLeadPayload);
+  db = await loadDb();
+  assert(db.outboundMessages.filter((message) => message.kind === 'website_lead_auto_reply' && message.meta?.inboundMessageId === 'wamid.website.lead').length === 1, 'duplicate website webhook must not send a duplicate acknowledgement');
+  const conversations = await adminConversations();
+  const leadConversation = conversations.find((conversation) => conversation.phone.endsWith('6543'));
+  assert(leadConversation?.websiteLead === true && leadConversation.messages.some((message) => message.type === 'website_lead_auto_reply'), 'manager conversation should include website lead and auto reply');
 
   const csv = await exportFamiliesCsv();
   assert(csv.includes('utm_campaign') && csv.includes('malachi_beta') && csv.includes('owner_name') && csv.includes('שלמה'), 'csv export failed');

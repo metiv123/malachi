@@ -362,3 +362,16 @@ export async function sendBetaUpdate(to, text, meta = {}) {
   }
   return recordOutbound('beta_update', to, body, [], { ...meta, whatsappMessageId: providerResponse?.messages?.[0]?.id || null });
 }
+
+export async function sendWebsiteLeadAutoReply(to, text, meta = {}) {
+  const body = String(text || '').trim();
+  if (!body) throw new Error('Missing website lead auto-reply text');
+  let providerResponse = null;
+  if (config.whatsappProvider === 'meta') {
+    providerResponse = await sendMetaText(to, body);
+  }
+  return recordOutbound('website_lead_auto_reply', to, body, [], {
+    ...meta,
+    whatsappMessageId: providerResponse?.messages?.[0]?.id || null
+  });
+}

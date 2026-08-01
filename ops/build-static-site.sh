@@ -34,6 +34,7 @@ for p in root.glob('*.html'):
         'href="/dashboard.html"':'href="dashboard.html"',
         'href="/feedback.html"':'href="feedback.html"',
         'href="/status.html"':'href="status.html"',
+        'href="/manager.html"':'href="manager.html"',
     }
     for a,b in replacements.items(): s=s.replace(a,b)
     # Load API config before scripts that call the API
@@ -41,6 +42,8 @@ for p in root.glob('*.html'):
         s=s.replace('<script src="app.js"></script>', '<script src="config.js"></script><script src="app.js"></script>')
     if 'src="dashboard.js"' in s and 'src="config.js"' not in s:
         s=s.replace('<script src="dashboard.js"></script>', '<script src="config.js"></script><script src="dashboard.js"></script>')
+    s=s.replace('src="/config.js"', 'src="config.js"')
+    s=s.replace('src="/accessibility.js"', 'src="accessibility.js"')
     p.write_text(s)
 PY
 printf '%s\n' "$OUT"

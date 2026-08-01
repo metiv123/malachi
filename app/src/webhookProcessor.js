@@ -1,6 +1,6 @@
 import { id, loadDb, mutateDb, nowIso } from './store.js';
 import { extractWhatsAppButtonEvents, extractWhatsAppStatusEvents, extractWhatsAppTextEvents, mapButtonToResponse, mapMetaDeliveryStatus, mapTextToIntent } from './metaWebhook.js';
-import { handleElderResponse, optOutByPhone, setContactOptIn, setOptIn } from './malachi.js';
+import { acknowledgeWebsiteLead, handleElderResponse, optOutByPhone, setContactOptIn, setOptIn } from './malachi.js';
 import { isHodayaAgentSender, processHodayaAgentEvents } from './hodayaAgent.js';
 
 export async function processWhatsAppWebhookPayload(payload) {
@@ -104,7 +104,20 @@ export async function processWhatsAppWebhookPayload(payload) {
   for (const textEvent of texts) {
     const mapped = mapTextToIntent(textEvent);
     const elder = findElder(textEvent.from);
-    if (!mapped || !elder) handled.push({ event: textEvent, mapped, status: 'ignored' });
+    if (!mapped) {
+      const acknowledgement = await acknowledgeWebsiteLead({
+        from: textEvent.from,
+        inboundMessageId: textEvent.messageId,
+        inboundText: textEvent.text
+      });
+      handled.push({
+        event: textEvent,
+        mapped,
+        status: acknowledgement.sent ? 'website_lead_ack_sent' : 'ignored',
+        acknowledgement
+      });
+    }
+    else if (!elder) handled.push({ event: textEvent, mapped, status: 'ignored' });
     else if (mapped === 'opt_out') handled.push({ event: textEvent, mapped, status: 'opted_out', result: await optOutByPhone(textEvent.from) });
     else {
       const check = await handleElderResponse({ elderId: elder.id, response: mapped, inboundMessageId: textEvent.messageId });

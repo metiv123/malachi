@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ניהול שיחות — מלאכי</title>
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    .manager-shell{max-width:1180px;margin:0 auto;padding:28px 18px 60px}.manager-top{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}.manager-login{max-width:520px;margin:42px auto;padding:24px;border:1px solid #dce7e3;border-radius:18px;background:#fff;box-shadow:0 12px 32px #1232}.manager-login input,.reply-box textarea{width:100%;box-sizing:border-box;margin:10px 0;padding:12px;border:1px solid #bdcdc7;border-radius:10px;font:inherit}.manager-grid{display:grid;grid-template-columns:minmax(260px,34%) 1fr;gap:18px;margin-top:20px}.thread-list,.conversation{background:#fff;border:1px solid #dce7e3;border-radius:18px;overflow:hidden}.thread-list{max-height:70vh;overflow:auto}.thread{width:100%;text-align:right;border:0;border-bottom:1px solid #edf2f0;background:#fff;padding:14px;cursor:pointer;font:inherit}.thread:hover,.thread.active{background:#eef9f5}.thread small{display:block;color:#667873;margin-top:5px}.conversation{min-height:540px;display:flex;flex-direction:column}.conversation-head{padding:16px;border-bottom:1px solid #edf2f0}.messages{padding:18px;display:flex;flex-direction:column;gap:10px;overflow:auto;max-height:52vh}.bubble{max-width:78%;padding:10px 13px;border-radius:14px;background:#edf2f0}.bubble.outbound{align-self:flex-start;background:#dff5e9}.bubble.inbound{align-self:flex-end;background:#f4f0ff}.bubble small{display:block;color:#63716d;margin-top:5px}.reply-box{padding:14px;border-top:1px solid #edf2f0;margin-top:auto}.notice{padding:12px;border-radius:10px;background:#fff7dc;color:#725b00}.hidden{display:none!important}@media(max-width:760px){.manager-grid{grid-template-columns:1fr}.thread-list{max-height:34vh}.conversation{min-height:460px}}
+  </style>
+</head>
+<body>
+<header class="hero small-hero"><nav><a class="brand" href="/"><span class="logo">מ</span> מלאכי</a><a href="/" class="nav-cta">דף הבית</a></nav></header>
+<main class="manager-shell">
+  <section id="loginPanel" class="manager-login">
+    <h1>כניסה לניהול שיחות</h1>
+    <p>יש להזין את קוד המנהל. הקוד נשמר רק בדפדפן הזה ואינו מופיע בכתובת.</p>
+    <label>קוד מנהל<input id="tokenInput" type="password" autocomplete="current-password"></label>
+    <button class="button primary" id="loginButton">כניסה</button>
+    <p id="loginError" class="notice hidden"></p>
+  </section>
+
+  <section id="managerPanel" class="hidden">
+    <div class="manager-top">
+      <div><h1>ניהול שיחות</h1><p>הודעות שנשלחו למלאכי והמענים שנשלחו מהמערכת.</p></div>
+      <div><button class="button secondary" id="refreshButton">רענון</button> <button class="button secondary" id="logoutButton">יציאה</button></div>
+    </div>
+    <p class="notice">כדי לשמור על מכסת Render, הדף מתרענן רק בלחיצה. אין רענון אוטומטי ברקע.</p>
+    <div class="manager-grid">
+      <aside class="thread-list" id="threadList"></aside>
+      <section class="conversation">
+        <div class="conversation-head" id="conversationHead">יש לבחור שיחה.</div>
+        <div class="messages" id="messages"></div>
+        <form class="reply-box" id="replyForm">
+          <label>מענה<textarea id="replyText" rows="3" maxlength="1000" placeholder="כתיבת מענה..."></textarea></label>
+          <button class="button primary" id="sendButton" type="submit">שליחת הודעה</button>
+          <small id="replyStatus"></small>
+        </form>
+      </section>
+    </div>
+  </section>
+</main>
+<script src="/config.js"></script>
+<script>
+const API_BASE = (window.MALACHI_API_BASE || location.origin).replace(/\/$/, '');
+let adminToken = localStorage.getItem('malachi_manager_token') || '';
+let conversations = [];
+let selected = null;
+
+const $ = (selector) => document.querySelector(selector);
+const esc = (value) => String(value ?? '').replace(/[&<>\"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));
+const when = (value) => value ? new Date(value).toLocaleString('he-IL', {dateStyle:'short',timeStyle:'short'}) : '';
+async function api(path, options = {}) {
+  const response = await fetch(`${API_BASE}${path}`, {...options, headers:{...(options.headers || {}),'X-Admin-Token':adminToken}});
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || 'הפעולה נכשלה');
+  return data;
+}
+function showLogin(error = '') {
+  $('#loginPanel').classList.remove('hidden'); $('#managerPanel').classList.add('hidden');
+  $('#loginError').textContent = error; $('#loginError').classList.toggle('hidden', !error);
+}
+function showManager() { $('#loginPanel').classList.add('hidden'); $('#managerPanel').classList.remove('hidden'); }
+function renderThreads() {
+  $('#threadList').innerHTML = conversations.map((item, index) => `<button class="thread ${selected?.phone===item.phone?'active':''}" data-index="${index}"><strong>${item.websiteLead?'פנייה מהאתר · ':''}${esc(item.maskedPhone)}</strong><small>${esc(item.latestText || 'הודעה')} · ${when(item.latestAt)}</small></button>`).join('') || '<p style="padding:16px">אין עדיין שיחות.</p>';
+  document.querySelectorAll('.thread').forEach(button => button.onclick = () => selectConversation(Number(button.dataset.index)));
+}
+function selectConversation(index) {
+  selected = conversations[index]; renderThreads();
+  $('#conversationHead').innerHTML = `<strong>${esc(selected.maskedPhone)}</strong> · ${selected.replyWindowOpen?'חלון המענה פתוח':'חלון 24 השעות נסגר'}`;
+  $('#messages').innerHTML = selected.messages.map(message => `<article class="bubble ${message.direction}">${esc(message.content)}<small>${message.direction==='inbound'?'נכנסה':'נשלחה'} · ${when(message.createdAt)} · ${esc(message.status)}</small></article>`).join('');
+  $('#sendButton').disabled = !selected.replyWindowOpen;
+  $('#replyText').disabled = !selected.replyWindowOpen;
+}
+async function loadConversations() {
+  $('#refreshButton').disabled = true;
+  try {
+    const data = await api('/api/admin/conversations?limit=50');
+    conversations = data.conversations || []; showManager();
+    const priorPhone = selected?.phone; selected = null; renderThreads();
+    const index = conversations.findIndex(item => item.phone === priorPhone);
+    if (index >= 0) selectConversation(index); else if (conversations.length) selectConversation(0);
+  } catch (error) {
+    if (String(error.message).includes('token') || String(error.message).includes('401')) { adminToken=''; localStorage.removeItem('malachi_manager_token'); showLogin('קוד המנהל שגוי.'); }
+    else $('#replyStatus').textContent = error.message;
+  } finally { $('#refreshButton').disabled = false; }
+}
+$('#loginButton').onclick = async () => { adminToken=$('#tokenInput').value.trim(); if(!adminToken) return showLogin('יש להזין קוד מנהל.'); localStorage.setItem('malachi_manager_token',adminToken); await loadConversations(); };
+$('#logoutButton').onclick = () => { adminToken=''; selected=null; localStorage.removeItem('malachi_manager_token'); showLogin(); };
+$('#refreshButton').onclick = loadConversations;
+$('#replyForm').onsubmit = async (event) => {
+  event.preventDefault(); if(!selected) return;
+  const message=$('#replyText').value.trim(); if(!message) return;
+  $('#sendButton').disabled=true; $('#replyStatus').textContent='שולח...';
+  try {
+    await api('/api/admin/inbound-reply',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({inboundId:selected.latestInboundId,message,hours:24,dryRun:false})});
+    $('#replyText').value=''; $('#replyStatus').textContent='ההודעה נשלחה.'; await loadConversations();
+  } catch(error) { $('#replyStatus').textContent=error.message; $('#sendButton').disabled=false; }
+};
+if (adminToken) loadConversations(); else showLogin();
+</script>
+<script src="/accessibility.js"></script>
+</body></html>
