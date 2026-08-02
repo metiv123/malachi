@@ -184,7 +184,8 @@ async function body(req) {
 }
 
 async function staticFile(res, pathname, { head = false } = {}) {
-  const file = pathname === '/' ? 'index.html' : pathname.replace(/^\//, '');
+  const cleanPath = pathname.replace(/^\//, '');
+  const file = pathname === '/' ? 'index.html' : pathname.endsWith('/') ? `${cleanPath}index.html` : cleanPath;
   const target = path.resolve(publicDir, file);
   if (!target.startsWith(publicDir)) throw new Error('Bad path');
   const ext = path.extname(target);
@@ -242,7 +243,7 @@ async function route(req, res) {
     }
     if (req.method === 'GET' && url.pathname === '/api/health') return json(res, 200, { ok: true, provider: config.whatsappProvider, version });
     if (req.method === 'GET' && url.pathname === '/api/version') return json(res, 200, version);
-    if (req.method === 'GET' && url.pathname === '/api/beta/status') return json(res, 200, await betaStatus());
+    if (req.method === 'GET' && url.pathname === '/api/beta/status') return json(res, 200, await betaStatus(url.searchParams.get('cohort') || ''));
     if (req.method === 'GET' && url.pathname === '/api/feedback') return json(res, 200, { feedback: await listFeedback() });
     if (req.method === 'POST' && url.pathname === '/api/feedback') {
       const input = await body(req);

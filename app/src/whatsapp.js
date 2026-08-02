@@ -5,6 +5,18 @@ function normalizePhone(phone = '') {
   return String(phone).replace(/[^0-9+]/g, '');
 }
 
+function languageCode(...records) {
+  return records.some((record) => String(record?.language || '').toLowerCase().startsWith('en')) ? 'en_US' : 'he';
+}
+
+function templateSet(language) {
+  return language === 'en_US' ? config.meta.templatesEnglish : config.meta.templates;
+}
+
+function localeFor(language) {
+  return language === 'en_US' ? 'en-GB' : 'he-IL';
+}
+
 function textParam(text) {
   return { type: 'text', text: String(text ?? '') };
 }
@@ -198,45 +210,61 @@ async function sendMetaInteractiveButtons(to, text, buttons = []) {
 }
 
 export async function sendOptIn(elder, family) {
-  const body = `שלום ${elder.name} 🌿\nכאן מלאכי. ${family.ownerName} ביקש/ה לצרף אותך לבדיקת בוקר יומית ב-WhatsApp. בכל יום בשעה ${elder.dailyCheckTime} נשלח הודעה קצרה כדי לוודא שהכול בסדר.`;
-  const buttons = [{ id: 'approve_optin', title: 'מאשר/ת' }, { id: 'decline_optin', title: 'לא מעוניין/ת' }];
+  const language = languageCode(elder, family);
+  const templates = templateSet(language);
+  const body = language === 'en_US'
+    ? `Hello ${elder.name} 🌿\nThis is Malachi. ${family.ownerName} asked to add you to a daily family WhatsApp check-in around ${elder.dailyCheckTime}.`
+    : `שלום ${elder.name} 🌿\nכאן מלאכי. ${family.ownerName} ביקש/ה לצרף אותך לבדיקת בוקר יומית ב-WhatsApp. בכל יום בשעה ${elder.dailyCheckTime} נשלח הודעה קצרה כדי לוודא שהכול בסדר.`;
+  const buttons = language === 'en_US'
+    ? [{ id: 'approve_optin', title: 'I agree' }, { id: 'decline_optin', title: 'Not interested' }]
+    : [{ id: 'approve_optin', title: 'מאשר/ת' }, { id: 'decline_optin', title: 'לא מעוניין/ת' }];
   let providerResponse = null;
   if (config.whatsappProvider === 'meta') {
-    providerResponse = await sendMetaTemplate(elder.whatsappPhone, config.meta.templates.optin, 'he', [
+    providerResponse = await sendMetaTemplate(elder.whatsappPhone, templates.optin, language, [
       ...bodyComponent([elder.name, family.ownerName, elder.dailyCheckTime]),
       quickReplyButton(0, 'approve_optin'),
       quickReplyButton(1, 'decline_optin')
     ]);
   }
-  return recordOutbound('optin', elder.whatsappPhone, body, buttons, { elderId: elder.id, whatsappMessageId: providerResponse?.messages?.[0]?.id || null });
+  return recordOutbound('optin', elder.whatsappPhone, body, buttons, { elderId: elder.id, language, templateName: templates.optin, whatsappMessageId: providerResponse?.messages?.[0]?.id || null });
 }
 
 export async function sendContactOptIn(contact, elder, family) {
-  const body = `שלום ${contact.name} 🌿\nכאן מלאכי. ${family.ownerName} צירף/ה אותך כאיש קשר להתראות עבור ${elder.name}. אם ${elder.name} לא יענה/תענה לבדיקת הבוקר — נעדכן אותך ב־WhatsApp.`;
-  const buttons = [{ id: `approve_contact_optin:${contact.id}`, title: 'מאשר/ת' }, { id: `decline_contact_optin:${contact.id}`, title: 'לא מעוניין/ת' }];
+  const language = languageCode(contact, elder, family);
+  const templates = templateSet(language);
+  const body = language === 'en_US'
+    ? `Hello ${contact.name} 🌿\nThis is Malachi. ${family.ownerName} added you as a family contact for ${elder.name}. If ${elder.name} does not respond to the daily check-in, we will notify you on WhatsApp.`
+    : `שלום ${contact.name} 🌿\nכאן מלאכי. ${family.ownerName} צירף/ה אותך כאיש קשר להתראות עבור ${elder.name}. אם ${elder.name} לא יענה/תענה לבדיקת הבוקר — נעדכן אותך ב־WhatsApp.`;
+  const buttons = language === 'en_US'
+    ? [{ id: `approve_contact_optin:${contact.id}`, title: 'I agree' }, { id: `decline_contact_optin:${contact.id}`, title: 'Not interested' }]
+    : [{ id: `approve_contact_optin:${contact.id}`, title: 'מאשר/ת' }, { id: `decline_contact_optin:${contact.id}`, title: 'לא מעוניין/ת' }];
   let providerResponse = null;
   if (config.whatsappProvider === 'meta') {
-    const usesElderOptInTemplate = config.meta.templates.contactOptin === config.meta.templates.optin;
+    const usesElderOptInTemplate = templates.contactOptin === templates.optin;
     const params = usesElderOptInTemplate
       ? [contact.name, family.ownerName, elder.dailyCheckTime]
       : [contact.name, elder.name, family.ownerName];
-    providerResponse = await sendMetaTemplate(contact.whatsappPhone, config.meta.templates.contactOptin, 'he', [
+    providerResponse = await sendMetaTemplate(contact.whatsappPhone, templates.contactOptin, language, [
       ...bodyComponent(params),
       quickReplyButton(0, `approve_contact_optin:${contact.id}`),
       quickReplyButton(1, `decline_contact_optin:${contact.id}`)
     ]);
   }
-  return recordOutbound('contact_optin', contact.whatsappPhone, body, buttons, { elderId: elder.id, contactId: contact.id, whatsappMessageId: providerResponse?.messages?.[0]?.id || null });
+  return recordOutbound('contact_optin', contact.whatsappPhone, body, buttons, { elderId: elder.id, contactId: contact.id, language, templateName: templates.contactOptin, whatsappMessageId: providerResponse?.messages?.[0]?.id || null });
 }
 
 export async function sendDailyCheck(elder, check) {
+  const language = languageCode(elder);
+  const templates = templateSet(language);
   const singleOkMode = config.dailyCheckMode === 'single_ok';
   const freeformMode = config.dailyCheckMode === 'freeform_connection';
-  const body = singleOkMode
-    ? `בוקר טוב ${elder.name} 🌿\nכאן מלאכי. רק לסמן שהכול בסדר הבוקר.`
-    : `בוקר טוב ${elder.name} 🌿\nכאן מלאכי, רק לוודא מה שלומך הבוקר.`;
+  const body = language === 'en_US'
+    ? `Good morning ${elder.name} 🌿\nThis is Malachi. Just tap to let your family know everything is okay this morning.`
+    : singleOkMode
+      ? `בוקר טוב ${elder.name} 🌿\nכאן מלאכי. רק לסמן שהכול בסדר הבוקר.`
+      : `בוקר טוב ${elder.name} 🌿\nכאן מלאכי, רק לוודא מה שלומך הבוקר.`;
   const buttons = singleOkMode
-    ? [{ id: 'daily_ok', title: 'אני בסדר' }]
+    ? [{ id: 'daily_ok', title: language === 'en_US' ? 'I’m okay' : 'אני בסדר' }]
     : [{ id: 'daily_ok', title: 'הכול בסדר' }, { id: 'daily_greeting', title: 'שלח ד״ש למשפחה' }];
   let providerResponse = null;
   if (config.whatsappProvider === 'meta' && freeformMode) {
@@ -245,27 +273,31 @@ export async function sendDailyCheck(elder, check) {
     const templateButtons = singleOkMode
       ? [quickReplyButton(0, 'daily_ok')]
       : [quickReplyButton(0, 'daily_ok'), quickReplyButton(1, 'daily_greeting')];
-    providerResponse = await sendMetaTemplate(elder.whatsappPhone, config.meta.templates.dailyCheck, 'he', [
+    providerResponse = await sendMetaTemplate(elder.whatsappPhone, templates.dailyCheck, language, [
       ...bodyComponent([elder.name]),
       ...templateButtons
     ]);
   }
-  return recordOutbound('daily_check', elder.whatsappPhone, body, buttons, { elderId: elder.id, checkId: check.id, mode: config.dailyCheckMode, whatsappMessageId: providerResponse?.messages?.[0]?.id || null });
+  return recordOutbound('daily_check', elder.whatsappPhone, body, buttons, { elderId: elder.id, checkId: check.id, mode: config.dailyCheckMode, language, templateName: templates.dailyCheck, whatsappMessageId: providerResponse?.messages?.[0]?.id || null });
 }
 
 export async function sendDailyReminder(elder, check) {
-  const body = `היי ${elder.name} 🌿\nרק תזכורת קטנה ממלאכי — נשמח לדעת שהכול בסדר. אפשר ללחוץ על הכפתור למטה.`;
-  const buttons = [{ id: 'daily_ok', title: 'אני בסדר' }];
+  const language = languageCode(elder);
+  const templates = templateSet(language);
+  const body = language === 'en_US'
+    ? `Hi ${elder.name} 🌿\nWe haven’t received a response yet. Just checking that everything is okay. You can tap the button below.`
+    : `היי ${elder.name} 🌿\nרק תזכורת קטנה ממלאכי — נשמח לדעת שהכול בסדר. אפשר ללחוץ על הכפתור למטה.`;
+  const buttons = [{ id: 'daily_ok', title: language === 'en_US' ? 'I’m okay' : 'אני בסדר' }];
   let providerResponse = null;
   if (config.whatsappProvider === 'meta') {
     // Until the dedicated reminder template is approved, use the existing daily-check template.
     // This keeps reminders compliant outside the 24h WhatsApp service window.
-    providerResponse = await sendMetaTemplate(elder.whatsappPhone, config.meta.templates.dailyReminder, 'he', [
+    providerResponse = await sendMetaTemplate(elder.whatsappPhone, templates.dailyReminder, language, [
       ...bodyComponent([elder.name]),
       quickReplyButton(0, 'daily_ok')
     ]);
   }
-  return recordOutbound('daily_reminder', elder.whatsappPhone, body, buttons, { elderId: elder.id, checkId: check.id, reminderCount: Number(check.noResponseReminderCount || 0), templateName: config.meta.templates.dailyReminder, whatsappMessageId: providerResponse?.messages?.[0]?.id || null });
+  return recordOutbound('daily_reminder', elder.whatsappPhone, body, buttons, { elderId: elder.id, checkId: check.id, reminderCount: Number(check.noResponseReminderCount || 0), language, templateName: templates.dailyReminder, whatsappMessageId: providerResponse?.messages?.[0]?.id || null });
 }
 
 export async function sendDistressAlert(contact, elder, check) {
@@ -279,13 +311,17 @@ export async function sendDistressAlert(contact, elder, check) {
 }
 
 export async function sendNoResponseAlert(contact, elder, check) {
-  const time = new Date().toLocaleTimeString('he-IL', { timeZone: config.timezone || 'Asia/Jerusalem', hour: '2-digit', minute: '2-digit' });
-  const body = `מלאכי: ${elder.name} לא ענה/ענתה להודעת הבוקר עד עכשיו. כדאי ליצור קשר ולוודא שהכול בסדר.`;
+  const language = languageCode(contact, elder);
+  const templates = templateSet(language);
+  const time = new Date().toLocaleTimeString(localeFor(language), { timeZone: elder.timezone || config.timezone || 'Asia/Jerusalem', hour: '2-digit', minute: '2-digit' });
+  const body = language === 'en_US'
+    ? `Malachi update: ${elder.name} has not responded to the morning check-in by ${time}. We recommend contacting them directly to make sure everything is okay.`
+    : `מלאכי: ${elder.name} לא ענה/ענתה להודעת הבוקר עד עכשיו. כדאי ליצור קשר ולוודא שהכול בסדר.`;
   let providerResponse = null;
   if (config.whatsappProvider === 'meta') {
-    providerResponse = await sendMetaTemplate(contact.whatsappPhone, config.meta.templates.noResponseAlert, 'he', bodyComponent([elder.name, time]));
+    providerResponse = await sendMetaTemplate(contact.whatsappPhone, templates.noResponseAlert, language, bodyComponent([elder.name, time]));
   }
-  return recordOutbound('no_response_alert', contact.whatsappPhone, body, [], { elderId: elder.id, checkId: check.id, whatsappMessageId: providerResponse?.messages?.[0]?.id || null });
+  return recordOutbound('no_response_alert', contact.whatsappPhone, body, [], { elderId: elder.id, checkId: check.id, language, templateName: templates.noResponseAlert, whatsappMessageId: providerResponse?.messages?.[0]?.id || null });
 }
 
 export async function sendFamilyGreeting(contact, elder, check) {
@@ -298,15 +334,19 @@ export async function sendFamilyGreeting(contact, elder, check) {
 }
 
 export async function sendOkAck(elder) {
-  const body = `תודה ${elder.name} ❤️\nשמחנו לשמוע שהכול בסדר. נבדוק שוב מחר בבוקר.`;
+  const language = languageCode(elder);
+  const templates = templateSet(language);
+  const body = language === 'en_US'
+    ? `Thank you, ${elder.name} ❤️\nWe’re glad to hear everything is okay. We’ll check in again tomorrow morning.`
+    : `תודה ${elder.name} ❤️\nשמחנו לשמוע שהכול בסדר. נבדוק שוב מחר בבוקר.`;
   let providerResponse = null;
   if (config.whatsappProvider === 'meta') {
-    if (!config.meta.templates.okAck) {
+    if (!templates.okAck) {
       return recordOutbound('ok_ack', elder.whatsappPhone, body, [], { elderId: elder.id, status: 'skipped', reason: 'META_TEMPLATE_OK_ACK not approved/configured' });
     }
-    providerResponse = await sendMetaTemplate(elder.whatsappPhone, config.meta.templates.okAck, 'he', bodyComponent([elder.name]));
+    providerResponse = await sendMetaTemplate(elder.whatsappPhone, templates.okAck, language, bodyComponent([elder.name]));
   }
-  return recordOutbound('ok_ack', elder.whatsappPhone, body, [], { elderId: elder.id, whatsappMessageId: providerResponse?.messages?.[0]?.id || null });
+  return recordOutbound('ok_ack', elder.whatsappPhone, body, [], { elderId: elder.id, language, templateName: templates.okAck, whatsappMessageId: providerResponse?.messages?.[0]?.id || null });
 }
 
 export async function sendOkReaction(elder, check, inboundMessageId, emoji = '❤️') {
@@ -325,16 +365,20 @@ export async function sendOkReaction(elder, check, inboundMessageId, emoji = '�
 }
 
 export async function sendIncompleteSignupReminder(family, { signupUrl = '' } = {}) {
-  const link = signupUrl || config.publicBaseUrl || 'https://malachi-v78v.onrender.com/';
-  const body = `היי ${family.ownerName} 🌿\nראינו שהתחלת הרשמה למלאכי, אבל עדיין חסרים פרטים כדי להפעיל את השירות.\nכדי שנוכל לשלוח בדיקת בוקר ולאפשר למשפחה לקבל עדכון אם אין מענה, צריך להשלים את הפרטים כאן: ${link}\nאם זה לא רלוונטי, אפשר להתעלם מההודעה.`;
+  const language = languageCode(family);
+  const templates = templateSet(language);
+  const link = signupUrl || (language === 'en_US' ? `${config.publicBaseUrl.replace(/\/$/, '')}/en/dashboard.html` : config.publicBaseUrl) || 'https://malachi-v78v.onrender.com/';
+  const body = language === 'en_US'
+    ? `Hi ${family.ownerName} 🌿\nWe saw that you started setting up Malachi, but some details are still missing. Please complete the setup here: ${link}\nIf this is no longer relevant, you can ignore this message.`
+    : `היי ${family.ownerName} 🌿\nראינו שהתחלת הרשמה למלאכי, אבל עדיין חסרים פרטים כדי להפעיל את השירות.\nכדי שנוכל לשלוח בדיקת בוקר ולאפשר למשפחה לקבל עדכון אם אין מענה, צריך להשלים את הפרטים כאן: ${link}\nאם זה לא רלוונטי, אפשר להתעלם מההודעה.`;
   let providerResponse = null;
   if (config.whatsappProvider === 'meta') {
-    if (!config.meta.templates.incompleteSignupReminder) {
+    if (!templates.incompleteSignupReminder) {
       return recordOutbound('incomplete_signup_reminder', family.ownerPhone, body, [], { familyId: family.id, status: 'skipped', reason: 'META_TEMPLATE_INCOMPLETE_SIGNUP_REMINDER not approved/configured' });
     }
-    providerResponse = await sendMetaTemplate(family.ownerPhone, config.meta.templates.incompleteSignupReminder, 'he', bodyComponent([family.ownerName, link]));
+    providerResponse = await sendMetaTemplate(family.ownerPhone, templates.incompleteSignupReminder, language, bodyComponent([family.ownerName, link]));
   }
-  return recordOutbound('incomplete_signup_reminder', family.ownerPhone, body, [], { familyId: family.id, templateName: config.meta.templates.incompleteSignupReminder, whatsappMessageId: providerResponse?.messages?.[0]?.id || null });
+  return recordOutbound('incomplete_signup_reminder', family.ownerPhone, body, [], { familyId: family.id, language, templateName: templates.incompleteSignupReminder, whatsappMessageId: providerResponse?.messages?.[0]?.id || null });
 }
 
 export async function sendHodayaWindowOpenTemplate(to, { name = 'הודיה', templateName = '' } = {}) {

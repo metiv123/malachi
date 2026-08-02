@@ -10,6 +10,11 @@ cp "$ROOT/app/public/"*.html "$OUT/"
 cp "$ROOT/app/public/"*.css "$OUT/"
 cp "$ROOT/app/public/"*.js "$OUT/"
 cp -R "$ROOT/app/public/assets" "$OUT/assets"
+mkdir -p "$OUT/en"
+for page in index demo privacy terms accessibility data-deletion; do
+  cp "$ROOT/app/public/en/$page.html" "$OUT/en/$page.html"
+done
+cp "$ROOT/app/public/en/site.css" "$OUT/en/site.css"
 cat > "$OUT/config.js" <<EOF
 window.MALACHI_API_BASE = '$API_BASE';
 EOF
@@ -53,6 +58,20 @@ for p in root.glob('*.html'):
     s=s.replace('src="/accessibility.js"', 'src="accessibility.js"')
     s=s.replace('src="/assets/', 'src="assets/')
     s=s.replace('href="/assets/', 'href="assets/')
+    p.write_text(s)
+
+# English pages remain available under /en on the main site. Account pages
+# intentionally open on the API origin so the secure HttpOnly session cookie
+# stays first-party.
+for p in (root/'en').glob('*.html'):
+    s=p.read_text()
+    s=s.replace('href="/en/site.css"', 'href="site.css"')
+    s=s.replace('src="/assets/', 'src="../assets/')
+    s=s.replace('href="/assets/', 'href="../assets/')
+    for page in ['create-user.html','login.html','dashboard.html']:
+        s=s.replace(f'href="/en/{page}"', f'href="{api}/en/{page}"')
+    if p.name == 'index.html' and 'src="../config.js"' not in s:
+        s=s.replace('<script>', '<script src="../config.js"></script><script>', 1)
     p.write_text(s)
 PY
 printf '%s\n' "$OUT"

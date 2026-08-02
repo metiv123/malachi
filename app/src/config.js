@@ -13,6 +13,7 @@ export const config = {
   reminderAttemptCount: Number(process.env.MALACHI_REMINDER_ATTEMPT_COUNT || 3),
   betaOpen: process.env.MALACHI_BETA_OPEN !== 'false',
   betaMaxFamilies: Number(process.env.MALACHI_BETA_MAX_FAMILIES || 100),
+  ukPilotMaxFamilies: Number(process.env.MALACHI_UK_PILOT_MAX_FAMILIES || 30),
   firebaseAuthEnabled: process.env.FIREBASE_AUTH_ENABLED === 'true',
   feedbackNotifyWebhook: process.env.MALACHI_FEEDBACK_NOTIFY_WEBHOOK || '',
   adminToken: process.env.MALACHI_ADMIN_TOKEN || '',
@@ -62,6 +63,15 @@ export const config = {
       familyGreeting: process.env.META_TEMPLATE_FAMILY_GREETING || 'family_greeting_message_he',
       optin: process.env.META_TEMPLATE_OPTIN || 'contact_optin_he',
       contactOptin: process.env.META_TEMPLATE_CONTACT_OPTIN || process.env.META_TEMPLATE_OPTIN || 'optin_confirm_he'
+    },
+    templatesEnglish: {
+      dailyCheck: process.env.META_TEMPLATE_DAILY_CHECK_EN || 'daily_check_en',
+      dailyReminder: process.env.META_TEMPLATE_DAILY_REMINDER_EN || 'daily_check_reminder_en',
+      okAck: process.env.META_TEMPLATE_OK_ACK_EN || 'daily_ok_ack_en',
+      incompleteSignupReminder: process.env.META_TEMPLATE_INCOMPLETE_SIGNUP_REMINDER_EN || 'incomplete_signup_reminder_en',
+      noResponseAlert: process.env.META_TEMPLATE_NO_RESPONSE_ALERT_EN || 'no_response_alert_en',
+      optin: process.env.META_TEMPLATE_OPTIN_EN || 'contact_optin_en',
+      contactOptin: process.env.META_TEMPLATE_CONTACT_OPTIN_EN || process.env.META_TEMPLATE_OPTIN_EN || 'contact_optin_en'
     }
   }
 };

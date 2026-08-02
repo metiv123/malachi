@@ -1,6 +1,6 @@
 import { rm } from 'node:fs/promises';
 import path from 'node:path';
-import { addContactByToken, addElderByToken, adminConversations, adminSimpleOverview, cancelOpenChecks, createFamily, createUserAccount, deleteFamilyByToken, exportFamiliesCsv, getCheckHistoryByToken, getFamilyByToken, getOutboundMessagesByToken, handleElderResponse, listDashboard, loginFamily, normalizeFamilyContactOptIns, optOutByPhone, processDueChecks, processNoResponses, resendElderOptInByToken, sendCheckNow, setContactOptIn, setElderActiveByToken, setFamilyPasswordByToken, setOptIn, systemReadiness, updateElderByToken, weeklyReportByToken } from './malachi.js';
+import { addContactByToken, addElderByToken, adminConversations, adminSimpleOverview, betaStatus, cancelOpenChecks, createFamily, createUserAccount, deleteFamilyByToken, exportFamiliesCsv, getCheckHistoryByToken, getFamilyByToken, getOutboundMessagesByToken, handleElderResponse, listDashboard, loginFamily, normalizeFamilyContactOptIns, optOutByPhone, processDueChecks, processNoResponses, resendElderOptInByToken, sendCheckNow, setContactOptIn, setElderActiveByToken, setFamilyPasswordByToken, setOptIn, systemReadiness, updateElderByToken, weeklyReportByToken } from './malachi.js';
 import { extractWhatsAppButtonEvents, extractWhatsAppTextEvents, mapButtonToResponse, mapTextToIntent } from './metaWebhook.js';
 import { processWhatsAppWebhookPayload } from './webhookProcessor.js';
 import { getHodayaAgentStatus, prepareHodayaWindowOpenTemplate, sendHodayaAgentReply, triggerHodayaEventDrivenTurn } from './hodayaAgent.js';
@@ -28,6 +28,47 @@ async function run() {
   const addedElder = await addElderByToken(accountOnly.family.managementToken, { elderName: 'אמא', elderPhone: '0522222222', dailyCheckTime: '08:30', contactName: 'משתמש חדש', contactPhone: '0521111111', skipOptIn: true, skipContactOptIn: true, elderConsent: true });
   assert(addedElder.elder.id && addedElder.contact.id, 'add elder should create elder and contact');
   await deleteFamilyByToken(accountOnly.family.managementToken);
+
+  const englishAccount = await createUserAccount({
+    ownerName: 'Alex',
+    ownerEmail: 'alex-uk@example.com',
+    password: 'strongpass123',
+    ownerPhone: '+447700900111',
+    language: 'en_US',
+    country: 'GB',
+    pilotCohort: 'uk_free_2026',
+    pilotFree: true,
+    termsConsent: true,
+    privacyConsent: true,
+    source: 'uk_selftest'
+  });
+  assert(englishAccount.family.language === 'en_US', 'English account language should be stored');
+  assert(englishAccount.family.pilotFree === true, 'UK pilot should be marked free');
+  const englishElder = await addElderByToken(englishAccount.family.managementToken, {
+    elderName: 'Margaret',
+    elderPhone: '+447700900222',
+    dailyCheckTime: '09:00',
+    timezone: 'Europe/London',
+    contactName: 'Alex',
+    contactPhone: '+447700900111',
+    skipOptIn: true,
+    skipContactOptIn: true,
+    elderConsent: true
+  });
+  assert(englishElder.elder.language === 'en_US', 'English elder should inherit account language');
+  const englishCheck = await sendCheckNow(englishElder.elder.id);
+  const englishMessages = await getOutboundMessagesByToken(englishAccount.family.managementToken);
+  const englishOutbound = englishMessages.find((message) => message.kind === 'daily_check' && message.meta?.checkId === englishCheck.id);
+  assert(englishOutbound?.meta?.language === 'en_US', 'English check should use en_US');
+  assert(englishOutbound?.meta?.templateName === 'daily_check_en', 'English check should select approved English template');
+  assert(englishOutbound?.buttons?.[0]?.title === 'I’m okay', 'English check should use English button copy');
+  const unsupportedEnglishResponse = await handleElderResponse({ elderId: englishElder.elder.id, checkId: englishCheck.id, response: 'distress' });
+  assert(unsupportedEnglishResponse === null, 'English pilot should ignore unsupported non-OK intents');
+  const englishAfterUnsupported = await getCheckHistoryByToken(englishAccount.family.managementToken, englishElder.elder.id);
+  assert(englishAfterUnsupported.find((check) => check.id === englishCheck.id)?.status === 'sent', 'Unsupported English intent must leave the check open for reminders');
+  const ukStatus = await betaStatus('uk_free_2026');
+  assert(ukStatus.used === 1 && ukStatus.maxFamilies === config.ukPilotMaxFamilies, 'UK cohort status should be separate');
+  await deleteFamilyByToken(englishAccount.family.managementToken);
 
   const created = await createFamily({
     ownerName: 'שלמה',

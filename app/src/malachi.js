@@ -20,6 +20,18 @@ function cleanOptional(input, field) {
   return String(input?.[field] || '').trim();
 }
 
+function normalizeLanguage(value = '') {
+  const language = String(value || '').trim().replace('-', '_').toLowerCase();
+  return language.startsWith('en') ? 'en_US' : 'he';
+}
+
+function pilotIdentity(input = {}) {
+  const language = normalizeLanguage(input.language || input.locale);
+  const country = String(input.country || (language === 'en_US' ? 'GB' : 'IL')).trim().toUpperCase();
+  const pilotCohort = String(input.pilotCohort || (language === 'en_US' ? 'uk_free_2026' : 'israel_beta_2026')).trim();
+  return { language, country, pilotCohort, pilotFree: checkbox(input, 'pilotFree') || language === 'en_US' };
+}
+
 function leadAttribution(input = {}) {
   return {
     source: cleanOptional(input, 'source') || cleanOptional(input, 'utm_source') || cleanOptional(input, 'ref') || 'direct',
@@ -130,10 +142,13 @@ function requireAccountInput(input = {}) {
 export async function createUserAccount(input = {}) {
   const { ownerName, ownerPhone, ownerEmail, password } = requireAccountInput(input);
   const attribution = leadAttribution(input);
+  const pilot = pilotIdentity(input);
   const legalConsent = consentRecord(input);
   const created = await mutateDb((db) => {
-    if (!config.betaOpen || db.families.length >= config.betaMaxFamilies) {
-      const wait = { id: id('wait'), ownerName, ownerPhone, ownerEmail, ...attribution, ...legalConsent, createdAt: nowIso() };
+    const cohortUsed = db.families.filter((family) => family.pilotCohort === pilot.pilotCohort).length;
+    const cohortFull = pilot.pilotCohort === 'uk_free_2026' && cohortUsed >= config.ukPilotMaxFamilies;
+    if (!config.betaOpen || db.families.length >= config.betaMaxFamilies || cohortFull) {
+      const wait = { id: id('wait'), ownerName, ownerPhone, ownerEmail, ...pilot, ...attribution, ...legalConsent, createdAt: nowIso() };
       db.waitlist = db.waitlist || [];
       db.waitlist.push(wait);
       return { waitlist: true, wait };
@@ -156,6 +171,7 @@ export async function createUserAccount(input = {}) {
       tokenLastUsedAt: null,
       source: attribution.source,
       attribution,
+      ...pilot,
       createdAt: nowIso()
     };
     db.families.push(family);
@@ -186,14 +202,17 @@ export async function createFamily(input) {
   const contactName = String(input.contactName || ownerName).trim();
   const contactPhone = normalizePhone(input.contactPhone || ownerPhone);
   const attribution = leadAttribution(input);
+  const pilot = pilotIdentity(input);
   const ownerEmail = String(input.ownerEmail || '').trim().toLowerCase();
   const password = String(input.password || '').trim();
   if (ownerEmail && !ownerEmail.includes('@')) throw new Error('מייל לא תקין');
   if (password && password.length < 8) throw new Error('הסיסמה צריכה לכלול לפחות 8 תווים');
 
   const created = await mutateDb((db) => {
-    if (!config.betaOpen || db.families.length >= config.betaMaxFamilies) {
-      const wait = { id: id('wait'), ownerName, ownerPhone, elderName, ...attribution, createdAt: nowIso() };
+    const cohortUsed = db.families.filter((family) => family.pilotCohort === pilot.pilotCohort).length;
+    const cohortFull = pilot.pilotCohort === 'uk_free_2026' && cohortUsed >= config.ukPilotMaxFamilies;
+    if (!config.betaOpen || db.families.length >= config.betaMaxFamilies || cohortFull) {
+      const wait = { id: id('wait'), ownerName, ownerPhone, elderName, ...pilot, ...attribution, createdAt: nowIso() };
       db.waitlist = db.waitlist || [];
       db.waitlist.push(wait);
       return { waitlist: true, wait };
@@ -214,6 +233,7 @@ export async function createFamily(input) {
       tokenLastUsedAt: null,
       source: attribution.source,
       attribution,
+      ...pilot,
       createdAt: nowIso()
     };
     const elder = {
@@ -223,6 +243,8 @@ export async function createFamily(input) {
       whatsappPhone: elderPhone,
       dailyCheckTime,
       timezone: input.timezone || 'Asia/Jerusalem',
+      language: pilot.language,
+      country: pilot.country,
       shomerShabbat: checkbox(input, 'shomerShabbat'),
       noResponseGraceMinutes: alertDelayMinutes(input),
       noResponseAlertRepeatCount: alertRepeatCount(input),
@@ -239,6 +261,7 @@ export async function createFamily(input) {
       name: contactName,
       whatsappPhone: contactPhone,
       relationship: input.relationship || 'קרוב משפחה',
+      language: pilot.language,
       optInStatus: input.skipContactOptIn ? 'approved' : 'pending',
       optInRequestedAt: input.skipContactOptIn ? null : nowIso(),
       optInAcceptedAt: input.skipContactOptIn ? nowIso() : null,
@@ -281,7 +304,7 @@ export async function addContactByToken(token, elderId, input) {
     const existing = db.contacts.find((c) => c.elderId === elderId && normalizePhone(c.whatsappPhone) === phone);
     if (existing) throw new Error('איש קשר עם מספר WhatsApp זה כבר קיים עבור האדם הזה');
     const inheritedApproval = approvedSameFamilyContact(db, family.id, phone);
-    const contact = { id: id('contact'), elderId, name, whatsappPhone: phone, relationship: input.relationship || 'קרוב משפחה', optInStatus: inheritedApproval ? 'approved' : 'pending', createdAt: nowIso() };
+    const contact = { id: id('contact'), elderId, name, whatsappPhone: phone, relationship: input.relationship || (family.language === 'en_US' ? 'Family member' : 'קרוב משפחה'), language: elder.language || family.language || 'he', optInStatus: inheritedApproval ? 'approved' : 'pending', createdAt: nowIso() };
     db.contacts.push(contact);
     db.audit.push({ id: id('evt'), type: 'contact_added', payload: { elderId, contactId: contact.id, inheritedApprovalFromContactId: inheritedApproval?.id || null }, createdAt: nowIso() });
     return { contact: { ...contact }, elder: { ...elder }, family: { ...family } };
@@ -308,6 +331,8 @@ export async function addElderByToken(token, input = {}) {
       whatsappPhone: elderPhone,
       dailyCheckTime,
       timezone: input.timezone || 'Asia/Jerusalem',
+      language: family.language || 'he',
+      country: family.country || 'IL',
       shomerShabbat: checkbox(input, 'shomerShabbat'),
       noResponseGraceMinutes: alertDelayMinutes(input),
       noResponseAlertRepeatCount: alertRepeatCount(input),
@@ -322,6 +347,7 @@ export async function addElderByToken(token, input = {}) {
       name: contactName,
       whatsappPhone: contactPhone,
       relationship: input.relationship || 'קרוב משפחה',
+      language: family.language || 'he',
       optInStatus: input.skipContactOptIn || inheritedApproval ? 'approved' : 'pending',
       createdAt: nowIso()
     };
@@ -371,8 +397,20 @@ export async function getOutboundMessagesByToken(token, elderId = null) {
     .slice(0, 50);
 }
 
-export async function betaStatus() {
+export async function betaStatus(cohort = '') {
   const db = await loadDb();
+  if (cohort === 'uk_free_2026') {
+    const used = db.families.filter((family) => family.pilotCohort === cohort).length;
+    const waitlist = (db.waitlist || []).filter((entry) => entry.pilotCohort === cohort).length;
+    return {
+      open: config.betaOpen && used < config.ukPilotMaxFamilies && db.families.length < config.betaMaxFamilies,
+      cohort,
+      maxFamilies: config.ukPilotMaxFamilies,
+      used,
+      remaining: Math.max(0, config.ukPilotMaxFamilies - used),
+      waitlist
+    };
+  }
   return {
     open: config.betaOpen && db.families.length < config.betaMaxFamilies,
     maxFamilies: config.betaMaxFamilies,
@@ -1150,6 +1188,14 @@ export async function handleElderResponse({ elderId, checkId, response, inboundM
       return { check: null, elder: { ...elder }, contact: null, action: 'ignored_no_open_check' };
     }
     if (check.status !== 'sent') return { check: { ...check }, elder: { ...elder }, contact: null, action: 'none' };
+
+    // The approved English pilot is deliberately a single-button "I'm okay" flow.
+    // Until dedicated English greeting/distress templates are approved, keep other
+    // intents open for the normal reminder path instead of leaking Hebrew copy.
+    if (normalizeLanguage(elder.language) === 'en_US' && response !== 'ok') {
+      db.audit.push({ id: id('evt'), type: 'english_unsupported_response_ignored', payload: { elderId, checkId: check.id, response }, createdAt: nowIso() });
+      return { check: null, elder: { ...elder }, contact: null, action: 'ignored_unsupported_english_response' };
+    }
 
     check.respondedAt = nowIso();
     check.responsePayload = { response };
