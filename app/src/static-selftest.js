@@ -38,6 +38,11 @@ async function run() {
   assert((index.match(/חשוב לדעת/g) || []).length === 1, 'homepage must contain one combined important notice');
   assert(index.includes('class="nav-login"') && index.includes('/login.html'), 'top user-login button missing');
   assert(index.includes('/accessibility.html'), 'accessibility statement link missing');
+  assert(index.includes('src="/analytics.js"'), 'Israeli homepage analytics missing');
+  const englishIndex = await readFile(path.join(publicDir, 'en/index.html'), 'utf8');
+  assert(englishIndex.includes('src="/analytics.js"'), 'UK homepage analytics missing');
+  assert((await readFile(path.join(publicDir, 'create-user.html'), 'utf8')).includes('src="/analytics.js"'), 'Israeli signup analytics missing');
+  assert((await readFile(path.join(publicDir, 'en/create-user.html'), 'utf8')).includes('src="/analytics.js"'), 'UK signup analytics missing');
 
   const customerFiles = ['dashboard.js', 'create-user.js', 'login.js', 'feedback.html'];
   for (const filename of customerFiles) {

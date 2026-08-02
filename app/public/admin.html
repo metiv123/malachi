@@ -30,6 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
     <button class="button primary" onclick="loadSimpleOverview()">תמונת מצב פשוטה</button>
     <button class="button primary" onclick="loadBetaChecklist()">צ׳ק ליסט בטא</button>
     <button class="button secondary" onclick="loadSources()">דוח מקורות</button>
+    <button class="button primary" onclick="loadAnalytics()">כניסות והמרות</button>
     <button class="button secondary" onclick="loadWaitlist()">רשימת המתנה</button>
     <a class="button secondary" href="/admin-feedback.html">ניהול פידבקים</a>
     <a class="button secondary" href="/admin-marketing.html">מאגר שיווקי</a>
@@ -114,6 +115,29 @@ async function loadSources(){
   const res = await adminFetch('/api/reports/sources');
   const data = await res.json();
   showJson(data);
+}
+
+async function loadAnalytics(){
+  const res = await adminFetch('/api/admin/analytics?days=30&market=all');
+  const data = await res.json();
+  if (!res.ok) return showJson(data);
+  document.querySelector('#readinessBox').classList.add('hidden');
+  const root = document.querySelector('#simpleOverview');
+  root.classList.remove('hidden');
+  const labels = { il: 'ישראל', uk: 'בריטניה / Angelo' };
+  root.innerHTML = `<h2>כניסות והמרות — 30 הימים האחרונים</h2>${data.markets.map((market) => `
+    <h3>${labels[market.market] || market.market}</h3>
+    <section class="admin-cards">
+      <article><strong>${market.visitors}</strong><span>מבקרים משוערים</span></article>
+      <article><strong>${market.pageViews}</strong><span>צפיות בעמודים</span></article>
+      <article><strong>${market.events.join_click || 0}</strong><span>לחיצות הצטרפות</span></article>
+      <article><strong>${market.events.demo_click || 0}</strong><span>לחיצות על הדמו</span></article>
+      <article><strong>${market.events.signup_start || 0}</strong><span>התחלות הרשמה</span></article>
+      <article><strong>${market.events.signup_complete || 0}</strong><span>הרשמות שהושלמו</span></article>
+      <article><strong>${market.conversionRate}%</strong><span>המרה ממבקר להרשמה</span></article>
+    </section>
+    <div class="simple-list"><article class="simple-item compact"><strong>מקורות צפייה</strong><br>${Object.entries(market.sources).sort((a,b)=>b[1]-a[1]).map(([name,count])=>`${escapeHtml(name)}: ${count}`).join(' · ') || 'אין עדיין נתונים'}<br><strong>קמפיינים</strong><br>${Object.entries(market.campaigns).filter(([name])=>name!=='none').sort((a,b)=>b[1]-a[1]).map(([name,count])=>`${escapeHtml(name)}: ${count}`).join(' · ') || 'ללא UTM campaign'}</article></div>
+  `).join('')}<p class="small">מספר המבקרים הוא אומדן פרטיותי. כתובות IP גולמיות אינן נשמרות ובוטים מזוהים אינם נספרים.</p>`;
 }
 
 async function loadMeta(){

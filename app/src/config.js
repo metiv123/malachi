@@ -17,6 +17,7 @@ export const config = {
   firebaseAuthEnabled: process.env.FIREBASE_AUTH_ENABLED === 'true',
   feedbackNotifyWebhook: process.env.MALACHI_FEEDBACK_NOTIFY_WEBHOOK || '',
   adminToken: process.env.MALACHI_ADMIN_TOKEN || '',
+  analyticsSalt: process.env.MALACHI_ANALYTICS_SALT || process.env.MALACHI_ADMIN_TOKEN || process.env.META_VERIFY_TOKEN || 'malachi-local-analytics',
   websiteLeadAutoReplyEnabled: process.env.MALACHI_WEBSITE_LEAD_AUTO_REPLY !== 'false',
   websiteLeadMatchText: process.env.MALACHI_WEBSITE_LEAD_MATCH_TEXT || 'הגעתי דרך אתר מלאכי',
   websiteLeadAutoReplyText: process.env.MALACHI_WEBSITE_LEAD_AUTO_REPLY_TEXT || 'היי 👋 תודה שפנית למלאכי.\nהפנייה שלך התקבלה.\nאפשר לכתוב כאן בקצרה במה נוכל לעזור, ומלאכי יחזור אליך בהקדם.',
@@ -28,6 +29,7 @@ export const config = {
     feedbackDays: Number(process.env.MALACHI_RETENTION_FEEDBACK_DAYS || 365),
     waitlistDays: Number(process.env.MALACHI_RETENTION_WAITLIST_DAYS || 180),
     errorsDays: Number(process.env.MALACHI_RETENTION_ERRORS_DAYS || 365),
+    analyticsDays: Number(process.env.MALACHI_RETENTION_ANALYTICS_DAYS || 90),
     backupsDays: Number(process.env.MALACHI_RETENTION_BACKUPS_DAYS || 30)
   },
   whatsappProvider: process.env.WHATSAPP_PROVIDER || 'mock',

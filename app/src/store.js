@@ -29,7 +29,8 @@ const emptyDb = () => ({
   outboundMessages: [],
   waitlist: [],
   feedback: [],
-  errors: []
+  errors: [],
+  analyticsDaily: []
 });
 
 function normalizeDb(db = {}) {
@@ -73,7 +74,8 @@ function compactDb(db = {}) {
     outboundMessages: trimArrayTail(retain(normalized.outboundMessages, config.retention.messagesDays), HEAVY_LOG_LIMITS.outboundMessages),
     waitlist: retain(normalized.waitlist, config.retention.waitlistDays),
     feedback: retain(normalized.feedback, config.retention.feedbackDays),
-    errors: trimArrayTail(retain(normalized.errors, config.retention.errorsDays), HEAVY_LOG_LIMITS.errors)
+    errors: trimArrayTail(retain(normalized.errors, config.retention.errorsDays), HEAVY_LOG_LIMITS.errors),
+    analyticsDaily: retain(normalized.analyticsDaily, config.retention.analyticsDays, ['day', 'updatedAt'])
   };
 }
 

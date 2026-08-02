@@ -27,6 +27,7 @@ const result = document.querySelector('#createUserResult');
 if (form) {
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
+    window.MalachiAnalytics?.track('signup_start');
     const submit = form.querySelector('button[type="submit"]');
     const payload = Object.fromEntries(new FormData(form).entries());
     payload.marketingEmailConsent = Boolean(payload.marketingEmailConsent);
@@ -34,7 +35,8 @@ if (form) {
     if (result) result.textContent = 'יוצר משתמש...';
     try {
       const data = await api('/api/users', { method: 'POST', body: JSON.stringify(payload) });
-      if (data.waitlist) { result.textContent = 'הבטא מלאה כרגע. נכנסת לרשימת המתנה.'; return; }
+      if (data.waitlist) { window.MalachiAnalytics?.track('waitlist_joined'); result.textContent = 'הבטא מלאה כרגע. נכנסת לרשימת המתנה.'; return; }
+      window.MalachiAnalytics?.track('signup_complete');
       result.textContent = 'המשתמש נוצר בהצלחה. מעבירים אותך לאזור האישי…';
       setTimeout(() => { location.href = '/dashboard.html'; }, 600);
     } catch (err) {

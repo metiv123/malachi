@@ -6,6 +6,7 @@ import { processWhatsAppWebhookPayload } from './webhookProcessor.js';
 import { getHodayaAgentStatus, prepareHodayaWindowOpenTemplate, sendHodayaAgentReply, triggerHodayaEventDrivenTurn } from './hodayaAgent.js';
 import { loadDb, saveDb } from './store.js';
 import { config } from './config.js';
+import { analyticsReport, recordAnalyticsEvent } from './analytics.js';
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
@@ -18,6 +19,19 @@ async function reset() {
 
 async function run() {
   await reset();
+  await recordAnalyticsEvent({ event: 'page_view', market: 'il', path: '/', utm_source: 'facebook', utm_campaign: 'israel_launch' }, { ip: '203.0.113.10', userAgent: 'Selftest Browser' });
+  await recordAnalyticsEvent({ event: 'page_view', market: 'il', path: '/', utm_source: 'facebook', utm_campaign: 'israel_launch' }, { ip: '203.0.113.10', userAgent: 'Selftest Browser' });
+  await recordAnalyticsEvent({ event: 'join_click', market: 'il', path: '/' }, { ip: '203.0.113.10', userAgent: 'Selftest Browser' });
+  await recordAnalyticsEvent({ event: 'page_view', market: 'uk', path: '/', utm_source: 'community' }, { ip: '198.51.100.20', userAgent: 'Selftest Browser UK' });
+  await recordAnalyticsEvent({ event: 'signup_complete', market: 'uk', path: '/en/create-user.html' }, { ip: '198.51.100.20', userAgent: 'Selftest Browser UK' });
+  await recordAnalyticsEvent({ event: 'page_view', market: 'uk', path: '/', test: true }, { ip: '192.0.2.99', userAgent: 'Selftest Browser' });
+  await recordAnalyticsEvent({ event: 'page_view', market: 'uk', path: '/' }, { ip: '192.0.2.88', userAgent: 'Googlebot' });
+  const analytics = await analyticsReport({ days: 30 });
+  const israelAnalytics = analytics.markets.find((item) => item.market === 'il');
+  const ukAnalytics = analytics.markets.find((item) => item.market === 'uk');
+  assert(israelAnalytics.pageViews === 2 && israelAnalytics.visitors === 1, 'Israeli analytics should count views and deduplicate visitors');
+  assert(israelAnalytics.events.join_click === 1 && israelAnalytics.sources.facebook === 2, 'Israeli analytics should count clicks and sources');
+  assert(ukAnalytics.pageViews === 1 && ukAnalytics.events.signup_complete === 1, 'UK analytics should stay separate and ignore tests/bots');
   const accountOnly = await createUserAccount({ ownerName: 'משתמש חדש', ownerEmail: 'new-user@example.com', password: 'strongpass123', ownerPhone: '0521111111', termsConsent: true, privacyConsent: true, marketingEmailConsent: true, source: 'unit_test' });
   assert(accountOnly.family.id, 'account-only family id missing');
   assert(accountOnly.family.marketingEmailConsent === true, 'marketing consent should be saved');

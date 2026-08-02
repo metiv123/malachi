@@ -10,6 +10,7 @@ for page in index demo privacy terms accessibility data-deletion; do
   cp "$ROOT/app/public/en/$page.html" "$OUT/$page.html"
 done
 cp "$ROOT/app/public/en/"*.css "$OUT/"
+cp "$ROOT/app/public/analytics.js" "$OUT/analytics.js"
 cp -R "$ROOT/app/public/assets" "$OUT/assets"
 cat > "$OUT/config.js" <<EOF
 window.MALACHI_API_BASE = '$API_BASE';
@@ -25,14 +26,14 @@ api_pages=['create-user.html','login.html','dashboard.html']
 for p in root.glob('*.html'):
     s=p.read_text()
     s=s.replace('href="/en/site.css"', 'href="site.css"')
+    s=s.replace('src="/analytics.js"', 'src="analytics.js"')
+    s=s.replace('src="/config.js"', 'src="config.js"')
     s=s.replace('src="/assets/', 'src="assets/')
     s=s.replace('href="/assets/', 'href="assets/')
     for source,target in local_pages.items():
         s=s.replace(f'href="{source}"', f'href="{target}"')
     for page in api_pages:
         s=s.replace(f'href="/en/{page}"', f'href="{api}/en/{page}"')
-    if p.name == 'index.html' and 'src="config.js"' not in s:
-        s=s.replace('<script>', '<script src="config.js"></script><script>', 1)
     p.write_text(s)
 PY
 printf '%s\n' "$OUT"

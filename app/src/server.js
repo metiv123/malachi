@@ -20,6 +20,7 @@ import { listConnectionTemplates, submitConnectionTemplates, submitHodayaAgentTe
 import { createBackup, exportDbJson, listBackups } from './backup.js';
 import { listErrors, logError } from './errorLog.js';
 import { createFeedback, listFeedback } from './feedback.js';
+import { analyticsReport, recordAnalyticsEvent } from './analytics.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.resolve(__dirname, '../public');
@@ -123,7 +124,7 @@ const adminGetApiPaths = new Set([
   '/api/dashboard', '/api/waitlist', '/api/feedback', '/api/debug/db', '/api/readiness', '/api/beta/readiness',
   '/api/beta/checklist', '/api/meta/readiness', '/api/meta/sample-payloads', '/api/meta/phone-check',
   '/api/meta/templates/connection', '/api/reports/sources', '/api/export/families.csv', '/api/export/db.json',
-  '/api/backups', '/api/errors', '/api/audit', '/api/inbound-messages', '/api/admin/simple-overview', '/api/admin/conversations', '/api/admin/beta-update-candidates', '/api/admin/incomplete-signup-reminder-candidates', '/api/admin/hodaya-agent/status', '/api/admin/hodaya-agent/messages', '/api/meta/templates/hodaya-agent'
+  '/api/backups', '/api/errors', '/api/audit', '/api/inbound-messages', '/api/admin/simple-overview', '/api/admin/analytics', '/api/admin/conversations', '/api/admin/beta-update-candidates', '/api/admin/incomplete-signup-reminder-candidates', '/api/admin/hodaya-agent/status', '/api/admin/hodaya-agent/messages', '/api/meta/templates/hodaya-agent'
 ]);
 const adminPostApiPaths = new Set([
   '/api/backups', '/api/families', '/api/dev/demo-family', '/api/jobs/due-checks', '/api/jobs/no-responses',
@@ -229,6 +230,9 @@ async function route(req, res) {
     if (url.pathname === '/api/users' && !rateLimit(req, { key: 'create-user', limit: 5, windowMs: 60 * 60_000 })) {
       return json(res, 429, { error: 'יותר מדי ניסיונות הרשמה. נסו שוב מאוחר יותר.' });
     }
+    if (url.pathname === '/api/analytics/event' && !rateLimit(req, { key: 'analytics-event', limit: 120, windowMs: 60 * 60_000 })) {
+      return json(res, 429, { error: 'Too many analytics events' });
+    }
     if (!rateLimit(req, { key: url.pathname, limit: url.pathname.startsWith('/api/') ? 180 : 300 })) {
       return json(res, 429, { error: 'Too many requests' });
     }
@@ -264,6 +268,7 @@ async function route(req, res) {
       return json(res, 200, { report: await weeklyReportByToken(familyToken(req, url), { days: Number(url.searchParams.get('days') || 7) }) });
     }
     if (req.method === 'GET' && url.pathname === '/api/admin/simple-overview') return json(res, 200, await adminSimpleOverview());
+    if (req.method === 'GET' && url.pathname === '/api/admin/analytics') return json(res, 200, await analyticsReport({ days: url.searchParams.get('days'), market: url.searchParams.get('market') || 'all' }));
     if (req.method === 'GET' && url.pathname === '/api/admin/conversations') return json(res, 200, { conversations: await adminConversations({ limit: Number(url.searchParams.get('limit') || 50) }) });
     if (req.method === 'GET' && url.pathname === '/api/admin/beta-update-candidates') return json(res, 200, await betaUpdateCandidates({ hours: Number(url.searchParams.get('hours') || 24), includeTests: url.searchParams.get('includeTests') === 'true' }));
     if (req.method === 'GET' && url.pathname === '/api/admin/incomplete-signup-reminder-candidates') return json(res, 200, await incompleteSignupReminderCandidates({ familyId: url.searchParams.get('familyId') || '', phoneLast4: url.searchParams.get('phoneLast4') || '', ownerEmail: url.searchParams.get('ownerEmail') || '', includeTests: url.searchParams.get('includeTests') === 'true' }));
@@ -305,6 +310,13 @@ async function route(req, res) {
     if (req.method === 'POST' && url.pathname === '/api/auth/logout') return json(res, 200, { ok: true }, { 'Set-Cookie': sessionCookie('', { clear: true }) });
     if (req.method === 'POST' && url.pathname === '/api/auth/set-password') { const input = await body(req); return json(res, 200, await setFamilyPasswordByToken(familyToken(req, url, input), input)); }
     if (req.method === 'POST' && url.pathname === '/api/marketing/consent') return json(res, 200, await setMarketingConsentByEmail(await body(req)));
+    if (req.method === 'POST' && url.pathname === '/api/analytics/event') {
+      const input = await body(req);
+      return json(res, 202, await recordAnalyticsEvent(input, {
+        ip: req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '',
+        userAgent: req.headers['user-agent'] || ''
+      }));
+    }
     if (req.method === 'GET' && url.pathname === '/api/export/families.csv') return csvResponse(res, 'malachi-families.csv', await exportFamiliesCsv());
     if (req.method === 'GET' && url.pathname === '/api/export/db.json') {
       res.writeHead(200, {
@@ -436,6 +448,7 @@ async function route(req, res) {
     return json(res, 404, { error: 'Not found' });
   } catch (err) {
     if (err?.statusCode === 413) return json(res, 413, { error: 'הבקשה גדולה מדי.' });
+    if (err?.statusCode === 400) return json(res, 400, { error: err.message });
     if (['Missing token', 'Family not found'].includes(err.message)) {
       return json(res, 401, { error: 'החיבור לחשבון חסר או פג. יש להיכנס מחדש.' }, { 'Set-Cookie': sessionCookie('', { clear: true }) });
     }

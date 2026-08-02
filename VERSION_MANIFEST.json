@@ -1,5 +1,5 @@
 {
-  "latest": 129,
+  "latest": 130,
   "versions": [
     {
       "version": 4,
@@ -756,6 +756,12 @@
       "file": "specs/v129_release_notes.md",
       "title": "# מלאכי V129 — Free UK English Pilot",
       "zip": "malachi-mvp-project-v129.zip"
+    },
+    {
+      "version": 130,
+      "file": "specs/v130_release_notes.md",
+      "title": "# מלאכי V130 — מדידת כניסות והמרות בישראל ובבריטניה",
+      "zip": "malachi-mvp-project-v130.zip"
     }
   ]
 }

@@ -13,6 +13,7 @@ for page in index.html demo-ai.html onboarding.html faq.html privacy.html terms.
 done
 cp "$ROOT/app/public/style.css" "$OUT/style.css"
 cp "$ROOT/app/public/accessibility.js" "$OUT/accessibility.js"
+cp "$ROOT/app/public/analytics.js" "$OUT/analytics.js"
 cp "$ROOT/app/public/robots.txt" "$OUT/robots.txt"
 cp "$ROOT/app/public/sitemap.xml" "$OUT/sitemap.xml"
 cp -R "$ROOT/app/public/assets" "$OUT/assets"
@@ -36,6 +37,7 @@ for (const name of fs.readdirSync(root).filter((file) => file.endsWith('.html'))
   const replacements = new Map([
     ['href="/style.css"', 'href="style.css"'],
     ['src="/config.js"', 'src="config.js"'],
+    ['src="/analytics.js"', 'src="analytics.js"'],
     ['src="/app.js"', 'src="app.js"'],
     ['src="/dashboard.js"', 'src="dashboard.js"'],
     ['src="/accessibility.js"', 'src="accessibility.js"'],
@@ -69,13 +71,12 @@ for (const name of fs.readdirSync(englishRoot).filter((file) => file.endsWith('.
   const file = path.join(englishRoot, name);
   let html = fs.readFileSync(file, 'utf8');
   html = html.replaceAll('href="/en/site.css"', 'href="site.css"')
+    .replaceAll('src="/analytics.js"', 'src="../analytics.js"')
+    .replaceAll('src="/config.js"', 'src="../config.js"')
     .replaceAll('src="/assets/', 'src="../assets/')
     .replaceAll('href="/assets/', 'href="../assets/');
   for (const page of ['create-user.html', 'login.html', 'dashboard.html']) {
     html = html.replaceAll(`href="/en/${page}"`, `href="${api}/en/${page}"`);
-  }
-  if (name === 'index.html' && !html.includes('src="../config.js"')) {
-    html = html.replace('<script>', '<script src="../config.js"></script><script>');
   }
   fs.writeFileSync(file, html);
 }

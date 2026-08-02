@@ -51,6 +51,10 @@ services:
         value: "180"
       - key: MALACHI_RETENTION_ERRORS_DAYS
         value: "365"
+      - key: MALACHI_RETENTION_ANALYTICS_DAYS
+        value: "90"
+      - key: MALACHI_ANALYTICS_SALT
+        sync: false
       - key: MALACHI_RETENTION_BACKUPS_DAYS
         value: "30"
       - key: HODAYA_AGENT_WINDOW_TEMPLATE
