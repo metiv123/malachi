@@ -9,7 +9,14 @@ mkdir -p "$OUT"
 cp "$ROOT/app/public/"*.html "$OUT/"
 cp "$ROOT/app/public/"*.css "$OUT/"
 cp "$ROOT/app/public/"*.js "$OUT/"
-cp -R "$ROOT/app/public/assets" "$OUT/assets"
+for pattern in '*.txt' '*.xml'; do
+  for file in "$ROOT/app/public/"$pattern; do
+    [ -f "$file" ] && cp "$file" "$OUT/"
+  done
+done
+if [ -d "$ROOT/app/public/assets" ]; then
+  cp -R "$ROOT/app/public/assets" "$OUT/"
+fi
 cat > "$OUT/config.js" <<EOF
 window.MALACHI_API_BASE = '$API_BASE';
 EOF
