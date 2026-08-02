@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://malachi-static.onrender.com/sitemap.xml
