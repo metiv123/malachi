@@ -107,3 +107,27 @@ services:
       - path: /assets/*
         name: Cache-Control
         value: public, max-age=86400
+      - path: /admin*
+        name: X-Robots-Tag
+        value: noindex, nofollow
+      - path: /create-user.html
+        name: X-Robots-Tag
+        value: noindex, nofollow
+      - path: /dashboard.html
+        name: X-Robots-Tag
+        value: noindex, nofollow
+      - path: /feedback.html
+        name: X-Robots-Tag
+        value: noindex, nofollow
+      - path: /login.html
+        name: X-Robots-Tag
+        value: noindex, nofollow
+      - path: /manager.html
+        name: X-Robots-Tag
+        value: noindex, nofollow
+      - path: /status.html
+        name: X-Robots-Tag
+        value: noindex, nofollow
+      - path: /unsubscribe.html
+        name: X-Robots-Tag
+        value: noindex, nofollow
