@@ -22,6 +22,7 @@
         <div class="actions">
           <a href="/create-user.html" class="button primary">צור משתמש</a>
           <a href="/demo-ai.html" class="button secondary">צפה בדמו</a>
+          <a href="https://wa.me/972552639584?text=%D7%A9%D7%9C%D7%95%D7%9D%20%D7%9E%D7%9C%D7%90%D7%9B%D7%99%2C%20%D7%90%D7%A9%D7%9E%D7%97%20%D7%9C%D7%A7%D7%91%D7%9C%20%D7%A4%D7%A8%D7%98%D7%99%D7%9D." class="button talk-malachi" target="_blank" rel="noopener">לדבר עם מלאכי</a>
           <a href="/login.html" class="button secondary">כניסת משתמש</a>
           <a href="#how" class="button secondary">איך זה עובד?</a>
         </div>
@@ -126,12 +127,36 @@
       <a href="/faq.html">שאלות ותשובות</a>
       <a href="/privacy.html">מדיניות פרטיות</a>
       <a href="/terms.html">תנאי שימוש</a>
+      <a href="/accessibility.html">הצהרת נגישות</a>
       <a href="/unsubscribe.html">הסרה מדיוור</a>
       <a href="/data-deletion.html">מחיקת מידע</a>
     </nav>
     <p class="small">מלאכי הוא כלי עזר משפחתי בלבד ואינו מוקד חירום או שירות רפואי.</p>
   </footer>
 
+  <aside class="cookie-bar" id="cookieBar" aria-label="הודעת פרטיות" hidden>
+    <p>האתר משתמש בעוגיית התחברות חיונית ובאחסון מקומי לשמירת העדפות. אין כרגע כלי פרסום או מעקב. מידע נוסף ב<a href="/privacy.html#cookies">מדיניות הפרטיות</a>.</p>
+    <button class="cookie-button" type="button" id="cookieAccept">הבנתי</button>
+  </aside>
+
   <script src="/app.js"></script>
+  <script>
+    (() => {
+      const key = 'malachi_privacy_notice_v1';
+      const bar = document.querySelector('#cookieBar');
+      const accept = document.querySelector('#cookieAccept');
+      let accepted = false;
+      try { accepted = localStorage.getItem(key) === 'accepted'; } catch (_error) {}
+      if (!accepted) {
+        bar.hidden = false;
+        document.body.classList.add('cookie-open');
+      }
+      accept.addEventListener('click', () => {
+        try { localStorage.setItem(key, 'accepted'); } catch (_error) {}
+        bar.hidden = true;
+        document.body.classList.remove('cookie-open');
+      });
+    })();
+  </script>
 <script src="/accessibility.js"></script></body>
 </html>
