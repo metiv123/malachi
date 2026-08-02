@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>תרשים זרימה וטמפלטים — מלאכי V128</title>
+  <style>
+    :root{--bg:#f8fafc;--fg:#172033;--muted:#5b6475;--line:#64748b;--input:#dbeafe;--process:#e0e7ff;--storage:#ccfbf1;--external:#fef3c7;--risk:#fee2e2;--ok:#dcfce7}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 Arial,"Noto Sans Hebrew",sans-serif}main{width:min(1500px,calc(100% - 32px));margin:24px auto 60px}.title{text-align:center}.title h1{margin-bottom:4px;color:#123c69}.title p{margin-top:0;color:var(--muted)}svg{display:block;width:100%;height:auto;margin:24px auto;background:#fff;border:1px solid #d7e2ec;border-radius:24px}.edge{stroke:var(--line);stroke-width:2;fill:none}.node{stroke:var(--line);stroke-width:1.3}.label{font-size:20px;font-weight:800;fill:var(--fg)}.small{font-size:15px;fill:var(--muted)}.section-title{font-size:30px;font-weight:900;fill:#123c69}.catalog{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}.card{padding:18px;border:1px solid #d7e2ec;border-radius:18px;background:#fff}.card h2{margin:0 0 8px;color:#123c69;font-size:20px}.card p{margin:6px 0;white-space:pre-line}.badge{display:inline-block;padding:3px 8px;border-radius:999px;background:#eef6ff;color:#123c69;font-size:12px;font-weight:900}.warning{grid-column:1/-1;padding:18px;border:2px solid #e2a29d;border-radius:18px;background:var(--risk)}.legend{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin:15px}.legend span{padding:5px 10px;border-radius:999px;border:1px solid #cad5df}.footer{margin-top:20px;color:var(--muted);text-align:center}@media(max-width:800px){.catalog{grid-template-columns:1fr}.warning{grid-column:auto}}
+  </style>
+</head>
+<body><main><header class="title"><h1>מלאכי V128 — תרשים זרימה והודעות</h1><p>מסלול ההרשמה, בדיקת הבוקר, תזכורות, התראות, פנייה מהאתר וניהול שיחה</p></header>
+  <div class="legend"><span style="background:var(--input)">אירוע נכנס</span><span style="background:var(--process)">פעולת מלאכי</span><span style="background:var(--external)">הודעת WhatsApp</span><span style="background:var(--ok)">תגובה תקינה</span><span style="background:var(--risk)">דורש טיפול</span></div>
+  <svg viewBox="0 0 1460 1620" role="img" aria-label="תרשים זרימה של מלאכי">
+    <defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#64748b"/></marker></defs>
+    <!-- connectors first -->
+    <path class="edge" marker-end="url(#arrow)" d="M730 145 V210"/><path class="edge" marker-end="url(#arrow)" d="M730 320 V385"/><path class="edge" marker-end="url(#arrow)" d="M600 495 C470 540 330 560 270 625"/><path class="edge" marker-end="url(#arrow)" d="M860 495 C990 540 1130 560 1190 625"/><path class="edge" marker-end="url(#arrow)" d="M270 735 V800"/><path class="edge" marker-end="url(#arrow)" d="M1190 735 V800"/><path class="edge" marker-end="url(#arrow)" d="M730 495 V800"/><path class="edge" marker-end="url(#arrow)" d="M730 910 V975"/><path class="edge" marker-end="url(#arrow)" d="M600 1085 C470 1130 330 1140 270 1205"/><path class="edge" marker-end="url(#arrow)" d="M730 1085 V1205"/><path class="edge" marker-end="url(#arrow)" d="M860 1085 C990 1130 1130 1140 1190 1205"/><path class="edge" marker-end="url(#arrow)" d="M1190 1315 V1380"/><path class="edge" marker-end="url(#arrow)" d="M270 1315 V1380"/>
+    <text x="730" y="65" text-anchor="middle" class="section-title">המסלול היומי המרכזי</text>
+    <rect x="550" y="80" width="360" height="65" rx="18" class="node" fill="var(--input)"/><text x="730" y="112" text-anchor="middle" class="label">משפחה נרשמת</text><text x="730" y="134" text-anchor="middle" class="small">מייל, הורה, איש קשר ושעת בדיקה</text>
+    <rect x="500" y="210" width="460" height="110" rx="20" class="node" fill="var(--external)"/><text x="730" y="245" text-anchor="middle" class="label">אישור הצטרפות ב־WhatsApp</text><text x="730" y="274" text-anchor="middle" class="small">להורה ולאיש הקשר: מאשר/ת · לא מעוניין/ת</text><text x="730" y="299" text-anchor="middle" class="small">רק לאחר אישור ניתן להפעיל את המסלול</text>
+    <rect x="540" y="385" width="380" height="110" rx="20" class="node" fill="var(--process)"/><text x="730" y="424" text-anchor="middle" class="label">בדיקת בוקר בשעה שנבחרה</text><text x="730" y="456" text-anchor="middle" class="small">“בוקר טוב [שם]... רק לסמן שהכול בסדר”</text><text x="730" y="480" text-anchor="middle" class="small">כפתור: אני בסדר</text>
+    <rect x="80" y="625" width="380" height="110" rx="20" class="node" fill="var(--ok)"/><text x="270" y="664" text-anchor="middle" class="label">התקבלה “אני בסדר”</text><text x="270" y="696" text-anchor="middle" class="small">נשמר סטטוס + אישור תודה / ❤️</text><text x="270" y="720" text-anchor="middle" class="small">לא נשלחת התראה למשפחה</text>
+    <rect x="540" y="800" width="380" height="110" rx="20" class="node" fill="var(--external)"/><text x="730" y="839" text-anchor="middle" class="label">לא התקבלה תגובה</text><text x="730" y="871" text-anchor="middle" class="small">מלאכי שולח תזכורת אוטומטית</text><text x="730" y="895" text-anchor="middle" class="small">עד 3 ניסיונות לפי ההגדרה</text>
+    <rect x="1000" y="625" width="380" height="110" rx="20" class="node" fill="var(--risk)"/><text x="1190" y="664" text-anchor="middle" class="label">מצוקה / צורך דחוף</text><text x="1190" y="696" text-anchor="middle" class="small">אם מתקבל אירוע מצוקה מוכר</text><text x="1190" y="720" text-anchor="middle" class="small">נשלחת התראה מיידית לאיש הקשר</text>
+    <rect x="540" y="975" width="380" height="110" rx="20" class="node" fill="var(--process)"/><text x="730" y="1014" text-anchor="middle" class="label">בדיקה אחרי התזכורות</text><text x="730" y="1046" text-anchor="middle" class="small">האם התקבלה תגובה?</text>
+    <rect x="80" y="1205" width="380" height="110" rx="20" class="node" fill="var(--ok)"/><text x="270" y="1244" text-anchor="middle" class="label">כן — המסלול נסגר</text><text x="270" y="1276" text-anchor="middle" class="small">נרשם “הכול בסדר”</text><text x="270" y="1300" text-anchor="middle" class="small">אין הודעה לאיש הקשר</text>
+    <rect x="540" y="1205" width="380" height="110" rx="20" class="node" fill="var(--risk)"/><text x="730" y="1244" text-anchor="middle" class="label">לא — התראת אין מענה</text><text x="730" y="1276" text-anchor="middle" class="small">“[שם] לא ענה/ענתה עד [שעה]”</text><text x="730" y="1300" text-anchor="middle" class="small">איש הקשר מתבקש לבדוק</text>
+    <rect x="1000" y="1205" width="380" height="110" rx="20" class="node" fill="var(--external)"/><text x="1190" y="1244" text-anchor="middle" class="label">ד״ש למשפחה</text><text x="1190" y="1276" text-anchor="middle" class="small">אם נלחץ הכפתור המתאים</text><text x="1190" y="1300" text-anchor="middle" class="small">מלאכי שולח דרישת שלום ❤️</text>
+    <rect x="80" y="1380" width="380" height="110" rx="20" class="node" fill="var(--process)"/><text x="270" y="1419" text-anchor="middle" class="label">הסרה / עצור</text><text x="270" y="1451" text-anchor="middle" class="small">השירות לאדם מופסק</text><text x="270" y="1475" text-anchor="middle" class="small">לא נשלחות בדיקות נוספות</text>
+    <rect x="1000" y="1380" width="380" height="110" rx="20" class="node" fill="var(--process)"/><text x="1190" y="1419" text-anchor="middle" class="label">עדכון בדשבורד</text><text x="1190" y="1451" text-anchor="middle" class="small">סטטוס, מסירה, תגובה ואנשי קשר</text><text x="1190" y="1475" text-anchor="middle" class="small">נשמרים לבקרה</text>
+    <text x="730" y="1560" text-anchor="middle" class="small">מלאכי הוא כלי קשר משפחתי — לא מוקד חירום ולא מערכת רפואית.</text>
+  </svg>
+  <section class="catalog">
+    <article class="card"><h2>1. אישור הצטרפות להורה <span class="badge">Meta Utility</span></h2><p>שלום [שם] 🌿
+כאן מלאכי. [בן/בת המשפחה] ביקש/ה לצרף אותך לבדיקת בוקר יומית ב־WhatsApp. בכל יום בשעה [שעה] נשלח הודעה קצרה כדי לוודא שהכול בסדר.
+כפתורים: מאשר/ת · לא מעוניין/ת</p></article>
+    <article class="card"><h2>2. אישור לאיש קשר <span class="badge">Meta Utility</span></h2><p>שלום [שם איש הקשר] 🌿
+כאן מלאכי. [בן/בת המשפחה] צירף/ה אותך כאיש קשר להתראות עבור [שם ההורה]. אם לא יתקבל מענה לבדיקת הבוקר — נעדכן אותך ב־WhatsApp.
+כפתורים: מאשר/ת · לא מעוניין/ת</p></article>
+    <article class="card"><h2>3. בדיקת בוקר <span class="badge">Meta Utility</span></h2><p>בוקר טוב [שם] 🌿
+כאן מלאכי. רק לסמן שהכול בסדר הבוקר.
+כפתור: אני בסדר</p></article>
+    <article class="card"><h2>4. תזכורת <span class="badge">Meta Utility</span></h2><p>היי [שם] 🌿
+לא קיבלנו ממך מענה עדיין. רק רוצים לוודא שהכול בסדר. אפשר ללחוץ על הכפתור למטה.
+כפתור: אני בסדר</p></article>
+    <article class="card"><h2>5. אישור “אני בסדר”</h2><p>תודה [שם] ❤️
+שמחנו לשמוע שהכול בסדר. נבדוק שוב מחר בבוקר.</p></article>
+    <article class="card"><h2>6. אין מענה — לאיש קשר <span class="badge">Meta Utility</span></h2><p>מלאכי: [שם] לא ענה/ענתה להודעת הבוקר עד השעה [שעה]. כדאי ליצור קשר ולוודא שהכול בסדר.</p></article>
+    <article class="card"><h2>7. מצוקה — לאיש קשר <span class="badge">מסלול נתמך בקוד</span></h2><p>התראת מלאכי: [שם] לחץ/ה על “מצוקה” בשעה [שעה]. מומלץ ליצור קשר מיד.</p></article>
+    <article class="card"><h2>8. דרישת שלום למשפחה</h2><p>הודעת מלאכי: [שם] שולח/ת לך דרישת שלום ❤️</p></article>
+    <article class="card"><h2>9. הרשמה שלא הושלמה <span class="badge">Meta Utility</span></h2><p>היי [שם] 🌿
+ראינו שהתחלת הרשמה למלאכי, אבל עדיין חסרים פרטים כדי להפעיל את השירות. יש להשלים אותם בקישור [קישור].</p></article>
+    <article class="card"><h2>10. פנייה מהאתר <span class="badge">בתוך חלון 24 שעות</span></h2><p>היי 👋 תודה שפנית למלאכי.
+הפנייה שלך התקבלה.
+אפשר לכתוב כאן בקצרה במה נוכל לעזור, ומלאכי יחזור אליך בהקדם.</p></article>
+    <article class="card"><h2>11. תשובת מנהל</h2><p>בתוך חלון 24 השעות ניתן לענות מהדשבורד בנוסח חופשי. מחוץ לחלון נדרש טמפלט מאושר של Meta.</p></article>
+    <article class="card"><h2>12. הסרה / עצירה</h2><p>המערכת מזהה “עצור” או “הסרה”, מפסיקה את השירות ושומרת את האירוע. מסמך הטמפלט כולל גם הודעת service_paused_he, אך היא אינה מחוברת כרגע לשליחה בקוד.</p></article>
+    <aside class="warning"><b>בדיקת שפות:</b> ב־V128 כל קריאות הטמפלט בקוד שולחות במפורש בשפה <b>he</b>. אין כרגע שדה שפה למשפחה/להורה, אין טמפלטים <b>ru</b> או <b>en</b>, ואין מנגנון שבוחר נוסח לפי שפה. לכן עברית קיימת; רוסית ואנגלית עדיין אינן מוכנות ולא יישלחו אוטומטית.</aside>
+  </section><p class="footer">התרשים מתאר את גרסת הבדיקה V128. הוא אינו אישור של Meta לטמפלטים ואינו משנה את האתר החי.</p>
+</main></body></html>
