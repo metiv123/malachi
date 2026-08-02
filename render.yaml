@@ -28,7 +28,7 @@ services:
       - key: MALACHI_BETA_OPEN
         value: "true"
       - key: MALACHI_BETA_MAX_FAMILIES
-        value: "50"
+        value: "100"
       - key: MALACHI_DEV_TOOLS
         value: "false"
       - key: MALACHI_TIMEZONE

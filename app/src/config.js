@@ -12,7 +12,7 @@ export const config = {
   reminderIntervalMinutes: Number(process.env.MALACHI_REMINDER_INTERVAL_MINUTES || process.env.MALACHI_NO_RESPONSE_GRACE_MINUTES || 30),
   reminderAttemptCount: Number(process.env.MALACHI_REMINDER_ATTEMPT_COUNT || 3),
   betaOpen: process.env.MALACHI_BETA_OPEN !== 'false',
-  betaMaxFamilies: Number(process.env.MALACHI_BETA_MAX_FAMILIES || 50),
+  betaMaxFamilies: Number(process.env.MALACHI_BETA_MAX_FAMILIES || 100),
   firebaseAuthEnabled: process.env.FIREBASE_AUTH_ENABLED === 'true',
   feedbackNotifyWebhook: process.env.MALACHI_FEEDBACK_NOTIFY_WEBHOOK || '',
   adminToken: process.env.MALACHI_ADMIN_TOKEN || '',
