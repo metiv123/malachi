@@ -29,6 +29,8 @@ services:
         value: "true"
       - key: MALACHI_BETA_MAX_FAMILIES
         value: "100"
+      - key: MALACHI_UK_PILOT_MAX_FAMILIES
+        value: "30"
       - key: MALACHI_DEV_TOOLS
         value: "false"
       - key: MALACHI_TIMEZONE
@@ -36,7 +38,7 @@ services:
       - key: MALACHI_PUBLIC_BASE_URL
         value: https://malachi-v78v.onrender.com
       - key: MALACHI_ALLOWED_ORIGINS
-        value: https://malachi-v78v.onrender.com,https://malachi-static.onrender.com
+        value: https://malachi-v78v.onrender.com,https://malachi-static.onrender.com,https://malachi-uk-pilot.onrender.com
       - key: MALACHI_RETENTION_CHECKS_DAYS
         value: "180"
       - key: MALACHI_RETENTION_MESSAGES_DAYS
@@ -85,6 +87,18 @@ services:
         value: contact_optin_he
       - key: META_TEMPLATE_CONTACT_OPTIN
         value: contact_optin_he
+      - key: META_TEMPLATE_OPTIN_EN
+        value: contact_optin_en
+      - key: META_TEMPLATE_CONTACT_OPTIN_EN
+        value: contact_optin_en
+      - key: META_TEMPLATE_DAILY_CHECK_EN
+        value: daily_check_en
+      - key: META_TEMPLATE_DAILY_REMINDER_EN
+        value: daily_check_reminder_en
+      - key: META_TEMPLATE_OK_ACK_EN
+        value: daily_ok_ack_en
+      - key: META_TEMPLATE_NO_RESPONSE_ALERT_EN
+        value: no_response_alert_en
   - type: web
     name: malachi-static
     runtime: static
