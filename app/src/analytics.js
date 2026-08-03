@@ -180,6 +180,7 @@ export async function publicMarketingStatus({ days = 7 } = {}) {
       market: summary.market,
       visitors: Number(summary.visitors || 0),
       pageViews: Number(summary.pageViews || 0),
+      demoClicks: Number(summary.events.demo_click || 0),
       joinClicks: Number(summary.events.join_click || 0),
       whatsappClicks: Number(summary.events.whatsapp_click || 0),
       signupStarts: Number(summary.events.signup_start || 0),
