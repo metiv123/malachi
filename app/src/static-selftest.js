@@ -41,6 +41,8 @@ async function run() {
   assert(index.includes('src="/analytics.js"'), 'Israeli homepage analytics missing');
   const englishIndex = await readFile(path.join(publicDir, 'en/index.html'), 'utf8');
   assert(englishIndex.includes('src="/analytics.js"'), 'UK homepage analytics missing');
+  assert(englishIndex.includes('id="partnerReview"') && englishIndex.includes('partner-review') && englishIndex.includes('hidden'), 'UK partner-review panel must exist and stay hidden by default');
+  assert(englishIndex.includes("partnerSource.startsWith('email_')") && englishIndex.includes("partnerCampaign.startsWith('uk_partner')"), 'UK partner-review source targeting missing');
   assert((await readFile(path.join(publicDir, 'create-user.html'), 'utf8')).includes('src="/analytics.js"'), 'Israeli signup analytics missing');
   assert((await readFile(path.join(publicDir, 'en/create-user.html'), 'utf8')).includes('src="/analytics.js"'), 'UK signup analytics missing');
   assert((await readFile(path.join(publicDir, 'f.html'), 'utf8')).includes('source=facebook'), 'Israeli Facebook short link missing');
