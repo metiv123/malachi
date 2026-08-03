@@ -6,7 +6,7 @@ API_BASE="${MALACHI_STATIC_API_BASE:-https://malachi-v78v.onrender.com}"
 export API_BASE
 rm -rf "$OUT"
 mkdir -p "$OUT"
-for page in index demo privacy terms accessibility data-deletion; do
+for page in index demo privacy terms accessibility data-deletion f w; do
   cp "$ROOT/app/public/en/$page.html" "$OUT/$page.html"
 done
 cp "$ROOT/app/public/en/"*.css "$OUT/"

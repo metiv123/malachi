@@ -44,10 +44,9 @@
       <section class="dashboard-card">
         <h2>WhatsApp simulation</h2>
         <div class="phone">
-          <div class="phone-top"><img src="/assets/brand/malachi-mascot.png" alt=""><div><strong>Malachi</strong><small id="subtitle">Waiting to start</small></div></div>
+          <div class="phone-top"><img src="/assets/brand/malachi-mascot.png" alt=""><div><strong>Angelo</strong><small id="subtitle">Waiting to start</small></div></div>
           <div id="demoChat" aria-live="polite"></div>
         </div>
-        <p class="pilot-name-note">Angelo is the English pilot name. During the transition, live WhatsApp messages may display our existing service name, Malachi.</p>
       </section>
     </div>
     <p class="safety"><strong>Reminder:</strong> Angelo is not an emergency, medical or monitoring service. If there is no response, the family must contact the person directly and take the appropriate action.</p>
@@ -91,7 +90,7 @@ function resetDemo() {
 function registration() {
   const { parent, family } = names(); chat.innerHTML = ''; subtitle.textContent = 'Registration and consent'; status('start');
   bubble('system','Initial family registration'); bubble('reply',`${family} has started setting up the daily check-in.<small>Now ✓✓</small>`);
-  pause(() => { bubble('bot',`Hello ${parent} 🌿<br>${family} would like to connect you to Malachi’s daily WhatsApp check-in.<br>Please approve before any routine messages begin.`); action('I agree', () => { bubble('reply','I agree<small>Now ✓✓</small>'); bubble('bot','Thank you. Your daily check-in is now active.'); status('registered'); subtitle.textContent = 'Consent approved'; }); }, 350);
+  pause(() => { bubble('bot',`Hello ${parent} 🌿<br>${family} would like to connect you to Angelo’s daily WhatsApp check-in.<br>Please approve before any routine messages begin.`); action('I agree', () => { bubble('reply','I agree<small>Now ✓✓</small>'); bubble('bot','Thank you. Your daily check-in is now active.'); status('registered'); subtitle.textContent = 'Consent approved'; }); }, 350);
 }
 function morningCheck() {
   const { parent } = names(); chat.innerHTML = ''; subtitle.textContent = 'Morning check-in'; status('registered');

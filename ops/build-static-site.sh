@@ -8,7 +8,7 @@ rm -rf "$OUT"
 mkdir -p "$OUT"
 # Publish only public marketing pages. Account, dashboard and admin pages stay
 # on the application service and must not be copied to the marketing host.
-for page in index.html demo-ai.html onboarding.html faq.html privacy.html terms.html accessibility.html data-deletion.html; do
+for page in index.html demo-ai.html onboarding.html faq.html privacy.html terms.html accessibility.html data-deletion.html f.html w.html; do
   cp "$ROOT/app/public/$page" "$OUT/$page"
 done
 cp "$ROOT/app/public/style.css" "$OUT/style.css"

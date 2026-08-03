@@ -43,6 +43,10 @@ async function run() {
   assert(englishIndex.includes('src="/analytics.js"'), 'UK homepage analytics missing');
   assert((await readFile(path.join(publicDir, 'create-user.html'), 'utf8')).includes('src="/analytics.js"'), 'Israeli signup analytics missing');
   assert((await readFile(path.join(publicDir, 'en/create-user.html'), 'utf8')).includes('src="/analytics.js"'), 'UK signup analytics missing');
+  assert((await readFile(path.join(publicDir, 'f.html'), 'utf8')).includes('source=facebook'), 'Israeli Facebook short link missing');
+  assert((await readFile(path.join(publicDir, 'w.html'), 'utf8')).includes('source=whatsapp'), 'Israeli WhatsApp short link missing');
+  assert((await readFile(path.join(publicDir, 'en/f.html'), 'utf8')).includes('source=facebook'), 'UK Facebook short link missing');
+  assert((await readFile(path.join(publicDir, 'en/w.html'), 'utf8')).includes('source=whatsapp'), 'UK WhatsApp short link missing');
 
   const customerFiles = ['dashboard.js', 'create-user.js', 'login.js', 'feedback.html'];
   for (const filename of customerFiles) {
