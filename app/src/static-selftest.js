@@ -49,6 +49,8 @@ async function run() {
   assert(adminPage.includes('sourceFunnels') && adminPage.includes('campaignFunnels') && adminPage.includes('משפך לפי מקור'), 'admin source and campaign funnel view missing');
   assert((await readFile(path.join(publicDir, 'create-user.html'), 'utf8')).includes('src="/analytics.js"'), 'Israeli signup analytics missing');
   assert((await readFile(path.join(publicDir, 'en/create-user.html'), 'utf8')).includes('src="/analytics.js"'), 'UK signup analytics missing');
+  const israelDemo = await readFile(path.join(publicDir, 'demo-ai.html'), 'utf8');
+  assert(israelDemo.includes("track('demo_interaction')") && israelDemo.includes("track('demo_join_click')") && israelDemo.includes('data-demo-join'), 'Israeli demo funnel instrumentation missing');
   assert((await readFile(path.join(publicDir, 'f.html'), 'utf8')).includes('source=facebook'), 'Israeli Facebook short link missing');
   assert((await readFile(path.join(publicDir, 'w.html'), 'utf8')).includes('source=whatsapp'), 'Israeli WhatsApp short link missing');
   assert((await readFile(path.join(publicDir, 'en/f.html'), 'utf8')).includes('source=facebook'), 'UK Facebook short link missing');
