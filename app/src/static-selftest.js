@@ -44,6 +44,7 @@ async function run() {
   const englishIndex = await readFile(path.join(publicDir, 'en/index.html'), 'utf8');
   assert(englishIndex.includes('src="/analytics.js"'), 'UK homepage analytics missing');
   assert(englishIndex.includes("Know when Mum or Dad's usual reply arrives") && !englishIndex.includes('Know Mum or Dad is okay'), 'UK hero must describe a received reply without claiming health or safety certainty');
+  assert(englishIndex.includes('An honest fit check') && englishIndex.includes('Angelo is not the right tool when') && englishIndex.includes('The family prompt means “please make contact”'), 'UK homepage must state who the pilot fits and where its signal is insufficient');
   assert(englishIndex.includes('id="partnerReview"') && englishIndex.includes('partner-review') && englishIndex.includes('hidden'), 'UK partner-review panel must exist and stay hidden by default');
   assert(englishIndex.includes("partnerSource.startsWith('email_')") && englishIndex.includes("partnerCampaign.startsWith('uk_partner')"), 'UK partner-review source targeting missing');
   assert(englishIndex.includes('Send a three-line review') && englishIndex.includes('Strongest%20concern%20or%20design%20flaw'), 'UK partner-review response should open a structured three-line email');
