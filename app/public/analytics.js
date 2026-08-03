@@ -4,6 +4,8 @@
   const apiBase = (window.MALACHI_API_BASE || '').replace(/\/$/, '');
   const market = document.documentElement.lang.toLowerCase().startsWith('en') ? 'uk' : 'il';
   const params = new URLSearchParams(location.search);
+  const trackingKeys = ['ref', 'source', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'test'];
+  const testMode = params.get('test') === '1';
   function referralSource() {
     try {
       const host = new URL(document.referrer).hostname.replace(/^www\./, '');
@@ -26,7 +28,7 @@
     return fetch(`${apiBase}/api/analytics/event`, {
       method: 'POST', mode: 'cors', credentials: 'omit', keepalive: true,
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ event, market, path: location.pathname, ...attribution, ...details })
+      body: JSON.stringify({ event, market, path: location.pathname, ...attribution, ...details, test: testMode })
     }).catch(() => {});
   }
   function eventForLink(link) {
@@ -44,12 +46,13 @@
     document.querySelectorAll('a[href],button[data-analytics]').forEach((element) => {
       const event = eventForLink(element);
       if (event) element.addEventListener('click', () => track(event));
-      if (element.tagName === 'A' && [...params.keys()].some((key) => /^utm_|^(source|ref)$/.test(key))) {
+      if (element.tagName === 'A' && trackingKeys.some((key) => params.get(key))) {
         try {
           const target = new URL(element.href, location.href);
           if (/\.(?:html)?$/.test(target.pathname) || target.pathname.endsWith('/')) {
-            for (const key of ['ref', 'source', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term']) {
-              if (params.get(key) && !target.searchParams.has(key)) target.searchParams.set(key, params.get(key));
+            for (const key of trackingKeys) {
+              const value = params.get(key);
+              if (value && (key !== 'test' || value === '1') && !target.searchParams.has(key)) target.searchParams.set(key, value);
             }
             element.href = target.href;
           }

@@ -39,6 +39,8 @@ async function run() {
   assert(index.includes('class="nav-login"') && index.includes('/login.html'), 'top user-login button missing');
   assert(index.includes('/accessibility.html'), 'accessibility statement link missing');
   assert(index.includes('src="/analytics.js"'), 'Israeli homepage analytics missing');
+  const analyticsClient = await readFile(path.join(publicDir, 'analytics.js'), 'utf8');
+  assert(analyticsClient.includes("params.get('test') === '1'") && analyticsClient.includes('test: testMode') && analyticsClient.includes("'utm_term', 'test'"), 'browser QA mode must be ignored by analytics and preserved through internal links');
   const englishIndex = await readFile(path.join(publicDir, 'en/index.html'), 'utf8');
   assert(englishIndex.includes('src="/analytics.js"'), 'UK homepage analytics missing');
   assert(englishIndex.includes('id="partnerReview"') && englishIndex.includes('partner-review') && englishIndex.includes('hidden'), 'UK partner-review panel must exist and stay hidden by default');
