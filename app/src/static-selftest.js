@@ -57,10 +57,12 @@ async function run() {
   const israelFacebookShortLink = await readFile(path.join(publicDir, 'f.html'), 'utf8');
   assert(israelFacebookShortLink.includes('source=facebook'), 'Israeli Facebook short link missing');
   assert(israelFacebookShortLink.includes('location.search') && israelFacebookShortLink.includes('allowedTrackingKeys'), 'Israeli Facebook short link must preserve safe campaign attribution');
+  assert(israelFacebookShortLink.includes("'utm_term','test'") && israelFacebookShortLink.includes("key!=='test'||clean==='1'"), 'Israeli short link must preserve only the explicit QA test marker');
   assert((await readFile(path.join(publicDir, 'w.html'), 'utf8')).includes('source=whatsapp'), 'Israeli WhatsApp short link missing');
   const ukFacebookShortLink = await readFile(path.join(publicDir, 'en/f.html'), 'utf8');
   assert(ukFacebookShortLink.includes('source=facebook'), 'UK Facebook short link missing');
   assert(ukFacebookShortLink.includes('location.search') && ukFacebookShortLink.includes('allowedTrackingKeys'), 'UK Facebook short link must preserve safe campaign attribution');
+  assert(ukFacebookShortLink.includes("'utm_term','test'") && ukFacebookShortLink.includes("key!=='test'||clean==='1'"), 'UK short link must preserve only the explicit QA test marker');
   assert((await readFile(path.join(publicDir, 'en/w.html'), 'utf8')).includes('source=whatsapp'), 'UK WhatsApp short link missing');
 
   const customerFiles = ['dashboard.js', 'create-user.js', 'login.js', 'feedback.html'];
