@@ -7,6 +7,7 @@ import { getHodayaAgentStatus, prepareHodayaWindowOpenTemplate, sendHodayaAgentR
 import { loadDb, saveDb } from './store.js';
 import { config } from './config.js';
 import { analyticsReport, publicMarketingStatus, recordAnalyticsEvent } from './analytics.js';
+import { createServer } from './server.js';
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
@@ -15,6 +16,20 @@ function assert(condition, message) {
 async function reset() {
   await rm(path.resolve(process.cwd(), 'data/db.json'), { force: true });
   await saveDb({ families: [], elders: [], contacts: [], checks: [], audit: [], outboundMessages: [], waitlist: [], feedback: [], errors: [] });
+}
+
+async function withHttpServer(callback) {
+  const server = createServer();
+  await new Promise((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', resolve);
+  });
+  const { port } = server.address();
+  try {
+    return await callback(`http://127.0.0.1:${port}`);
+  } finally {
+    await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+  }
 }
 
 async function run() {
@@ -52,9 +67,28 @@ async function run() {
   assert(accountLogin.managementToken === accountOnly.family.managementToken, 'account-only login should work');
   let emptyAccount = await getFamilyByToken(accountOnly.family.managementToken);
   assert(emptyAccount.elders.length === 0, 'new account should start without elders');
-  const addedElder = await addElderByToken(accountOnly.family.managementToken, { elderName: 'אמא', elderPhone: '0522222222', dailyCheckTime: '08:30', contactName: 'משתמש חדש', contactPhone: '0521111111', skipOptIn: true, skipContactOptIn: true, elderConsent: true });
+  await withHttpServer(async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/api/elders`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Cookie: `malachi_session=${encodeURIComponent(accountOnly.family.managementToken)}` },
+      body: JSON.stringify({ elderName: 'אמא', elderPhone: '0522222222', dailyCheckTime: '08:30', contactName: 'משתמש חדש', contactPhone: '0521111111', skipOptIn: true, skipContactOptIn: true, elderConsent: true })
+    });
+    const payload = await response.json();
+    assert(response.status === 400 && payload.error === 'WhatsApp approval cannot be bypassed by a client request', 'public elder API must reject opt-in bypass fields');
+  });
+  emptyAccount = await getFamilyByToken(accountOnly.family.managementToken);
+  assert(emptyAccount.elders.length === 0, 'rejected bypass request must not create an elder');
+  const addedElder = await addElderByToken(accountOnly.family.managementToken, { elderName: 'אמא', elderPhone: '0522222222', dailyCheckTime: '08:30', contactName: 'משתמש חדש', contactPhone: '0521111111', skipOptIn: true, skipContactOptIn: true, elderConsent: true }, { allowOptInBypass: true });
   assert(addedElder.elder.id && addedElder.contact.id, 'add elder should create elder and contact');
+  assert(addedElder.elder.optInStatus === 'approved' && addedElder.contact.optInStatus === 'approved', 'trusted test setup should retain an explicit internal opt-in bypass');
   await deleteFamilyByToken(accountOnly.family.managementToken);
+
+  const bypassProbe = await createFamily({
+    ownerName: 'Bypass probe', ownerPhone: '+972504444444', elderName: 'Consent probe', elderPhone: '+972505555555', dailyCheckTime: '09:15',
+    contactName: 'Contact probe', contactPhone: '+972506666666', consent: 'on', skipOptIn: true, skipContactOptIn: true, source: 'security_selftest'
+  });
+  assert(bypassProbe.elder.optInStatus === 'pending' && bypassProbe.contact.optInStatus === 'pending', 'domain layer must ignore untrusted opt-in bypass fields');
+  await deleteFamilyByToken(bypassProbe.family.managementToken);
 
   const englishAccount = await createUserAccount({
     ownerName: 'Alex',
@@ -81,7 +115,7 @@ async function run() {
     skipOptIn: true,
     skipContactOptIn: true,
     elderConsent: true
-  });
+  }, { allowOptInBypass: true });
   assert(englishElder.elder.language === 'en_US', 'English elder should inherit account language');
   const englishCheck = await sendCheckNow(englishElder.elder.id);
   const englishMessages = await getOutboundMessagesByToken(englishAccount.family.managementToken);
@@ -175,7 +209,7 @@ async function run() {
   updatedFamily = await getFamilyByToken(created.family.managementToken);
   assert(updatedFamily.elders[0].contacts[0].optInStatus === 'approved', 'webhook contact opt-in should approve contact');
   const contactOptInCountBeforeInherited = (await getOutboundMessagesByToken(created.family.managementToken)).filter((message) => message.kind === 'contact_optin').length;
-  const inheritedContactElder = await addElderByToken(created.family.managementToken, { elderName: 'סבתא', elderPhone: '0523333333', dailyCheckTime: '11:00', contactName: 'שלמה', contactPhone: '+972501111111', skipOptIn: true, elderConsent: true });
+  const inheritedContactElder = await addElderByToken(created.family.managementToken, { elderName: 'סבתא', elderPhone: '0523333333', dailyCheckTime: '11:00', contactName: 'שלמה', contactPhone: '+972501111111', skipOptIn: true, elderConsent: true }, { allowOptInBypass: true });
   assert(inheritedContactElder.contact.optInStatus === 'approved', 'same family approved contact phone should inherit approval');
   const contactOptInCountAfterInherited = (await getOutboundMessagesByToken(created.family.managementToken)).filter((message) => message.kind === 'contact_optin').length;
   assert(contactOptInCountAfterInherited === contactOptInCountBeforeInherited, 'inherited approved contact should not receive duplicate contact opt-in');
@@ -315,7 +349,7 @@ async function run() {
     contactPhone: '+972501111111',
     consent: 'on',
     skipOptIn: true
-  });
+  }, { allowOptInBypass: true });
   const duplicateCheck = await sendCheckNow(duplicate.elder.id);
   const duplicatePayload = { entry: [{ changes: [{ value: { messages: [{ type: 'button', from: '972502222222', id: 'wamid.duplicate.distress', timestamp: '1', button: { payload: 'daily_distress', text: 'מצוקה' } }] } }] }] };
   const duplicateHandled = await processWhatsAppWebhookPayload(duplicatePayload);

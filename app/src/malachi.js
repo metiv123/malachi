@@ -192,8 +192,17 @@ export async function createUserAccount(input = {}) {
   return created;
 }
 
-export async function createFamily(input) {
+function trustedOptInBypass(input = {}, options = {}) {
+  const allowed = options.allowOptInBypass === true;
+  return {
+    elder: allowed && input.skipOptIn === true,
+    contact: allowed && input.skipContactOptIn === true
+  };
+}
+
+export async function createFamily(input, options = {}) {
   validateJoinInput(input);
+  const optInBypass = trustedOptInBypass(input, options);
   const ownerName = requireField(input, 'ownerName');
   const ownerPhone = normalizePhone(requireField(input, 'ownerPhone'));
   const elderName = requireField(input, 'elderName');
@@ -248,9 +257,9 @@ export async function createFamily(input) {
       shomerShabbat: checkbox(input, 'shomerShabbat'),
       noResponseGraceMinutes: alertDelayMinutes(input),
       noResponseAlertRepeatCount: alertRepeatCount(input),
-      optInStatus: input.skipOptIn ? 'approved' : 'pending',
-      optInRequestedAt: input.skipOptIn ? null : nowIso(),
-      optInAcceptedAt: input.skipOptIn ? nowIso() : null,
+      optInStatus: optInBypass.elder ? 'approved' : 'pending',
+      optInRequestedAt: optInBypass.elder ? null : nowIso(),
+      optInAcceptedAt: optInBypass.elder ? nowIso() : null,
       optInVersion: legalVersions.whatsappOptIn,
       active: true,
       createdAt: nowIso()
@@ -262,9 +271,9 @@ export async function createFamily(input) {
       whatsappPhone: contactPhone,
       relationship: input.relationship || 'קרוב משפחה',
       language: pilot.language,
-      optInStatus: input.skipContactOptIn ? 'approved' : 'pending',
-      optInRequestedAt: input.skipContactOptIn ? null : nowIso(),
-      optInAcceptedAt: input.skipContactOptIn ? nowIso() : null,
+      optInStatus: optInBypass.contact ? 'approved' : 'pending',
+      optInRequestedAt: optInBypass.contact ? null : nowIso(),
+      optInAcceptedAt: optInBypass.contact ? nowIso() : null,
       optInVersion: legalVersions.whatsappOptIn,
       createdAt: nowIso()
     };
@@ -280,11 +289,11 @@ export async function createFamily(input) {
   if (created.waitlist) return created;
 
   const warnings = [];
-  if (!input.skipOptIn) {
+  if (!optInBypass.elder) {
     try { await sendOptIn(created.elder, created.family); }
     catch (err) { warnings.push(`שליחת אישור להורה נכשלה: ${err.message}`); await recordSendFailure('optin', created.elder.whatsappPhone, err, { elderId: created.elder.id }); }
   }
-  if (!input.skipContactOptIn) {
+  if (!optInBypass.contact) {
     try { await sendContactOptIn(created.contact, created.elder, created.family); }
     catch (err) { warnings.push(`שליחת אישור לבן/בת המשפחה נכשלה: ${err.message}`); await recordSendFailure('contact_optin', created.contact.whatsappPhone, err, { elderId: created.elder.id, contactId: created.contact.id }); }
   }
@@ -313,8 +322,9 @@ export async function addContactByToken(token, elderId, input) {
   return created.contact;
 }
 
-export async function addElderByToken(token, input = {}) {
+export async function addElderByToken(token, input = {}, options = {}) {
   if (!input.elderConsent) throw new Error('צריך לאשר שהאדם יודע/יקבל הסבר ושהשירות יופעל רק לאחר אישור WhatsApp שלו/ה');
+  const optInBypass = trustedOptInBypass(input, options);
   const elderName = requireField(input, 'elderName');
   const elderPhone = normalizePhone(requireField(input, 'elderPhone'));
   const dailyCheckTime = requireField(input, 'dailyCheckTime');
@@ -336,7 +346,7 @@ export async function addElderByToken(token, input = {}) {
       shomerShabbat: checkbox(input, 'shomerShabbat'),
       noResponseGraceMinutes: alertDelayMinutes(input),
       noResponseAlertRepeatCount: alertRepeatCount(input),
-      optInStatus: input.skipOptIn ? 'approved' : 'pending',
+      optInStatus: optInBypass.elder ? 'approved' : 'pending',
       active: true,
       createdAt: nowIso()
     };
@@ -348,7 +358,7 @@ export async function addElderByToken(token, input = {}) {
       whatsappPhone: contactPhone,
       relationship: input.relationship || 'קרוב משפחה',
       language: family.language || 'he',
-      optInStatus: input.skipContactOptIn || inheritedApproval ? 'approved' : 'pending',
+      optInStatus: optInBypass.contact || inheritedApproval ? 'approved' : 'pending',
       createdAt: nowIso()
     };
     db.elders.push(elder);
@@ -357,11 +367,11 @@ export async function addElderByToken(token, input = {}) {
     return { family: { ...family }, elder: { ...elder }, contact: { ...contact } };
   });
   const warnings = [];
-  if (!input.skipOptIn) {
+  if (!optInBypass.elder) {
     try { await sendOptIn(created.elder, created.family); }
     catch (err) { warnings.push(`שליחת אישור להורה נכשלה: ${err.message}`); await recordSendFailure('optin', created.elder.whatsappPhone, err, { elderId: created.elder.id }); }
   }
-  if (!input.skipContactOptIn && created.contact.optInStatus !== 'approved') {
+  if (!optInBypass.contact && created.contact.optInStatus !== 'approved') {
     try { await sendContactOptIn(created.contact, created.elder, created.family); }
     catch (err) { warnings.push(`שליחת אישור לבן/בת המשפחה נכשלה: ${err.message}`); await recordSendFailure('contact_optin', created.contact.whatsappPhone, err, { elderId: created.elder.id, contactId: created.contact.id }); }
   }

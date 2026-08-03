@@ -184,6 +184,15 @@ async function body(req) {
   return JSON.parse(raw);
 }
 
+function rejectClientOptInBypass(input = {}) {
+  if (Object.prototype.hasOwnProperty.call(input, 'skipOptIn') || Object.prototype.hasOwnProperty.call(input, 'skipContactOptIn')) {
+    const err = new Error('WhatsApp approval cannot be bypassed by a client request');
+    err.statusCode = 400;
+    throw err;
+  }
+  return input;
+}
+
 async function staticFile(res, pathname, { head = false } = {}) {
   const cleanPath = pathname.replace(/^\//, '');
   const shortStaticPaths = new Map([['/f', 'f.html'], ['/w', 'w.html']]);
@@ -344,7 +353,7 @@ async function route(req, res) {
     if (req.method === 'POST' && url.pathname === '/api/admin/hodaya-agent/reply') return json(res, 200, await sendHodayaAgentReply(await body(req)));
     if (req.method === 'POST' && url.pathname === '/api/admin/hodaya-agent/event-trigger') return json(res, 200, await triggerHodayaEventDrivenTurn(await body(req)));
 
-    if (req.method === 'POST' && url.pathname === '/api/families') return json(res, 201, await createFamily(await body(req)));
+    if (req.method === 'POST' && url.pathname === '/api/families') return json(res, 201, await createFamily(rejectClientOptInBypass(await body(req))));
     if (req.method === 'POST' && url.pathname === '/api/users') {
       const result = await createUserAccount(await body(req));
       if (result.waitlist) return json(res, 201, result);
@@ -359,7 +368,7 @@ async function route(req, res) {
       const input = await body(req);
       return json(res, 201, { contact: await addContactByToken(familyToken(req, url, input), elderId, input) });
     }
-    if (req.method === 'POST' && url.pathname === '/api/elders') { const input = await body(req); return json(res, 201, await addElderByToken(familyToken(req, url, input), input)); }
+    if (req.method === 'POST' && url.pathname === '/api/elders') { const input = rejectClientOptInBypass(await body(req)); return json(res, 201, await addElderByToken(familyToken(req, url, input), input)); }
     if (req.method === 'POST' && url.pathname.match(/^\/api\/contacts\/[^/]+\/delete$/)) {
       const contactId = url.pathname.split('/')[3];
       const input = await body(req);
