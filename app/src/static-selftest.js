@@ -46,6 +46,7 @@ async function run() {
   assert(englishIndex.includes("Know when Mum or Dad's usual reply arrives") && !englishIndex.includes('Know Mum or Dad is okay'), 'UK hero must describe a received reply without claiming health or safety certainty');
   assert(englishIndex.includes('id="partnerReview"') && englishIndex.includes('partner-review') && englishIndex.includes('hidden'), 'UK partner-review panel must exist and stay hidden by default');
   assert(englishIndex.includes("partnerSource.startsWith('email_')") && englishIndex.includes("partnerCampaign.startsWith('uk_partner')"), 'UK partner-review source targeting missing');
+  assert(englishIndex.includes('Send a three-line review') && englishIndex.includes('Strongest%20concern%20or%20design%20flaw'), 'UK partner-review response should open a structured three-line email');
   assert(index.includes('id="requestedDetails"') && index.includes("requestedSource.includes('requested_reply')"), 'Israeli requested-details path missing');
   assert(englishIndex.includes('id="requestedDetails"') && englishIndex.includes("requestedSource.includes('requested_reply')"), 'UK requested-details path missing');
   const adminPage = await readFile(path.join(publicDir, 'admin.html'), 'utf8');
