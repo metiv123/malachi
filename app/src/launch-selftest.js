@@ -49,6 +49,11 @@ async function run() {
     assert(!('managementToken' in family.data.family) && !('passwordHash' in family.data.family), 'family response must not expose secrets');
     assert(family.response.headers.get('content-security-policy'), 'security headers missing');
 
+    const marketingStatus = await request(base, '/api/marketing/status?days=7');
+    assert(marketingStatus.response.status === 200, 'aggregate marketing status should be publicly readable');
+    assert(Array.isArray(marketingStatus.data.markets) && marketingStatus.data.markets.length === 2, 'marketing status should separate Israel and UK totals');
+    assert(!JSON.stringify(marketingStatus.data).includes('visitorSketch') && !JSON.stringify(marketingStatus.data).includes('sources'), 'public marketing status must not expose visitor sketches or attribution records');
+
     const feedback = await request(base, '/api/feedback', { method: 'POST', cookie, body: { rating: '5', text: 'בדיקת מחיקה', source: 'launch_test' } });
     assert(feedback.response.status === 201 && feedback.data.feedback.family?.familyId, 'feedback should be associated through the secure session');
 

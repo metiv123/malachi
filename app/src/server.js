@@ -20,7 +20,7 @@ import { listConnectionTemplates, submitConnectionTemplates, submitHodayaAgentTe
 import { createBackup, exportDbJson, listBackups } from './backup.js';
 import { listErrors, logError } from './errorLog.js';
 import { createFeedback, listFeedback } from './feedback.js';
-import { analyticsReport, recordAnalyticsEvent } from './analytics.js';
+import { analyticsReport, publicMarketingStatus, recordAnalyticsEvent } from './analytics.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const publicDir = path.resolve(__dirname, '../public');
@@ -248,6 +248,7 @@ async function route(req, res) {
     if (req.method === 'GET' && url.pathname === '/api/health') return json(res, 200, { ok: true, provider: config.whatsappProvider, version });
     if (req.method === 'GET' && url.pathname === '/api/version') return json(res, 200, version);
     if (req.method === 'GET' && url.pathname === '/api/beta/status') return json(res, 200, await betaStatus(url.searchParams.get('cohort') || ''));
+    if (req.method === 'GET' && url.pathname === '/api/marketing/status') return json(res, 200, await publicMarketingStatus({ days: url.searchParams.get('days') || 7 }));
     if (req.method === 'GET' && url.pathname === '/api/feedback') return json(res, 200, { feedback: await listFeedback() });
     if (req.method === 'POST' && url.pathname === '/api/feedback') {
       const input = await body(req);

@@ -170,4 +170,23 @@ export async function analyticsReport({ days = 30, market = 'all' } = {}) {
   };
 }
 
+export async function publicMarketingStatus({ days = 7 } = {}) {
+  const report = await analyticsReport({ days, market: 'all' });
+  return {
+    generatedAt: report.generatedAt,
+    days: report.days,
+    note: 'Aggregate, privacy-preserving funnel totals. No visitor, referrer or campaign records are exposed.',
+    markets: report.markets.map((summary) => ({
+      market: summary.market,
+      visitors: Number(summary.visitors || 0),
+      pageViews: Number(summary.pageViews || 0),
+      joinClicks: Number(summary.events.join_click || 0),
+      whatsappClicks: Number(summary.events.whatsapp_click || 0),
+      signupStarts: Number(summary.events.signup_start || 0),
+      signupCompletes: Number(summary.events.signup_complete || 0),
+      conversionRate: Number(summary.conversionRate || 0)
+    }))
+  };
+}
+
 export const analyticsInternals = { decodeSketch, estimateSketch, sketchAdd };

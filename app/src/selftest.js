@@ -6,7 +6,7 @@ import { processWhatsAppWebhookPayload } from './webhookProcessor.js';
 import { getHodayaAgentStatus, prepareHodayaWindowOpenTemplate, sendHodayaAgentReply, triggerHodayaEventDrivenTurn } from './hodayaAgent.js';
 import { loadDb, saveDb } from './store.js';
 import { config } from './config.js';
-import { analyticsReport, recordAnalyticsEvent } from './analytics.js';
+import { analyticsReport, publicMarketingStatus, recordAnalyticsEvent } from './analytics.js';
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
@@ -32,6 +32,12 @@ async function run() {
   assert(israelAnalytics.pageViews === 2 && israelAnalytics.visitors === 1, 'Israeli analytics should count views and deduplicate visitors');
   assert(israelAnalytics.events.join_click === 1 && israelAnalytics.sources.facebook === 2, 'Israeli analytics should count clicks and sources');
   assert(ukAnalytics.pageViews === 1 && ukAnalytics.events.signup_complete === 1, 'UK analytics should stay separate and ignore tests/bots');
+  const publicStatus = await publicMarketingStatus({ days: 30 });
+  const publicIsrael = publicStatus.markets.find((item) => item.market === 'il');
+  const publicUk = publicStatus.markets.find((item) => item.market === 'uk');
+  assert(publicIsrael.visitors === 1 && publicIsrael.pageViews === 2 && publicIsrael.joinClicks === 1, 'public Israel marketing status should expose aggregate funnel totals');
+  assert(publicUk.visitors === 1 && publicUk.signupCompletes === 1, 'public UK marketing status should expose aggregate funnel totals');
+  assert(!('sources' in publicIsrael) && !('campaigns' in publicIsrael) && !('daily' in publicStatus), 'public marketing status must not expose attribution or daily records');
   const accountOnly = await createUserAccount({ ownerName: 'משתמש חדש', ownerEmail: 'new-user@example.com', password: 'strongpass123', ownerPhone: '0521111111', termsConsent: true, privacyConsent: true, marketingEmailConsent: true, source: 'unit_test' });
   assert(accountOnly.family.id, 'account-only family id missing');
   assert(accountOnly.family.marketingEmailConsent === true, 'marketing consent should be saved');
