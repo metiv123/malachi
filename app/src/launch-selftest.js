@@ -31,6 +31,11 @@ async function run() {
   const address = server.address();
   const base = `http://127.0.0.1:${address.port}`;
   try {
+    const facebookShortLink = await request(base, '/f?utm_campaign=il_i5&utm_content=conversation_first');
+    assert(facebookShortLink.response.status === 200 && String(facebookShortLink.data).includes('allowedTrackingKeys'), 'extensionless Facebook short link must resolve and preserve safe attribution');
+    const whatsappShortLink = await request(base, '/w?utm_campaign=il_direct&utm_content=founder_share');
+    assert(whatsappShortLink.response.status === 200 && String(whatsappShortLink.data).includes('allowedTrackingKeys'), 'extensionless WhatsApp short link must resolve and preserve safe attribution');
+
     const rejected = await request(base, '/api/users', { method: 'POST', body: { ownerName: 'ללא הסכמה', ownerEmail: 'no@example.com', ownerPhone: '0551111111', password: 'strongpass123' } });
     assert(rejected.response.status === 400, 'server must reject account creation without legal consent');
 

@@ -186,7 +186,8 @@ async function body(req) {
 
 async function staticFile(res, pathname, { head = false } = {}) {
   const cleanPath = pathname.replace(/^\//, '');
-  const file = pathname === '/' ? 'index.html' : pathname.endsWith('/') ? `${cleanPath}index.html` : cleanPath;
+  const shortStaticPaths = new Map([['/f', 'f.html'], ['/w', 'w.html']]);
+  const file = shortStaticPaths.get(pathname) || (pathname === '/' ? 'index.html' : pathname.endsWith('/') ? `${cleanPath}index.html` : cleanPath);
   const target = path.resolve(publicDir, file);
   if (!target.startsWith(publicDir)) throw new Error('Bad path');
   const ext = path.extname(target);
