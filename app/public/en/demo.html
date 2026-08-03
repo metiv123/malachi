@@ -22,7 +22,7 @@
 </head>
 <body>
 <script src="/config.js"></script><script src="/analytics.js"></script>
-<header><nav class="wrap"><a class="brand" href="/en/"><img src="/assets/brand/malachi-mascot.png" alt=""><span class="brand-copy"><strong>Angelo</strong><small>Your Daily Check-In Angel</small></span></a><a class="pill-link" href="/en/create-user.html">Join free</a></nav></header>
+<header><nav class="wrap"><a class="brand" href="/en/"><img src="/assets/brand/malachi-mascot.png" alt=""><span class="brand-copy"><strong>Angelo</strong><small>Your Daily Check-In Angel</small></span></a><a class="pill-link" data-demo-join href="/en/create-user.html">Join free</a></nav></header>
 <main class="section">
   <div class="wrap">
     <div class="section-title"><h1 style="font-size:clamp(2.3rem,5vw,4rem)">See the complete daily check-in</h1><p>Try registration, a successful morning response and the full no-response path. This demonstration does not send real WhatsApp messages.</p></div>
@@ -50,7 +50,7 @@
       </section>
     </div>
     <p class="safety"><strong>Reminder:</strong> Angelo is not an emergency, medical or monitoring service. If there is no response, the family must contact the person directly and take the appropriate action.</p>
-    <div class="actions" style="justify-content:center"><a class="button primary" href="/en/create-user.html">Join the free pilot</a><a class="button secondary" href="/en/">Back to the website</a></div>
+    <div class="actions" style="justify-content:center"><a class="button primary" data-demo-join href="/en/create-user.html">Join the free pilot</a><a class="button secondary" href="/en/">Back to the website</a></div>
   </div>
 </main>
 <script>
@@ -59,6 +59,12 @@ const statusBox = document.querySelector('#demoStatus');
 const subtitle = document.querySelector('#subtitle');
 const names = () => ({ parent: document.querySelector('#parent').value.trim() || 'Margaret', family: document.querySelector('#family').value.trim() || 'Alex' });
 const pause = (fn, delay) => setTimeout(fn, delay);
+let demoEngagementTracked = false;
+function trackDemoEngagement() {
+  if (demoEngagementTracked) return;
+  demoEngagementTracked = true;
+  window.MalachiAnalytics?.track('demo_interaction');
+}
 function bubble(kind, html) {
   const item = document.createElement('div');
   item.className = kind === 'system' ? 'system-note' : `bubble${kind === 'reply' ? ' reply' : ''}`;
@@ -88,15 +94,18 @@ function resetDemo() {
   bubble('bot','Choose registration, a morning check-in or the no-response path.');
 }
 function registration() {
+  trackDemoEngagement();
   const { parent, family } = names(); chat.innerHTML = ''; subtitle.textContent = 'Registration and consent'; status('start');
   bubble('system','Initial family registration'); bubble('reply',`${family} has started setting up the daily check-in.<small>Now ✓✓</small>`);
   pause(() => { bubble('bot',`Hello ${parent} 🌿<br>${family} would like to connect you to Angelo’s daily WhatsApp check-in.<br>Please approve before any routine messages begin.`); action('I agree', () => { bubble('reply','I agree<small>Now ✓✓</small>'); bubble('bot','Thank you. Your daily check-in is now active.'); status('registered'); subtitle.textContent = 'Consent approved'; }); }, 350);
 }
 function morningCheck() {
+  trackDemoEngagement();
   const { parent } = names(); chat.innerHTML = ''; subtitle.textContent = 'Morning check-in'; status('registered');
   bubble('system','Today at 09:00'); pause(() => { bubble('bot',`Good morning ${parent} 🌿<br>Just tap to let your family know everything is okay.`); action('I’m okay', () => { bubble('reply','I’m okay<small>09:02 ✓✓</small>'); bubble('bot',`Thank you, ${parent} ❤️<br>We’ll check in again tomorrow morning.`); status('okay'); subtitle.textContent = 'Response received'; }); }, 250);
 }
 function noReply() {
+  trackDemoEngagement();
   const { parent, family } = names(); chat.innerHTML = ''; subtitle.textContent = 'No-response path'; status('registered');
   bubble('system','09:00 — morning check-in'); bubble('bot',`Good morning ${parent} 🌿<br>Just tap to let your family know everything is okay.`);
   pause(() => bubble('system','No response — first reminder sent'), 450);
@@ -110,6 +119,7 @@ document.querySelector('#noReply').onclick = noReply;
 document.querySelector('#reset').onclick = resetDemo;
 document.querySelector('#parent').oninput = () => status('start');
 document.querySelector('#family').oninput = () => status('start');
+document.querySelectorAll('[data-demo-join]').forEach((link) => link.addEventListener('click', () => window.MalachiAnalytics?.track('demo_join_click')));
 resetDemo();
 </script>
 </body>

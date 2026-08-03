@@ -23,6 +23,8 @@ async function run() {
   await recordAnalyticsEvent({ event: 'page_view', market: 'il', path: '/', utm_source: 'facebook', utm_campaign: 'israel_launch' }, { ip: '203.0.113.10', userAgent: 'Selftest Browser' });
   await recordAnalyticsEvent({ event: 'join_click', market: 'il', path: '/' }, { ip: '203.0.113.10', userAgent: 'Selftest Browser' });
   await recordAnalyticsEvent({ event: 'demo_click', market: 'il', path: '/' }, { ip: '203.0.113.10', userAgent: 'Selftest Browser' });
+  await recordAnalyticsEvent({ event: 'demo_interaction', market: 'il', path: '/demo.html' }, { ip: '203.0.113.10', userAgent: 'Selftest Browser' });
+  await recordAnalyticsEvent({ event: 'demo_join_click', market: 'il', path: '/demo.html' }, { ip: '203.0.113.10', userAgent: 'Selftest Browser' });
   await recordAnalyticsEvent({ event: 'page_view', market: 'uk', path: '/', utm_source: 'community' }, { ip: '198.51.100.20', userAgent: 'Selftest Browser UK' });
   await recordAnalyticsEvent({ event: 'signup_complete', market: 'uk', path: '/en/create-user.html' }, { ip: '198.51.100.20', userAgent: 'Selftest Browser UK' });
   await recordAnalyticsEvent({ event: 'page_view', market: 'uk', path: '/', test: true }, { ip: '192.0.2.99', userAgent: 'Selftest Browser' });
@@ -36,7 +38,7 @@ async function run() {
   const publicStatus = await publicMarketingStatus({ days: 30 });
   const publicIsrael = publicStatus.markets.find((item) => item.market === 'il');
   const publicUk = publicStatus.markets.find((item) => item.market === 'uk');
-  assert(publicIsrael.visitors === 1 && publicIsrael.pageViews === 2 && publicIsrael.demoClicks === 1 && publicIsrael.joinClicks === 1, 'public Israel marketing status should expose aggregate funnel totals');
+  assert(publicIsrael.visitors === 1 && publicIsrael.pageViews === 2 && publicIsrael.demoClicks === 1 && publicIsrael.demoInteractions === 1 && publicIsrael.demoJoinClicks === 1 && publicIsrael.joinClicks === 1, 'public Israel marketing status should expose aggregate funnel totals');
   assert(publicUk.visitors === 1 && publicUk.signupCompletes === 1, 'public UK marketing status should expose aggregate funnel totals');
   assert(!('sources' in publicIsrael) && !('campaigns' in publicIsrael) && !('daily' in publicStatus), 'public marketing status must not expose attribution or daily records');
   const accountOnly = await createUserAccount({ ownerName: 'משתמש חדש', ownerEmail: 'new-user@example.com', password: 'strongpass123', ownerPhone: '0521111111', termsConsent: true, privacyConsent: true, marketingEmailConsent: true, source: 'unit_test' });
