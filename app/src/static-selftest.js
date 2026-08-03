@@ -49,6 +49,7 @@ async function run() {
   assert(englishIndex.includes("partnerSource.startsWith('email_')") && englishIndex.includes("partnerCampaign.startsWith('uk_partner')"), 'UK partner-review source targeting missing');
   assert(englishIndex.includes('Send a three-line review') && englishIndex.includes('Strongest%20concern%20or%20design%20flaw'), 'UK partner-review response should open a structured three-line email');
   assert(index.includes('id="requestedDetails"') && index.includes("requestedSource.includes('requested_reply')"), 'Israeli requested-details path missing');
+  assert(index.includes('id="partnerReview"') && index.includes("partnerCampaign.startsWith('il_partner')") && index.includes('לשלוח משוב בשלוש שורות'), 'Israeli professional-review path missing');
   assert(englishIndex.includes('id="requestedDetails"') && englishIndex.includes("requestedSource.includes('requested_reply')"), 'UK requested-details path missing');
   const adminPage = await readFile(path.join(publicDir, 'admin.html'), 'utf8');
   assert(adminPage.includes('sourceFunnels') && adminPage.includes('campaignFunnels') && adminPage.includes('משפך לפי מקור'), 'admin source and campaign funnel view missing');
