@@ -31,6 +31,12 @@
       body: JSON.stringify({ event, market, path: location.pathname, ...attribution, ...details, test: testMode })
     }).catch(() => {});
   }
+  let engagementTracked = false;
+  function markEngagedView() {
+    if (engagementTracked) return;
+    engagementTracked = true;
+    track('engaged_view');
+  }
   function eventForLink(link) {
     if (link.dataset.analytics) return link.dataset.analytics;
     const href = link.getAttribute('href') || '';
@@ -43,6 +49,9 @@
   window.MalachiAnalytics = { track, market };
   document.addEventListener('DOMContentLoaded', () => {
     track('page_view');
+    document.addEventListener('pointerdown', markEngagedView, { once: true, passive: true });
+    document.addEventListener('keydown', markEngagedView, { once: true });
+    document.addEventListener('scroll', markEngagedView, { once: true, passive: true });
     document.querySelectorAll('a[href],button[data-analytics]').forEach((element) => {
       const event = eventForLink(element);
       if (event) element.addEventListener('click', () => track(event));

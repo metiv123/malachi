@@ -4,6 +4,7 @@ import { loadDb, mutateDb, nowIso } from './store.js';
 
 const EVENTS = new Set([
   'page_view',
+  'engaged_view',
   'join_click',
   'demo_click',
   'demo_interaction',
@@ -212,6 +213,7 @@ export async function publicMarketingStatus({ days = 7 } = {}) {
       market: summary.market,
       visitors: Number(summary.visitors || 0),
       pageViews: Number(summary.pageViews || 0),
+      engagedViews: Number(summary.events.engaged_view || 0),
       demoClicks: Number(summary.events.demo_click || 0),
       demoInteractions: Number(summary.events.demo_interaction || 0),
       demoJoinClicks: Number(summary.events.demo_join_click || 0),

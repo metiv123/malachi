@@ -73,7 +73,7 @@ function statusBadge(status){
 function renderFunnelBreakdown(title, funnels = {}){
   const score = (item) => Number(item.pageViews || 0) + Number(item.events?.demo_click || 0) + Number(item.events?.join_click || 0) + Number(item.events?.signup_start || 0) + Number(item.events?.signup_complete || 0);
   const rows = Object.entries(funnels).filter(([name]) => name !== 'none').sort((a,b) => score(b[1]) - score(a[1]));
-  return `<h4>${escapeHtml(title)}</h4><div class="simple-list">${rows.map(([name,item]) => `<article class="simple-item compact"><strong>${escapeHtml(name)}</strong><br>צפיות: ${item.pageViews || 0} · דמו: ${item.events?.demo_click || 0} · שימוש בדמו: ${item.events?.demo_interaction || 0} · מעבר מהדמו להצטרפות: ${item.events?.demo_join_click || 0} · לחיצות הצטרפות: ${item.events?.join_click || 0} · התחלת הרשמה: ${item.events?.signup_start || 0} · הרשמה הושלמה: ${item.events?.signup_complete || 0} · המרה מצפייה להרשמה: ${item.viewToSignupRate || 0}%</article>`).join('') || '<p>אין עדיין נתוני משפך למקור זה.</p>'}</div>`;
+  return `<h4>${escapeHtml(title)}</h4><div class="simple-list">${rows.map(([name,item]) => `<article class="simple-item compact"><strong>${escapeHtml(name)}</strong><br>צפיות: ${item.pageViews || 0} · ביקורים מעורבים: ${item.events?.engaged_view || 0} · דמו: ${item.events?.demo_click || 0} · שימוש בדמו: ${item.events?.demo_interaction || 0} · מעבר מהדמו להצטרפות: ${item.events?.demo_join_click || 0} · לחיצות הצטרפות: ${item.events?.join_click || 0} · התחלת הרשמה: ${item.events?.signup_start || 0} · הרשמה הושלמה: ${item.events?.signup_complete || 0} · המרה מצפייה להרשמה: ${item.viewToSignupRate || 0}%</article>`).join('') || '<p>אין עדיין נתוני משפך למקור זה.</p>'}</div>`;
 }
 
 async function loadSimpleOverview(){
