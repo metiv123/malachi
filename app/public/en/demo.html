@@ -1,4 +1,117 @@
-<!doctype html><html lang="en-GB"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>See Angelo in action</title><link rel="stylesheet" href="/en/site.css"><link rel="icon" href="/assets/brand/malachi-mascot.png"></head>
-<body><script src="/config.js"></script><script src="/analytics.js"></script><header><nav class="wrap"><a class="brand" href="/en/"><img src="/assets/brand/malachi-mascot.png" alt=""><span class="brand-copy"><strong>Angelo</strong><small>Your Daily Check-In Angel</small></span></a><a class="pill-link" href="/en/create-user.html">Join free</a></nav></header><main class="section"><div class="wrap"><div class="section-title"><h1 style="font-size:clamp(2.3rem,5vw,4rem)">See the full daily check-in</h1><p>Tap through both outcomes. This is a demonstration only; it does not send a real WhatsApp message.</p></div><div class="grid2"><section class="dashboard-card"><h2>Morning check-in</h2><div class="phone"><div class="phone-top"><img src="/assets/brand/malachi-mascot.png" alt=""><strong>Malachi</strong></div><div id="demoChat"><div class="bubble">Good morning Margaret 🌿<br>Just tap to let your family know everything is okay.<button class="chat-button" id="okay">I’m okay</button></div></div></div><p class="pilot-name-note">During the transition, live WhatsApp messages may display our existing service name, Malachi.</p></section><section class="dashboard-card"><h2>What the family sees</h2><div id="familyResult" class="small">Choose an outcome to see what happens.</div><div class="actions"><button class="button secondary" id="noReply">Show no-response path</button><button class="button secondary" id="reset">Reset demo</button></div></section></div><p class="safety"><strong>Reminder:</strong> Angelo is not an emergency or medical service. When there is no response, the family must contact the person directly and take the appropriate action.</p><div class="actions" style="justify-content:center"><a class="button primary" href="/en/create-user.html">Join the free pilot</a><a class="button secondary" href="/en/">Back to the website</a></div></div></main><script>
-const chat=document.querySelector('#demoChat'),result=document.querySelector('#familyResult');document.querySelector('#okay').onclick=()=>{chat.innerHTML+='<div class="bubble reply">I’m okay<small>09:02 ✓✓</small></div><div class="bubble">Thank you ❤️ We’ll check in tomorrow.</div>';result.innerHTML='<div class="success"><strong>No family alert is sent.</strong><p>The response is recorded and the daily routine is complete.</p></div>'};document.querySelector('#noReply').onclick=()=>{chat.innerHTML+='<div class="bubble">We haven’t received a response yet. Please tap below.<div class="chat-button">I’m okay</div></div>';result.innerHTML='<div class="success" style="border-color:#efb0aa;background:#fff4f2"><strong>After the configured reminders, the family is alerted.</strong><p>“Margaret has not responded to the morning check-in. We recommend contacting them directly.”</p></div>'};document.querySelector('#reset').onclick=()=>location.reload();
-</script></body></html>
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>See Angelo in action</title>
+  <link rel="stylesheet" href="/en/site.css">
+  <link rel="icon" href="/assets/brand/malachi-mascot.png">
+  <style>
+    .demo-controls{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:18px 0}
+    .demo-actions{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0}
+    .demo-actions .button{flex:1;min-width:150px}
+    .demo-status{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:18px}
+    .demo-status article{padding:13px;border:1px solid var(--line);border-radius:14px;background:#f7fbff}
+    .demo-status strong,.demo-status span{display:block}.demo-status span{font-size:.82rem;color:var(--muted)}
+    .demo-status .ok strong{color:#126d37}.demo-status .warning strong{color:#8f2d21}
+    .phone{min-height:560px}.phone-top small{display:block;color:#d9f3e8}
+    #demoChat{max-height:455px;overflow:auto}.chat-button{display:block;width:100%;background:#fff;cursor:pointer;font:inherit}
+    .system-note{margin:10px;text-align:center;color:var(--muted);font-size:.8rem}
+    @media(max-width:620px){.demo-controls,.demo-status{grid-template-columns:1fr}.demo-actions .button{width:100%}}
+  </style>
+</head>
+<body>
+<script src="/config.js"></script><script src="/analytics.js"></script>
+<header><nav class="wrap"><a class="brand" href="/en/"><img src="/assets/brand/malachi-mascot.png" alt=""><span class="brand-copy"><strong>Angelo</strong><small>Your Daily Check-In Angel</small></span></a><a class="pill-link" href="/en/create-user.html">Join free</a></nav></header>
+<main class="section">
+  <div class="wrap">
+    <div class="section-title"><h1 style="font-size:clamp(2.3rem,5vw,4rem)">See the complete daily check-in</h1><p>Try registration, a successful morning response and the full no-response path. This demonstration does not send real WhatsApp messages.</p></div>
+    <div class="grid2">
+      <section class="dashboard-card">
+        <h2>Choose a journey</h2>
+        <div class="demo-controls">
+          <label>Parent’s name<input id="parent" value="Margaret"></label>
+          <label>Family member’s name<input id="family" value="Alex"></label>
+        </div>
+        <div class="demo-actions">
+          <button class="button primary" type="button" id="registration">Start registration</button>
+          <button class="button secondary" type="button" id="morning">Send morning check-in</button>
+          <button class="button secondary" type="button" id="noReply">Show no-response path</button>
+        </div>
+        <div class="demo-status" id="demoStatus" aria-live="polite"></div>
+        <div class="demo-actions"><button class="button secondary" type="button" id="reset">Reset demo</button></div>
+      </section>
+      <section class="dashboard-card">
+        <h2>WhatsApp simulation</h2>
+        <div class="phone">
+          <div class="phone-top"><img src="/assets/brand/malachi-mascot.png" alt=""><div><strong>Malachi</strong><small id="subtitle">Waiting to start</small></div></div>
+          <div id="demoChat" aria-live="polite"></div>
+        </div>
+        <p class="pilot-name-note">Angelo is the English pilot name. During the transition, live WhatsApp messages may display our existing service name, Malachi.</p>
+      </section>
+    </div>
+    <p class="safety"><strong>Reminder:</strong> Angelo is not an emergency, medical or monitoring service. If there is no response, the family must contact the person directly and take the appropriate action.</p>
+    <div class="actions" style="justify-content:center"><a class="button primary" href="/en/create-user.html">Join the free pilot</a><a class="button secondary" href="/en/">Back to the website</a></div>
+  </div>
+</main>
+<script>
+const chat = document.querySelector('#demoChat');
+const statusBox = document.querySelector('#demoStatus');
+const subtitle = document.querySelector('#subtitle');
+const names = () => ({ parent: document.querySelector('#parent').value.trim() || 'Margaret', family: document.querySelector('#family').value.trim() || 'Alex' });
+const pause = (fn, delay) => setTimeout(fn, delay);
+function bubble(kind, html) {
+  const item = document.createElement('div');
+  item.className = kind === 'system' ? 'system-note' : `bubble${kind === 'reply' ? ' reply' : ''}`;
+  item.innerHTML = html;
+  chat.appendChild(item);
+  chat.scrollTop = chat.scrollHeight;
+  return item;
+}
+function action(text, handler) {
+  const button = document.createElement('button');
+  button.type = 'button'; button.className = 'chat-button'; button.textContent = text; button.onclick = handler;
+  chat.lastElementChild?.appendChild(button);
+}
+function status(mode) {
+  const { parent, family } = names();
+  const states = {
+    start: [['Waiting','Choose a journey'],[parent,'Parent'],[family,'Family contact'],['09:00','Example time']],
+    registered: [['Approved','Parent consent'],[parent,'Receives check-ins'],[family,'Receives alerts'],['Active','Ready for tomorrow']],
+    okay: [['I’m okay','Latest response'],['09:02','Response time'],['No alert','Family undisturbed'],['Complete','Next check tomorrow']],
+    late: [['No response','Check-in status'],['2 reminders','Sent automatically'],[family,'Family alerted'],['Contact directly','Recommended next step']]
+  };
+  statusBox.innerHTML = states[mode].map((item, index) => `<article class="${mode === 'okay' ? 'ok' : mode === 'late' && index < 3 ? 'warning' : ''}"><strong>${item[0]}</strong><span>${item[1]}</span></article>`).join('');
+}
+function resetDemo() {
+  chat.innerHTML = ''; subtitle.textContent = 'Waiting to start'; status('start');
+  bubble('system','Welcome to the interactive Angelo demo');
+  bubble('bot','Choose registration, a morning check-in or the no-response path.');
+}
+function registration() {
+  const { parent, family } = names(); chat.innerHTML = ''; subtitle.textContent = 'Registration and consent'; status('start');
+  bubble('system','Initial family registration'); bubble('reply',`${family} has started setting up the daily check-in.<small>Now ✓✓</small>`);
+  pause(() => { bubble('bot',`Hello ${parent} 🌿<br>${family} would like to connect you to Malachi’s daily WhatsApp check-in.<br>Please approve before any routine messages begin.`); action('I agree', () => { bubble('reply','I agree<small>Now ✓✓</small>'); bubble('bot','Thank you. Your daily check-in is now active.'); status('registered'); subtitle.textContent = 'Consent approved'; }); }, 350);
+}
+function morningCheck() {
+  const { parent } = names(); chat.innerHTML = ''; subtitle.textContent = 'Morning check-in'; status('registered');
+  bubble('system','Today at 09:00'); pause(() => { bubble('bot',`Good morning ${parent} 🌿<br>Just tap to let your family know everything is okay.`); action('I’m okay', () => { bubble('reply','I’m okay<small>09:02 ✓✓</small>'); bubble('bot',`Thank you, ${parent} ❤️<br>We’ll check in again tomorrow morning.`); status('okay'); subtitle.textContent = 'Response received'; }); }, 250);
+}
+function noReply() {
+  const { parent, family } = names(); chat.innerHTML = ''; subtitle.textContent = 'No-response path'; status('registered');
+  bubble('system','09:00 — morning check-in'); bubble('bot',`Good morning ${parent} 🌿<br>Just tap to let your family know everything is okay.`);
+  pause(() => bubble('system','No response — first reminder sent'), 450);
+  pause(() => bubble('bot',`Hi ${parent}, we still haven’t received a response. Please tap below when you can.`), 750);
+  pause(() => bubble('system','Still no response after the configured reminders'), 1100);
+  pause(() => { chat.innerHTML = ''; subtitle.textContent = `Family alert to ${family}`; bubble('system',`Conversation with ${family}`); bubble('bot',`Hello ${family} 🌿<br>${parent} has not responded to the morning check-in. Please contact them directly to make sure everything is okay.`); status('late'); }, 1500);
+}
+document.querySelector('#registration').onclick = registration;
+document.querySelector('#morning').onclick = morningCheck;
+document.querySelector('#noReply').onclick = noReply;
+document.querySelector('#reset').onclick = resetDemo;
+document.querySelector('#parent').oninput = () => status('start');
+document.querySelector('#family').oninput = () => status('start');
+resetDemo();
+</script>
+</body>
+</html>
