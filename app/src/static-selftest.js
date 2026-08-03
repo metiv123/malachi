@@ -36,6 +36,7 @@ async function run() {
 
   const index = await readFile(path.join(publicDir, 'index.html'), 'utf8');
   assert((index.match(/חשוב לדעת/g) || []).length === 1, 'homepage must contain one combined important notice');
+  assert(index.includes('רק בהסכמה — ורק כתוספת לקשר האישי') && index.includes('ואסור לה לגרום למשפחה לדבר פחות') && index.includes('מי שאינו רוצה הודעה אוטומטית אינו מתאים לפיילוט'), 'Israeli homepage must make voluntary fit and human-contact boundary explicit');
   assert(index.includes('class="nav-login"') && index.includes('/login.html'), 'top user-login button missing');
   assert(index.includes('/accessibility.html'), 'accessibility statement link missing');
   assert(index.includes('src="/analytics.js"'), 'Israeli homepage analytics missing');
