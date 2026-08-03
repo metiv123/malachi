@@ -43,6 +43,8 @@ async function run() {
   assert(englishIndex.includes('src="/analytics.js"'), 'UK homepage analytics missing');
   assert(englishIndex.includes('id="partnerReview"') && englishIndex.includes('partner-review') && englishIndex.includes('hidden'), 'UK partner-review panel must exist and stay hidden by default');
   assert(englishIndex.includes("partnerSource.startsWith('email_')") && englishIndex.includes("partnerCampaign.startsWith('uk_partner')"), 'UK partner-review source targeting missing');
+  const adminPage = await readFile(path.join(publicDir, 'admin.html'), 'utf8');
+  assert(adminPage.includes('sourceFunnels') && adminPage.includes('campaignFunnels') && adminPage.includes('משפך לפי מקור'), 'admin source and campaign funnel view missing');
   assert((await readFile(path.join(publicDir, 'create-user.html'), 'utf8')).includes('src="/analytics.js"'), 'Israeli signup analytics missing');
   assert((await readFile(path.join(publicDir, 'en/create-user.html'), 'utf8')).includes('src="/analytics.js"'), 'UK signup analytics missing');
   assert((await readFile(path.join(publicDir, 'f.html'), 'utf8')).includes('source=facebook'), 'Israeli Facebook short link missing');

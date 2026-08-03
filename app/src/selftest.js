@@ -21,12 +21,12 @@ async function run() {
   await reset();
   await recordAnalyticsEvent({ event: 'page_view', market: 'il', path: '/', utm_source: 'facebook', utm_campaign: 'israel_launch' }, { ip: '203.0.113.10', userAgent: 'Selftest Browser' });
   await recordAnalyticsEvent({ event: 'page_view', market: 'il', path: '/', utm_source: 'facebook', utm_campaign: 'israel_launch' }, { ip: '203.0.113.10', userAgent: 'Selftest Browser' });
-  await recordAnalyticsEvent({ event: 'join_click', market: 'il', path: '/' }, { ip: '203.0.113.10', userAgent: 'Selftest Browser' });
-  await recordAnalyticsEvent({ event: 'demo_click', market: 'il', path: '/' }, { ip: '203.0.113.10', userAgent: 'Selftest Browser' });
-  await recordAnalyticsEvent({ event: 'demo_interaction', market: 'il', path: '/demo.html' }, { ip: '203.0.113.10', userAgent: 'Selftest Browser' });
-  await recordAnalyticsEvent({ event: 'demo_join_click', market: 'il', path: '/demo.html' }, { ip: '203.0.113.10', userAgent: 'Selftest Browser' });
+  await recordAnalyticsEvent({ event: 'join_click', market: 'il', path: '/', utm_source: 'facebook', utm_campaign: 'israel_launch' }, { ip: '203.0.113.10', userAgent: 'Selftest Browser' });
+  await recordAnalyticsEvent({ event: 'demo_click', market: 'il', path: '/', utm_source: 'facebook', utm_campaign: 'israel_launch' }, { ip: '203.0.113.10', userAgent: 'Selftest Browser' });
+  await recordAnalyticsEvent({ event: 'demo_interaction', market: 'il', path: '/demo.html', utm_source: 'facebook', utm_campaign: 'israel_launch' }, { ip: '203.0.113.10', userAgent: 'Selftest Browser' });
+  await recordAnalyticsEvent({ event: 'demo_join_click', market: 'il', path: '/demo.html', utm_source: 'facebook', utm_campaign: 'israel_launch' }, { ip: '203.0.113.10', userAgent: 'Selftest Browser' });
   await recordAnalyticsEvent({ event: 'page_view', market: 'uk', path: '/', utm_source: 'community' }, { ip: '198.51.100.20', userAgent: 'Selftest Browser UK' });
-  await recordAnalyticsEvent({ event: 'signup_complete', market: 'uk', path: '/en/create-user.html' }, { ip: '198.51.100.20', userAgent: 'Selftest Browser UK' });
+  await recordAnalyticsEvent({ event: 'signup_complete', market: 'uk', path: '/en/create-user.html', utm_source: 'community', utm_campaign: 'uk_pilot' }, { ip: '198.51.100.20', userAgent: 'Selftest Browser UK' });
   await recordAnalyticsEvent({ event: 'page_view', market: 'uk', path: '/', test: true }, { ip: '192.0.2.99', userAgent: 'Selftest Browser' });
   await recordAnalyticsEvent({ event: 'page_view', market: 'uk', path: '/' }, { ip: '192.0.2.88', userAgent: 'Googlebot' });
   const analytics = await analyticsReport({ days: 30 });
@@ -34,7 +34,10 @@ async function run() {
   const ukAnalytics = analytics.markets.find((item) => item.market === 'uk');
   assert(israelAnalytics.pageViews === 2 && israelAnalytics.visitors === 1, 'Israeli analytics should count views and deduplicate visitors');
   assert(israelAnalytics.events.join_click === 1 && israelAnalytics.sources.facebook === 2, 'Israeli analytics should count clicks and sources');
+  assert(israelAnalytics.sourceFunnels.facebook.events.join_click === 1 && israelAnalytics.sourceFunnels.facebook.events.demo_interaction === 1, 'admin analytics should expose a source-level funnel');
+  assert(israelAnalytics.campaignFunnels.israel_launch.events.demo_join_click === 1, 'admin analytics should expose a campaign-level funnel');
   assert(ukAnalytics.pageViews === 1 && ukAnalytics.events.signup_complete === 1, 'UK analytics should stay separate and ignore tests/bots');
+  assert(ukAnalytics.sourceFunnels.community.events.signup_complete === 1, 'UK source funnel should attribute signup completion');
   const publicStatus = await publicMarketingStatus({ days: 30 });
   const publicIsrael = publicStatus.markets.find((item) => item.market === 'il');
   const publicUk = publicStatus.markets.find((item) => item.market === 'uk');

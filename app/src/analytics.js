@@ -88,7 +88,9 @@ function emptyRow(day, market) {
     events: {},
     pages: {},
     sources: {},
+    sourceEvents: {},
     campaigns: {},
+    campaignEvents: {},
     mediums: {},
     updatedAt: nowIso()
   };
@@ -115,6 +117,12 @@ export async function recordAnalyticsEvent(input = {}, request = {}) {
       db.analyticsDaily.push(row);
     }
     row.events[event] = Number(row.events[event] || 0) + 1;
+    row.sourceEvents ||= {};
+    row.sourceEvents[source] ||= {};
+    row.sourceEvents[source][event] = Number(row.sourceEvents[source][event] || 0) + 1;
+    row.campaignEvents ||= {};
+    row.campaignEvents[campaign] ||= {};
+    row.campaignEvents[campaign][event] = Number(row.campaignEvents[campaign][event] || 0) + 1;
     row.updatedAt = nowIso();
     if (event === 'page_view') {
       row.pageViews = Number(row.pageViews || 0) + 1;
@@ -133,10 +141,30 @@ function addCounts(target, source = {}) {
   for (const [key, value] of Object.entries(source)) target[key] = Number(target[key] || 0) + Number(value || 0);
 }
 
+function summarizeBreakdowns(rows, countsField, eventsField) {
+  const breakdowns = {};
+  for (const row of rows) {
+    for (const [name, value] of Object.entries(row[countsField] || {})) {
+      breakdowns[name] ||= { pageViews: 0, events: {}, viewToSignupRate: 0 };
+      breakdowns[name].pageViews += Number(value || 0);
+    }
+    for (const [name, events] of Object.entries(row[eventsField] || {})) {
+      breakdowns[name] ||= { pageViews: 0, events: {}, viewToSignupRate: 0 };
+      addCounts(breakdowns[name].events, events);
+    }
+  }
+  for (const item of Object.values(breakdowns)) {
+    const completed = Number(item.events.signup_complete || 0);
+    item.viewToSignupRate = item.pageViews ? Number(((completed / item.pageViews) * 100).toFixed(1)) : 0;
+  }
+  return breakdowns;
+}
+
 function summarize(rows, market) {
+  const marketRows = rows.filter((item) => item.market === market);
   const sketch = emptySketch();
-  const summary = { market, visitors: 0, pageViews: 0, events: {}, pages: {}, sources: {}, campaigns: {}, mediums: {}, conversionRate: 0 };
-  for (const row of rows.filter((item) => item.market === market)) {
+  const summary = { market, visitors: 0, pageViews: 0, events: {}, pages: {}, sources: {}, sourceFunnels: {}, campaigns: {}, campaignFunnels: {}, mediums: {}, conversionRate: 0 };
+  for (const row of marketRows) {
     summary.pageViews += Number(row.pageViews || 0);
     addCounts(summary.events, row.events);
     addCounts(summary.pages, row.pages);
@@ -146,6 +174,8 @@ function summarize(rows, market) {
     sketchMerge(sketch, row.visitorSketch);
   }
   summary.visitors = estimateSketch(sketch);
+  summary.sourceFunnels = summarizeBreakdowns(marketRows, 'sources', 'sourceEvents');
+  summary.campaignFunnels = summarizeBreakdowns(marketRows, 'campaigns', 'campaignEvents');
   const completed = Number(summary.events.signup_complete || 0);
   summary.conversionRate = summary.visitors ? Number(((completed / summary.visitors) * 100).toFixed(1)) : 0;
   return summary;
