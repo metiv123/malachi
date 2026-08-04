@@ -25,6 +25,14 @@ const form = document.querySelector('#createUserForm');
 const result = document.querySelector('#createUserResult');
 
 if (form) {
+  let signupFormEngaged = false;
+  const markSignupFormEngaged = () => {
+    if (signupFormEngaged) return;
+    signupFormEngaged = true;
+    window.MalachiAnalytics?.track('signup_form_engaged');
+  };
+  form.addEventListener('input', markSignupFormEngaged, { once: true });
+  form.addEventListener('change', markSignupFormEngaged, { once: true });
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     window.MalachiAnalytics?.track('signup_start');
