@@ -55,6 +55,10 @@ async function run() {
   assert(englishIndex.includes('Send a three-line review') && englishIndex.includes('Strongest%20concern%20or%20design%20flaw'), 'UK partner-review response should open a structured three-line email');
   assert(index.includes('id="requestedDetails"') && index.includes("requestedSource.includes('requested_reply')"), 'Israeli requested-details path missing');
   assert(index.includes('id="partnerReview"') && index.includes("partnerCampaign.startsWith('il_partner')") && index.includes('לשלוח משוב בשלוש שורות'), 'Israeli professional-review path missing');
+  for (const riskyHebrewClaim of ['המשפחה נשארת בשקט', 'התראה רק כשצריך לבדוק', 'הוא לא באמת לבד']) {
+    assert(!index.includes(riskyHebrewClaim), `Israeli homepage contains a contact-reduction or certainty claim: ${riskyHebrewClaim}`);
+  }
+  assert(index.includes('כשהתגובה הרגילה מגיעה — היא נרשמת') && index.includes('המשפחה תמיד מחליטה מה לעשות') && index.includes('שעוזרת למשפחה לשים לב ולהישאר בקשר'), 'Israeli homepage must describe the observable reply and preserve human decision and contact');
   assert(englishIndex.includes('id="requestedDetails"') && englishIndex.includes("requestedSource.includes('requested_reply')"), 'UK requested-details path missing');
   const adminPage = await readFile(path.join(publicDir, 'admin.html'), 'utf8');
   assert(adminPage.includes('sourceFunnels') && adminPage.includes('campaignFunnels') && adminPage.includes('משפך לפי מקור'), 'admin source and campaign funnel view missing');
