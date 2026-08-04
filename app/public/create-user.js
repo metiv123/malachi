@@ -25,6 +25,7 @@ const form = document.querySelector('#createUserForm');
 const result = document.querySelector('#createUserResult');
 
 if (form) {
+  window.MalachiAnalytics?.track('signup_form_view');
   let signupFormEngaged = false;
   const markSignupFormEngaged = () => {
     if (signupFormEngaged) return;

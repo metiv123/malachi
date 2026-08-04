@@ -11,6 +11,7 @@ const EVENTS = new Set([
   'demo_join_click',
   'sign_in_click',
   'whatsapp_click',
+  'signup_form_view',
   'signup_form_engaged',
   'signup_start',
   'signup_complete',
@@ -220,8 +221,10 @@ export async function publicMarketingStatus({ days = 7 } = {}) {
       demoJoinClicks: Number(summary.events.demo_join_click || 0),
       joinClicks: Number(summary.events.join_click || 0),
       whatsappClicks: Number(summary.events.whatsapp_click || 0),
+      signupFormViews: Number(summary.events.signup_form_view || 0),
       signupFormEngaged: Number(summary.events.signup_form_engaged || 0),
       signupStarts: Number(summary.events.signup_start || 0),
+      signupSubmitAttempts: Number(summary.events.signup_start || 0),
       signupCompletes: Number(summary.events.signup_complete || 0),
       conversionRate: Number(summary.conversionRate || 0)
     }))

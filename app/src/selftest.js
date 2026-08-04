@@ -42,6 +42,7 @@ async function run() {
   await recordAnalyticsEvent({ event: 'demo_interaction', market: 'il', path: '/demo.html', utm_source: 'facebook', utm_campaign: 'israel_launch' }, { ip: '203.0.113.10', userAgent: 'Selftest Browser' });
   await recordAnalyticsEvent({ event: 'demo_join_click', market: 'il', path: '/demo.html', utm_source: 'facebook', utm_campaign: 'israel_launch' }, { ip: '203.0.113.10', userAgent: 'Selftest Browser' });
   await recordAnalyticsEvent({ event: 'page_view', market: 'uk', path: '/', utm_source: 'community' }, { ip: '198.51.100.20', userAgent: 'Selftest Browser UK' });
+  await recordAnalyticsEvent({ event: 'signup_form_view', market: 'uk', path: '/en/create-user.html', utm_source: 'community', utm_campaign: 'uk_pilot' }, { ip: '198.51.100.20', userAgent: 'Selftest Browser UK' });
   await recordAnalyticsEvent({ event: 'signup_form_engaged', market: 'uk', path: '/en/create-user.html', utm_source: 'community', utm_campaign: 'uk_pilot' }, { ip: '198.51.100.20', userAgent: 'Selftest Browser UK' });
   await recordAnalyticsEvent({ event: 'signup_complete', market: 'uk', path: '/en/create-user.html', utm_source: 'community', utm_campaign: 'uk_pilot' }, { ip: '198.51.100.20', userAgent: 'Selftest Browser UK' });
   await recordAnalyticsEvent({ event: 'page_view', market: 'uk', path: '/', test: true }, { ip: '192.0.2.99', userAgent: 'Selftest Browser' });
@@ -53,13 +54,13 @@ async function run() {
   assert(israelAnalytics.events.join_click === 1 && israelAnalytics.sources.facebook === 2, 'Israeli analytics should count clicks and sources');
   assert(israelAnalytics.sourceFunnels.facebook.events.join_click === 1 && israelAnalytics.sourceFunnels.facebook.events.demo_interaction === 1, 'admin analytics should expose a source-level funnel');
   assert(israelAnalytics.campaignFunnels.israel_launch.events.demo_join_click === 1, 'admin analytics should expose a campaign-level funnel');
-  assert(ukAnalytics.pageViews === 1 && ukAnalytics.events.signup_form_engaged === 1 && ukAnalytics.events.signup_complete === 1, 'UK analytics should stay separate, expose form engagement and ignore tests/bots');
+  assert(ukAnalytics.pageViews === 1 && ukAnalytics.events.signup_form_view === 1 && ukAnalytics.events.signup_form_engaged === 1 && ukAnalytics.events.signup_complete === 1, 'UK analytics should stay separate, expose form entry and engagement, and ignore tests/bots');
   assert(ukAnalytics.sourceFunnels.community.events.signup_complete === 1, 'UK source funnel should attribute signup completion');
   const publicStatus = await publicMarketingStatus({ days: 30 });
   const publicIsrael = publicStatus.markets.find((item) => item.market === 'il');
   const publicUk = publicStatus.markets.find((item) => item.market === 'uk');
   assert(publicIsrael.visitors === 1 && publicIsrael.pageViews === 2 && publicIsrael.engagedViews === 1 && publicIsrael.demoClicks === 1 && publicIsrael.demoInteractions === 1 && publicIsrael.demoJoinClicks === 1 && publicIsrael.joinClicks === 1, 'public Israel marketing status should expose aggregate funnel totals');
-  assert(publicUk.visitors === 1 && publicUk.signupFormEngaged === 1 && publicUk.signupCompletes === 1, 'public UK marketing status should expose aggregate funnel totals including form engagement');
+  assert(publicUk.visitors === 1 && publicUk.signupFormViews === 1 && publicUk.signupFormEngaged === 1 && publicUk.signupSubmitAttempts === 0 && publicUk.signupCompletes === 1, 'public UK marketing status should expose aggregate form-view, engagement and submit-attempt totals');
   assert(!('sources' in publicIsrael) && !('campaigns' in publicIsrael) && !('daily' in publicStatus), 'public marketing status must not expose attribution or daily records');
   const accountOnly = await createUserAccount({ ownerName: 'משתמש חדש', ownerEmail: 'new-user@example.com', password: 'strongpass123', ownerPhone: '0521111111', termsConsent: true, privacyConsent: true, marketingEmailConsent: true, source: 'unit_test' });
   assert(accountOnly.family.id, 'account-only family id missing');
