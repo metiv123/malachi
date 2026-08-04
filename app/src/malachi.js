@@ -2,7 +2,7 @@ import { audit, id, loadDb, mutateDb, nowIso, saveDb } from './store.js';
 import { randomUUID } from 'node:crypto';
 import { sendBetaUpdate, sendContactOptIn, sendDailyCheck, sendDailyReminder, sendDistressAlert, sendFamilyGreeting, sendIncompleteSignupReminder, sendNoResponseAlert, sendOkAck, sendOkReaction, sendOptIn, sendWebsiteLeadAutoReply } from './whatsapp.js';
 import { localParts } from './time.js';
-import { validateJoinInput, isValidTime, normalizePhone } from './validators.js';
+import { validateJoinInput, isLikelyPhone, isValidTime, normalizePhone } from './validators.js';
 import { config } from './config.js';
 import { hashPassword, verifyPassword } from './security.js';
 import { createFirebaseAuthUser, deleteFirebaseAuthUser, updateFirebaseAuthUser } from './firebaseAuth.js';
@@ -136,6 +136,7 @@ function requireAccountInput(input = {}) {
   const password = String(requireField(input, 'password')).trim();
   if (!ownerEmail.includes('@')) throw new Error('מייל לא תקין');
   if (password.length < 8) throw new Error('הסיסמה צריכה לכלול לפחות 8 תווים');
+  if (!isLikelyPhone(ownerPhone)) throw new Error('טלפון בן משפחה לא תקין');
   return { ownerName, ownerPhone, ownerEmail, password };
 }
 

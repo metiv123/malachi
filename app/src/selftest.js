@@ -62,6 +62,13 @@ async function run() {
   assert(publicIsrael.visitors === 1 && publicIsrael.pageViews === 2 && publicIsrael.engagedViews === 1 && publicIsrael.demoClicks === 1 && publicIsrael.demoInteractions === 1 && publicIsrael.demoJoinClicks === 1 && publicIsrael.joinClicks === 1, 'public Israel marketing status should expose aggregate funnel totals');
   assert(publicUk.visitors === 1 && publicUk.signupFormViews === 1 && publicUk.signupFormEngaged === 1 && publicUk.signupSubmitAttempts === 0 && publicUk.signupCompletes === 1, 'public UK marketing status should expose aggregate form-view, engagement and submit-attempt totals');
   assert(!('sources' in publicIsrael) && !('campaigns' in publicIsrael) && !('daily' in publicStatus), 'public marketing status must not expose attribution or daily records');
+  let invalidAccountPhoneRejected = false;
+  try {
+    await createUserAccount({ ownerName: 'Invalid phone', ownerEmail: 'invalid-phone@example.com', password: 'strongpass123', ownerPhone: 'not-a-phone', termsConsent: true });
+  } catch (error) {
+    invalidAccountPhoneRejected = error.message === 'טלפון בן משפחה לא תקין';
+  }
+  assert(invalidAccountPhoneRejected, 'account creation must reject an unusable WhatsApp number before creating data');
   const accountOnly = await createUserAccount({ ownerName: 'משתמש חדש', ownerEmail: 'new-user@example.com', password: 'strongpass123', ownerPhone: '0521111111', termsConsent: true, privacyConsent: true, marketingEmailConsent: true, source: 'unit_test' });
   assert(accountOnly.family.id, 'account-only family id missing');
   assert(accountOnly.family.marketingEmailConsent === true, 'marketing consent should be saved');

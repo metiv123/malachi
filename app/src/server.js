@@ -464,7 +464,7 @@ async function route(req, res) {
       return json(res, 401, { error: 'החיבור לחשבון חסר או פג. יש להיכנס מחדש.' }, { 'Set-Cookie': sessionCookie('', { clear: true }) });
     }
     if (err.message === 'מייל או סיסמה לא נכונים') return json(res, 401, { error: err.message });
-    if (/^(Missing required field|חסר |יש לאשר|צריך |המייל כבר|איש קשר עם|שעה לא תקינה|הסיסמה)/.test(err.message)) {
+    if (/^(Missing required field|חסר |יש לאשר|צריך |מייל לא תקין|המייל כבר|טלפון |איש קשר עם|שעה לא תקינה|הסיסמה)/.test(err.message)) {
       return json(res, 400, { error: err.message });
     }
     await logError('http_route', err, { method: req.method, url: req.url }).catch(() => {});

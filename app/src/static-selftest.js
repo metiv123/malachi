@@ -58,12 +58,16 @@ async function run() {
   assert(englishIndex.includes('id="requestedDetails"') && englishIndex.includes("requestedSource.includes('requested_reply')"), 'UK requested-details path missing');
   const adminPage = await readFile(path.join(publicDir, 'admin.html'), 'utf8');
   assert(adminPage.includes('sourceFunnels') && adminPage.includes('campaignFunnels') && adminPage.includes('משפך לפי מקור'), 'admin source and campaign funnel view missing');
-  assert((await readFile(path.join(publicDir, 'create-user.html'), 'utf8')).includes('src="/analytics.js"'), 'Israeli signup analytics missing');
-  assert((await readFile(path.join(publicDir, 'en/create-user.html'), 'utf8')).includes('src="/analytics.js"'), 'UK signup analytics missing');
+  const israelSignupHtml = await readFile(path.join(publicDir, 'create-user.html'), 'utf8');
+  const ukSignupHtml = await readFile(path.join(publicDir, 'en/create-user.html'), 'utf8');
+  assert(israelSignupHtml.includes('src="/analytics.js"'), 'Israeli signup analytics missing');
+  assert(ukSignupHtml.includes('src="/analytics.js"'), 'UK signup analytics missing');
+  assert(israelSignupHtml.includes('pattern="\\+?[0-9 ()-]{9,20}"') && ukSignupHtml.includes('pattern="\\+?[0-9 ()-]{9,20}"'), 'signup forms must reject obviously invalid WhatsApp numbers before submission');
   const israelSignupClient = await readFile(path.join(publicDir, 'create-user.js'), 'utf8');
   const ukSignupClient = await readFile(path.join(publicDir, 'en/create-user.js'), 'utf8');
   assert(israelSignupClient.includes("track('signup_form_view')") && ukSignupClient.includes("track('signup_form_view')"), 'signup forms must distinguish form loading from upstream join clicks');
   assert(israelSignupClient.includes("track('signup_form_engaged')") && ukSignupClient.includes("track('signup_form_engaged')"), 'signup forms must distinguish first field engagement from final submit attempts');
+  assert(ukSignupClient.includes("'טלפון בן משפחה לא תקין':'Enter a valid WhatsApp number.'") && ukSignupClient.includes("'יש לאשר את תנאי השימוש ואת מדיניות הפרטיות':'Please accept the Terms and Privacy Notice.'"), 'UK signup must translate expected server validation errors');
   assert(adminPage.includes('signup_form_view') && adminPage.includes('signup_form_engaged') && adminPage.includes('ניסיונות שליחת טופס'), 'admin funnel must expose form views and engagement and label submit attempts accurately');
   const israelDemo = await readFile(path.join(publicDir, 'demo-ai.html'), 'utf8');
   assert(israelDemo.includes("track('demo_interaction')") && israelDemo.includes("track('demo_join_click')") && israelDemo.includes('data-demo-join'), 'Israeli demo funnel instrumentation missing');
