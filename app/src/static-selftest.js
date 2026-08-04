@@ -45,6 +45,10 @@ async function run() {
   const englishIndex = await readFile(path.join(publicDir, 'en/index.html'), 'utf8');
   assert(englishIndex.includes('src="/analytics.js"'), 'UK homepage analytics missing');
   assert(englishIndex.includes("Know when Mum or Dad's usual reply arrives") && !englishIndex.includes('Know Mum or Dad is okay'), 'UK hero must describe a received reply without claiming health or safety certainty');
+  for (const riskyClaim of ['everything is okay this morning', 'family stays undisturbed', 'Daily reassurance without turning every morning into a phone call']) {
+    assert(!englishIndex.includes(riskyClaim), `UK homepage contains misleading certainty/contact-reduction copy: ${riskyClaim}`);
+  }
+  assert(englishIndex.includes('When the usual reply arrives, it is recorded') && englishIndex.includes('helps the family notice a missed reply and reconnect directly'), 'UK homepage must describe the signal as a reply and preserve direct family contact');
   assert(englishIndex.includes('An honest fit check') && englishIndex.includes('Angelo is not the right tool when') && englishIndex.includes('The family prompt means “please make contact”'), 'UK homepage must state who the pilot fits and where its signal is insufficient');
   assert(englishIndex.includes('id="partnerReview"') && englishIndex.includes('partner-review') && englishIndex.includes('hidden'), 'UK partner-review panel must exist and stay hidden by default');
   assert(englishIndex.includes("partnerSource.startsWith('email_')") && englishIndex.includes("partnerCampaign.startsWith('uk_partner')"), 'UK partner-review source targeting missing');
@@ -68,6 +72,14 @@ async function run() {
   assert(ukFacebookShortLink.includes('location.search') && ukFacebookShortLink.includes('allowedTrackingKeys'), 'UK Facebook short link must preserve safe campaign attribution');
   assert(ukFacebookShortLink.includes("'utm_term','test'") && ukFacebookShortLink.includes("key!=='test'||clean==='1'"), 'UK short link must preserve only the explicit QA test marker');
   assert((await readFile(path.join(publicDir, 'en/w.html'), 'utf8')).includes('source=whatsapp'), 'UK WhatsApp short link missing');
+  const englishDemo = await readFile(path.join(publicDir, 'en/demo.html'), 'utf8');
+  assert(!englishDemo.includes('let your family know everything is okay') && !englishDemo.includes('Family undisturbed'), 'UK demo must not treat a reply as proof of safety or reduced family contact');
+  assert(englishDemo.includes('Your reply has been received') && englishDemo.includes('Please contact them directly and decide what to do next'), 'UK demo must distinguish a received reply from a direct family follow-up');
+  const whatsappSource = await readFile(path.resolve(process.cwd(), 'src/whatsapp.js'), 'utf8');
+  for (const riskyClaim of ['let your family know everything is okay this morning', 'We’re glad to hear everything is okay']) {
+    assert(!whatsappSource.includes(riskyClaim), `English WhatsApp copy contains an unsafe certainty claim: ${riskyClaim}`);
+  }
+  assert(whatsappSource.includes('Tap below to send your usual morning reply') && whatsappSource.includes('Your reply has been received'), 'English WhatsApp copy must describe only the response signal');
 
   const customerFiles = ['dashboard.js', 'create-user.js', 'login.js', 'feedback.html'];
   for (const filename of customerFiles) {

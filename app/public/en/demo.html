@@ -83,7 +83,7 @@ function status(mode) {
   const states = {
     start: [['Waiting','Choose a journey'],[parent,'Parent'],[family,'Family contact'],['09:00','Example time']],
     registered: [['Approved','Parent consent'],[parent,'Receives check-ins'],[family,'Receives alerts'],['Active','Ready for tomorrow']],
-    okay: [['I’m okay','Latest response'],['09:02','Response time'],['No alert','Family undisturbed'],['Complete','Next check tomorrow']],
+    okay: [['I’m okay','Latest response'],['09:02','Response time'],['Reply received','Usual routine recorded'],['Complete','Next check tomorrow']],
     late: [['No response','Check-in status'],['2 reminders','Sent automatically'],[family,'Family alerted'],['Contact directly','Recommended next step']]
   };
   statusBox.innerHTML = states[mode].map((item, index) => `<article class="${mode === 'okay' ? 'ok' : mode === 'late' && index < 3 ? 'warning' : ''}"><strong>${item[0]}</strong><span>${item[1]}</span></article>`).join('');
@@ -102,16 +102,16 @@ function registration() {
 function morningCheck() {
   trackDemoEngagement();
   const { parent } = names(); chat.innerHTML = ''; subtitle.textContent = 'Morning check-in'; status('registered');
-  bubble('system','Today at 09:00'); pause(() => { bubble('bot',`Good morning ${parent} 🌿<br>Just tap to let your family know everything is okay.`); action('I’m okay', () => { bubble('reply','I’m okay<small>09:02 ✓✓</small>'); bubble('bot',`Thank you, ${parent} ❤️<br>We’ll check in again tomorrow morning.`); status('okay'); subtitle.textContent = 'Response received'; }); }, 250);
+  bubble('system','Today at 09:00'); pause(() => { bubble('bot',`Good morning ${parent} 🌿<br>Tap below to send your usual morning reply.`); action('I’m okay', () => { bubble('reply','I’m okay<small>09:02 ✓✓</small>'); bubble('bot',`Thank you, ${parent} ❤️<br>Your reply has been received. We’ll check in again tomorrow morning.`); status('okay'); subtitle.textContent = 'Response received'; }); }, 250);
 }
 function noReply() {
   trackDemoEngagement();
   const { parent, family } = names(); chat.innerHTML = ''; subtitle.textContent = 'No-response path'; status('registered');
-  bubble('system','09:00 — morning check-in'); bubble('bot',`Good morning ${parent} 🌿<br>Just tap to let your family know everything is okay.`);
+  bubble('system','09:00 — morning check-in'); bubble('bot',`Good morning ${parent} 🌿<br>Tap below to send your usual morning reply.`);
   pause(() => bubble('system','No response — first reminder sent'), 450);
   pause(() => bubble('bot',`Hi ${parent}, we still haven’t received a response. Please tap below when you can.`), 750);
   pause(() => bubble('system','Still no response after the configured reminders'), 1100);
-  pause(() => { chat.innerHTML = ''; subtitle.textContent = `Family alert to ${family}`; bubble('system',`Conversation with ${family}`); bubble('bot',`Hello ${family} 🌿<br>${parent} has not responded to the morning check-in. Please contact them directly to make sure everything is okay.`); status('late'); }, 1500);
+  pause(() => { chat.innerHTML = ''; subtitle.textContent = `Family alert to ${family}`; bubble('system',`Conversation with ${family}`); bubble('bot',`Hello ${family} 🌿<br>${parent} has not responded to the morning check-in. Please contact them directly and decide what to do next.`); status('late'); }, 1500);
 }
 document.querySelector('#registration').onclick = registration;
 document.querySelector('#morning').onclick = morningCheck;

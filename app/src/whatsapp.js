@@ -259,7 +259,7 @@ export async function sendDailyCheck(elder, check) {
   const singleOkMode = config.dailyCheckMode === 'single_ok';
   const freeformMode = config.dailyCheckMode === 'freeform_connection';
   const body = language === 'en_US'
-    ? `Good morning ${elder.name} 🌿\nThis is Malachi. Just tap to let your family know everything is okay this morning.`
+    ? `Good morning ${elder.name} 🌿\nThis is Malachi. Tap below to send your usual morning reply.`
     : singleOkMode
       ? `בוקר טוב ${elder.name} 🌿\nכאן מלאכי. רק לסמן שהכול בסדר הבוקר.`
       : `בוקר טוב ${elder.name} 🌿\nכאן מלאכי, רק לוודא מה שלומך הבוקר.`;
@@ -285,7 +285,7 @@ export async function sendDailyReminder(elder, check) {
   const language = languageCode(elder);
   const templates = templateSet(language);
   const body = language === 'en_US'
-    ? `Hi ${elder.name} 🌿\nWe haven’t received a response yet. Just checking that everything is okay. You can tap the button below.`
+    ? `Hi ${elder.name} 🌿\nWe haven’t received your usual reply yet. You can tap the button below.`
     : `היי ${elder.name} 🌿\nרק תזכורת קטנה ממלאכי — נשמח לדעת שהכול בסדר. אפשר ללחוץ על הכפתור למטה.`;
   const buttons = [{ id: 'daily_ok', title: language === 'en_US' ? 'I’m okay' : 'אני בסדר' }];
   let providerResponse = null;
@@ -315,7 +315,7 @@ export async function sendNoResponseAlert(contact, elder, check) {
   const templates = templateSet(language);
   const time = new Date().toLocaleTimeString(localeFor(language), { timeZone: elder.timezone || config.timezone || 'Asia/Jerusalem', hour: '2-digit', minute: '2-digit' });
   const body = language === 'en_US'
-    ? `Malachi update: ${elder.name} has not responded to the morning check-in by ${time}. We recommend contacting them directly to make sure everything is okay.`
+    ? `Malachi update: ${elder.name} has not responded to the morning check-in by ${time}. Please contact them directly and decide what to do next.`
     : `מלאכי: ${elder.name} לא ענה/ענתה להודעת הבוקר עד עכשיו. כדאי ליצור קשר ולוודא שהכול בסדר.`;
   let providerResponse = null;
   if (config.whatsappProvider === 'meta') {
@@ -337,7 +337,7 @@ export async function sendOkAck(elder) {
   const language = languageCode(elder);
   const templates = templateSet(language);
   const body = language === 'en_US'
-    ? `Thank you, ${elder.name} ❤️\nWe’re glad to hear everything is okay. We’ll check in again tomorrow morning.`
+    ? `Thank you, ${elder.name} ❤️\nYour reply has been received. We’ll check in again tomorrow morning.`
     : `תודה ${elder.name} ❤️\nשמחנו לשמוע שהכול בסדר. נבדוק שוב מחר בבוקר.`;
   let providerResponse = null;
   if (config.whatsappProvider === 'meta') {
