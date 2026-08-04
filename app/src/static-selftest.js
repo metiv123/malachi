@@ -58,7 +58,8 @@ async function run() {
   for (const riskyHebrewClaim of ['המשפחה נשארת בשקט', 'התראה רק כשצריך לבדוק', 'הוא לא באמת לבד']) {
     assert(!index.includes(riskyHebrewClaim), `Israeli homepage contains a contact-reduction or certainty claim: ${riskyHebrewClaim}`);
   }
-  assert(index.includes('כשהתגובה הרגילה מגיעה — היא נרשמת') && index.includes('המשפחה תמיד מחליטה מה לעשות') && index.includes('שעוזרת למשפחה לשים לב ולהישאר בקשר'), 'Israeli homepage must describe the observable reply and preserve human decision and contact');
+  assert(index.includes('שקט נפשי יום־יומי למשפחה') && index.includes('מלאכי הפך לחלק משגרת הבוקר שלנו') && index.includes('שתי שגרות קטנות שמחברות משפחה'), 'Israeli homepage must lead with the daily family routine, emotional value and Malachi character');
+  assert(index.includes('כשהתגובה הרגילה מגיעה') && index.includes('כשהיא חסרה, מלאכי מבקש ליצור קשר ישיר') && index.includes('המשפחה מקבלת שקט'), 'Israeli homepage must connect the observable reply signal to direct family follow-up without losing the emotional benefit');
   assert(englishIndex.includes('id="requestedDetails"') && englishIndex.includes("requestedSource.includes('requested_reply')"), 'UK requested-details path missing');
   const adminPage = await readFile(path.join(publicDir, 'admin.html'), 'utf8');
   assert(adminPage.includes('sourceFunnels') && adminPage.includes('campaignFunnels') && adminPage.includes('משפך לפי מקור'), 'admin source and campaign funnel view missing');
