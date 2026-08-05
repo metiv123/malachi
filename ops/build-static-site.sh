@@ -8,7 +8,7 @@ rm -rf "$OUT"
 mkdir -p "$OUT"
 # Publish only public marketing pages. Account, dashboard and admin pages stay
 # on the application service and must not be copied to the marketing host.
-for page in index.html demo-ai.html onboarding.html faq.html privacy.html terms.html accessibility.html data-deletion.html f.html w.html; do
+for page in index.html demo-ai.html onboarding.html faq.html privacy.html terms.html accessibility.html data-deletion.html start.html f.html w.html; do
   cp "$ROOT/app/public/$page" "$OUT/$page"
 done
 cp "$ROOT/app/public/style.css" "$OUT/style.css"
@@ -50,8 +50,8 @@ for (const name of fs.readdirSync(root).filter((file) => file.endsWith('.html'))
     ['href="/terms.html"', 'href="terms.html"'],
     ['href="/data-deletion.html"', 'href="data-deletion.html"'],
     ['href="/accessibility.html"', 'href="accessibility.html"'],
-    ['href="/create-user.html"', `href="${api}/create-user.html"`],
-    ['href="/login.html"', `href="${api}/login.html"`],
+    ['href="/create-user.html"', 'href="start.html?next=%2Fcreate-user.html"'],
+    ['href="/login.html"', 'href="start.html?next=%2Flogin.html"'],
     ['href="/dashboard.html"', `href="${api}/dashboard.html"`],
     ['href="/feedback.html"', `href="${api}/feedback.html"`],
     ['href="/status.html"', `href="${api}/status.html"`],

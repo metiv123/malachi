@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="robots" content="noindex,nofollow">
+  <title>מתחברים למלאכי…</title>
+  <link rel="stylesheet" href="/style.css">
+  <link rel="icon" type="image/png" href="/assets/brand/malachi-mascot.png">
+  <link rel="apple-touch-icon" href="/assets/brand/malachi-mascot.png">
+  <style>
+    .wake-page{min-height:100vh;display:grid;place-items:center;padding:24px;background:linear-gradient(180deg,#f7fbff 0%,#eef8f4 100%)}
+    .wake-card{width:min(100%,520px);padding:40px 28px;text-align:center;background:#fff;border:1px solid #cfe4f2;border-radius:28px;box-shadow:0 18px 50px rgba(23,55,77,.12)}
+    .wake-mascot{width:128px;height:128px;object-fit:contain;margin-bottom:14px}
+    .wake-card h1{margin:0 0 12px;color:#17374d;font-size:clamp(1.8rem,7vw,2.7rem)}
+    .wake-card p{color:#405c6f;font-size:1.08rem;line-height:1.65}
+    .wake-dots{display:flex;justify-content:center;gap:9px;margin:24px 0}
+    .wake-dots span{width:12px;height:12px;border-radius:50%;background:#37a978;animation:wake 1.2s infinite ease-in-out}
+    .wake-dots span:nth-child(2){animation-delay:.18s}.wake-dots span:nth-child(3){animation-delay:.36s}
+    .wake-retry{margin-top:18px}
+    @keyframes wake{0%,80%,100%{opacity:.3;transform:translateY(0)}40%{opacity:1;transform:translateY(-7px)}}
+    @media(prefers-reduced-motion:reduce){.wake-dots span{animation:none;opacity:.75}}
+  </style>
+</head>
+<body>
+  <main class="wake-page">
+    <section class="wake-card" aria-labelledby="wakeTitle">
+      <img class="wake-mascot" src="/assets/brand/malachi-mascot.png" alt="">
+      <h1 id="wakeTitle">מלאכי מכין את האזור האישי</h1>
+      <p id="wakeStatus" role="status" aria-live="polite">רק רגע, אנחנו מתחברים בצורה מאובטחת…</p>
+      <div class="wake-dots" aria-hidden="true"><span></span><span></span><span></span></div>
+      <p class="small">בכניסה הראשונה החיבור עשוי לקחת עד כדקה. אפשר להישאר בעמוד — המעבר יתבצע אוטומטית.</p>
+      <button class="button primary wake-retry" id="wakeRetry" type="button" hidden>לנסות שוב</button>
+    </section>
+  </main>
+  <script src="/config.js"></script>
+  <script>
+    (() => {
+      const apiBase = String(window.MALACHI_API_BASE || '').replace(/\/$/, '');
+      const params = new URLSearchParams(location.search);
+      const requestedNext = params.get('next') || '/login.html';
+      const allowed = new Set(['/create-user.html', '/login.html']);
+      const nextPath = allowed.has(requestedNext) ? requestedNext : '/login.html';
+      params.delete('next');
+      const destination = new URL(`${apiBase}${nextPath}`);
+      for (const [key, value] of params) destination.searchParams.set(key, value);
+      const status = document.querySelector('#wakeStatus');
+      const retry = document.querySelector('#wakeRetry');
+      let attempts = 0;
+
+      async function wake() {
+        retry.hidden = true;
+        status.textContent = attempts ? 'החיבור מתעורר, עוד כמה שניות…' : 'רק רגע, אנחנו מתחברים בצורה מאובטחת…';
+        while (attempts < 45) {
+          attempts += 1;
+          try {
+            const response = await fetch(`${apiBase}/api/health`, { cache: 'no-store' });
+            const type = response.headers.get('content-type') || '';
+            if (response.ok && type.includes('application/json')) {
+              location.replace(destination.href);
+              return;
+            }
+          } catch {}
+          if (attempts === 6) status.textContent = 'מלאכי מתעורר עכשיו. אין צורך לרענן את העמוד…';
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+        }
+        status.textContent = 'החיבור מתעכב יותר מהרגיל. אפשר לנסות שוב.';
+        retry.hidden = false;
+      }
+
+      retry.addEventListener('click', () => { attempts = 0; wake(); });
+      wake();
+    })();
+  </script>
+  <script src="/accessibility.js"></script>
+</body>
+</html>

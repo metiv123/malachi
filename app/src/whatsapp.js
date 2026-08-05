@@ -367,7 +367,7 @@ export async function sendOkReaction(elder, check, inboundMessageId, emoji = '�
 export async function sendIncompleteSignupReminder(family, { signupUrl = '' } = {}) {
   const language = languageCode(family);
   const templates = templateSet(language);
-  const link = signupUrl || (language === 'en_US' ? `${config.publicBaseUrl.replace(/\/$/, '')}/en/dashboard.html` : config.publicBaseUrl) || 'https://malachi-v78v.onrender.com/';
+  const link = signupUrl || (language === 'en_US' ? `${config.publicBaseUrl.replace(/\/$/, '')}/en/dashboard.html` : config.publicBaseUrl) || 'https://malachi-static.onrender.com/';
   const body = language === 'en_US'
     ? `Hi ${family.ownerName} 🌿\nWe saw that you started setting up Malachi, but some details are still missing. Please complete the setup here: ${link}\nIf this is no longer relevant, you can ignore this message.`
     : `היי ${family.ownerName} 🌿\nראינו שהתחלת הרשמה למלאכי, אבל עדיין חסרים פרטים כדי להפעיל את השירות.\nכדי שנוכל לשלוח בדיקת בוקר ולאפשר למשפחה לקבל עדכון אם אין מענה, צריך להשלים את הפרטים כאן: ${link}\nאם זה לא רלוונטי, אפשר להתעלם מההודעה.`;

@@ -36,7 +36,7 @@ services:
       - key: MALACHI_TIMEZONE
         value: Asia/Jerusalem
       - key: MALACHI_PUBLIC_BASE_URL
-        value: https://malachi-v78v.onrender.com
+        value: https://malachi-static.onrender.com
       - key: MALACHI_ALLOWED_ORIGINS
         value: https://malachi-v78v.onrender.com,https://malachi-static.onrender.com,https://malachi-uk-pilot.onrender.com
       - key: MALACHI_RETENTION_CHECKS_DAYS
